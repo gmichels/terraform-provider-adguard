@@ -18,14 +18,29 @@ var (
 	_ resource.ResourceWithImportState = &clientResource{}
 )
 
-// NewClientResource is a helper function to simplify the provider implementation
-func NewClientResource() resource.Resource {
-	return &clientResource{}
-}
-
 // clientResource is the resource implementation
 type clientResource struct {
 	adg *adguard.ADG
+}
+
+// clientResourceModel maps client schema data
+type clientResourceModel struct {
+	ID                  types.String `tfsdk:"id"`
+	LastUpdated         types.String `tfsdk:"last_updated"`
+	Name                types.String `tfsdk:"name"`
+	Ids                 types.List   `tfsdk:"ids"`
+	UseGlobalSettings   types.Bool   `tfsdk:"use_global_settings"`
+	FilteringEnabled    types.Bool   `tfsdk:"filtering_enabled"`
+	ParentalEnabled     types.Bool   `tfsdk:"parental_enabled"`
+	SafebrowsingEnabled types.Bool   `tfsdk:"safebrowsing_enabled"`
+	BlockedServices     types.List   `tfsdk:"blocked_services"`
+	Upstreams           types.List   `tfsdk:"upstreams"`
+	Tags                types.List   `tfsdk:"tags"`
+}
+
+// NewClientResource is a helper function to simplify the provider implementation
+func NewClientResource() resource.Resource {
+	return &clientResource{}
 }
 
 // Metadata returns the resource type name
@@ -48,7 +63,8 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 			},
 			"ids": schema.ListAttribute{
 				ElementType: types.StringType,
-				Required:    true,
+				Computed:    true,
+				Optional:    true,
 			},
 			// default values are not yet an easy task using the plugin framework
 			// see https://github.com/hashicorp/terraform-plugin-framework/issues/668
@@ -87,21 +103,6 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 	}
 }
 
-// clientResourceModel maps client schema data
-type clientResourceModel struct {
-	ID                  types.String   `tfsdk:"id"`
-	LastUpdated         types.String   `tfsdk:"last_updated"`
-	Name                types.String   `tfsdk:"name"`
-	Ids                 []types.String `tfsdk:"ids"`
-	UseGlobalSettings   types.Bool     `tfsdk:"use_global_settings"`
-	FilteringEnabled    types.Bool     `tfsdk:"filtering_enabled"`
-	ParentalEnabled     types.Bool     `tfsdk:"parental_enabled"`
-	SafebrowsingEnabled types.Bool     `tfsdk:"safebrowsing_enabled"`
-	BlockedServices     []types.String `tfsdk:"blocked_services"`
-	Upstreams           []types.String `tfsdk:"upstreams"`
-	Tags                []types.String `tfsdk:"tags"`
-}
-
 // Configure adds the provider configured client to the resource
 func (r *clientResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
@@ -126,21 +127,35 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	// populate client from plan
 	clientPlan.Name = plan.Name.ValueString()
-	for _, id := range plan.Ids {
-		clientPlan.Ids = append(clientPlan.Ids, id.ValueString())
+	diags = plan.Ids.ElementsAs(ctx, &clientPlan.Ids, false)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 	clientPlan.UseGlobalSettings = plan.UseGlobalSettings.ValueBool()
 	clientPlan.FilteringEnabled = plan.FilteringEnabled.ValueBool()
 	clientPlan.ParentalEnabled = plan.ParentalEnabled.ValueBool()
 	clientPlan.SafebrowsingEnabled = plan.SafebrowsingEnabled.ValueBool()
-	for _, blockedService := range plan.BlockedServices {
-		clientPlan.BlockedServices = append(clientPlan.BlockedServices, blockedService.ValueString())
+	if len(plan.BlockedServices.Elements()) > 0 {
+		diags = plan.BlockedServices.ElementsAs(ctx, &clientPlan.BlockedServices, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
-	for _, upstream := range plan.Upstreams {
-		clientPlan.Upstreams = append(clientPlan.Upstreams, upstream.ValueString())
+	if len(plan.Upstreams.Elements()) > 0 {
+		diags = plan.Upstreams.ElementsAs(ctx, &clientPlan.Upstreams, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
-	for _, tag := range plan.Tags {
-		clientPlan.Tags = append(clientPlan.Tags, tag.ValueString())
+	if len(plan.Tags.Elements()) > 0 {
+		diags = plan.Tags.ElementsAs(ctx, &clientPlan.Tags, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	// create new clientState using plan
@@ -157,21 +172,29 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 	plan.ID = types.StringValue(clientState.Name)
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 	plan.Name = types.StringValue(clientState.Name)
-	for _, id := range clientState.Ids {
-		plan.Ids = append(plan.Ids, types.StringValue(id))
+	plan.Ids, diags = types.ListValueFrom(ctx, types.StringType, clientState.Ids)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 	plan.UseGlobalSettings = types.BoolValue(clientState.UseGlobalSettings)
 	plan.FilteringEnabled = types.BoolValue(clientState.FilteringEnabled)
 	plan.ParentalEnabled = types.BoolValue(clientState.ParentalEnabled)
 	plan.SafebrowsingEnabled = types.BoolValue(clientState.SafebrowsingEnabled)
-	for _, blockedService := range clientState.BlockedServices {
-		plan.BlockedServices = append(plan.BlockedServices, types.StringValue(blockedService))
+	plan.BlockedServices, diags = types.ListValueFrom(ctx, types.StringType, clientState.BlockedServices)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-	for _, upstream := range clientState.Upstreams {
-		plan.Upstreams = append(plan.Upstreams, types.StringValue(upstream))
+	plan.Upstreams, diags = types.ListValueFrom(ctx, types.StringType, clientState.Upstreams)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-	for _, tag := range clientState.Tags {
-		plan.Tags = append(plan.Tags, types.StringValue(tag))
+	plan.Tags, diags = types.ListValueFrom(ctx, types.StringType, clientState.Tags)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	// set state to fully populated data
@@ -192,7 +215,7 @@ func (r *clientResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	// get refreshed order value from Adguard Home
+	// get refreshed client value from Adguard Home
 	client, err := r.adg.GetClient(state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -202,23 +225,31 @@ func (r *clientResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	// overwrite items with refreshed state
+	// overwrite client with refreshed state
 	state.Name = types.StringValue(client.Name)
-	for _, id := range client.Ids {
-		state.Ids = append(state.Ids, types.StringValue(id))
+	state.Ids, diags = types.ListValueFrom(ctx, types.StringType, client.Ids)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 	state.UseGlobalSettings = types.BoolValue(client.UseGlobalSettings)
 	state.FilteringEnabled = types.BoolValue(client.FilteringEnabled)
 	state.ParentalEnabled = types.BoolValue(client.ParentalEnabled)
 	state.SafebrowsingEnabled = types.BoolValue(client.SafebrowsingEnabled)
-	for _, blockedService := range client.BlockedServices {
-		state.BlockedServices = append(state.BlockedServices, types.StringValue(blockedService))
+	state.BlockedServices, diags = types.ListValueFrom(ctx, types.StringType, client.BlockedServices)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-	for _, upstream := range client.Upstreams {
-		state.Upstreams = append(state.Upstreams, types.StringValue(upstream))
+	state.Upstreams, diags = types.ListValueFrom(ctx, types.StringType, client.Upstreams)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-	for _, tag := range client.Tags {
-		state.Tags = append(state.Tags, types.StringValue(tag))
+	state.Tags, diags = types.ListValueFrom(ctx, types.StringType, client.Tags)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	// set refreshed state
@@ -243,21 +274,35 @@ func (r *clientResource) Update(ctx context.Context, req resource.UpdateRequest,
 	var clientUpdate adguard.ClientUpdate
 	clientUpdate.Name = plan.Name.ValueString()
 	clientUpdate.Data.Name = plan.Name.ValueString()
-	for _, id := range plan.Ids {
-		clientUpdate.Data.Ids = append(clientUpdate.Data.Ids, id.ValueString())
+	diags = plan.Ids.ElementsAs(ctx, &clientUpdate.Data.Ids, false)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 	clientUpdate.Data.UseGlobalSettings = plan.UseGlobalSettings.ValueBool()
 	clientUpdate.Data.FilteringEnabled = plan.FilteringEnabled.ValueBool()
 	clientUpdate.Data.ParentalEnabled = plan.ParentalEnabled.ValueBool()
 	clientUpdate.Data.SafebrowsingEnabled = plan.SafebrowsingEnabled.ValueBool()
-	for _, blockedService := range plan.BlockedServices {
-		clientUpdate.Data.BlockedServices = append(clientUpdate.Data.BlockedServices, blockedService.ValueString())
+	if len(plan.BlockedServices.Elements()) > 0 {
+		diags = plan.BlockedServices.ElementsAs(ctx, &clientUpdate.Data.BlockedServices, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
-	for _, upstream := range plan.Upstreams {
-		clientUpdate.Data.Upstreams = append(clientUpdate.Data.Upstreams, upstream.ValueString())
+	if len(plan.Upstreams.Elements()) > 0 {
+		diags = plan.Upstreams.ElementsAs(ctx, &clientUpdate.Data.Upstreams, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
-	for _, tag := range plan.Tags {
-		clientUpdate.Data.Tags = append(clientUpdate.Data.Tags, tag.ValueString())
+	if len(plan.Tags.Elements()) > 0 {
+		diags = plan.Tags.ElementsAs(ctx, &clientUpdate.Data.Tags, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	// update existing client
