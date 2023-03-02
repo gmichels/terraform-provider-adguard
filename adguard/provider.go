@@ -3,15 +3,23 @@ package adguard
 import (
 	"context"
 	"os"
+	"regexp"
+	"strconv"
 
 	"github.com/gmichels/adguard-client-go"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+// define a max Adguard Home client timeout
+const MAX_TIMEOUT int = 60
 
 // ensure the implementation satisfies the expected interfaces
 var (
@@ -37,31 +45,34 @@ func (p *adguardProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
 				Description: "The hostname of the Adguard Home instance. Include the port if not on a standard HTTP/HTTPS port",
-				Required:    true,
-				// DefaultFunc: schema.EnvDefaultFunc("ADGUARD_HOST", nil),
+				Optional:    true,
 			},
 			"username": schema.StringAttribute{
 				Description: "The username of the Adguard Home instance",
-				Required:    true,
-				// DefaultFunc: schema.EnvDefaultFunc("ADGUARD_USERNAME", nil),
+				Optional:    true,
 			},
 			"password": schema.StringAttribute{
 				Description: "The password of the Adguard Home instance",
-				Required:    true,
+				Optional:    true,
 				Sensitive:   true,
-				// DefaultFunc: schema.EnvDefaultFunc("ADGUARD_PASSWORD", nil),
 			},
 			"scheme": schema.StringAttribute{
 				Description: "The HTTP scheme of the Adguard Home instance. Can be either `http` or `https` (default)",
 				Optional:    true,
-				// DefaultFunc:  schema.EnvDefaultFunc("ADGUARD_SCHEME", nil),
-				// ValidateFunc: validation.StringInSlice([]string{"http", "https"}, false),
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(4, 5),
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^https{0,1}$`),
+						"must be either http or https",
+					),
+				},
 			},
 			"timeout": schema.Int64Attribute{
 				Description: "The timeout (in seconds) for making requests to Adguard Home. Defaults to 10",
 				Optional:    true,
-				// DefaultFunc:  schema.EnvDefaultFunc("ADGUARD_TIMEOUT", nil),
-				// ValidateFunc: validation.IntBetween(1, 600),
+				Validators: []validator.Int64{
+					int64validator.Between(1, int64(MAX_TIMEOUT)),
+				},
 			},
 		},
 	}
@@ -100,7 +111,7 @@ func (p *adguardProvider) Configure(ctx context.Context, req provider.ConfigureR
 	if config.Username.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("username"),
-			"Unknown HashiCups API Username",
+			"Unknown Adguard Home Username",
 			"The provider cannot create the Adguard Home client as there is an unknown configuration value for the Adguard Home username. "+
 				"Either target apply the source of the value first, set the value statically in the configuration, or use the ADGUARD_USERNAME environment variable.",
 		)
@@ -116,11 +127,21 @@ func (p *adguardProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	if config.Scheme.IsUnknown() {
-		config.Scheme = types.StringValue("https")
+		resp.Diagnostics.AddAttributeError(
+			path.Root("scheme"),
+			"Unknown Adguard Home Scheme",
+			"The provider cannot create the Adguard Home client as there is an unknown configuration value for the Adguard Home scheme. "+
+				"Either target apply the source of the value first, set the value statically in the configuration, or use the ADGUARD_SCHEME environment variable.",
+		)
 	}
 
 	if config.Timeout.IsUnknown() {
-		config.Timeout = types.Int64Value(10)
+		resp.Diagnostics.AddAttributeError(
+			path.Root("timeout"),
+			"Unknown Adguard Home Timeout",
+			"The provider cannot create the Adguard Home client as there is an unknown configuration value for the Adguard Home timeout. "+
+				"Either target apply the source of the value first, set the value statically in the configuration, or use the ADGUARD_TIMEOUT environment variable.",
+		)
 	}
 
 	if resp.Diagnostics.HasError() {
@@ -132,18 +153,35 @@ func (p *adguardProvider) Configure(ctx context.Context, req provider.ConfigureR
 	username := os.Getenv("ADGUARD_USERNAME")
 	password := os.Getenv("ADGUARD_PASSWORD")
 	scheme := os.Getenv("ADGUARD_SCHEME")
-	timeout := 10
-	// timeout_env := os.Getenv("ADGUARD_TIMEOUT")
-	// if len(timeout_env) > 0 {
-	// 	timeout, err := strconv.Atoi(timeout_env)
-	// 	if err != nil {
-	// 		resp.Diagnostics.AddAttributeError(
-	// 			path.Root("timeout"),
-	// 			"Unable to parse  Adguard Home Timeout value",
-	// 			"The provider cannot create the Adguard Home client as it was unable to parse the provided value for ADGUARD_TIMEOUT.")
-	// 		return
-	// 	}
-	// }
+	// sanity check for scheme when provided via env variable
+	if scheme != "" && scheme != "http" && scheme != "https" {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("scheme"),
+			"Unable to parse Adguard Home Scheme value",
+			"The provider cannot create the Adguard Home client as the provided value for ADGUARD_SCHEME needs to be either `http` or `https`.")
+		return
+
+	}
+	timeout_env := os.Getenv("ADGUARD_TIMEOUT")
+	// sanity check for timeout when provided via env variable
+	var timeout int
+	if timeout_env != "" {
+		var err error
+		timeout, err = strconv.Atoi(timeout_env)
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("timeout"),
+				"Unable to parse Adguard Home Timeout value",
+				"The provider cannot create the Adguard Home client as it was unable to parse the provided value for ADGUARD_TIMEOUT.")
+			return
+		} else if timeout <= 0 || timeout > MAX_TIMEOUT {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("timeout"),
+				"Unable to parse Adguard Home Timeout value",
+				"The provider cannot create the Adguard Home client as the provided value for ADGUARD_TIMEOUT was outside the acceptable range (1, "+strconv.Itoa(MAX_TIMEOUT)+").")
+			return
+		}
+	}
 
 	if !config.Host.IsNull() {
 		host = config.Host.ValueString()
@@ -165,7 +203,7 @@ func (p *adguardProvider) Configure(ctx context.Context, req provider.ConfigureR
 		timeout = int(config.Timeout.ValueInt64())
 	}
 
-	// If any of the expected configurations are missing, return errors with provider-specific guidance
+	// if any of the expected configurations are missing, return errors with provider-specific guidance
 	if host == "" {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("host"),
@@ -197,23 +235,13 @@ func (p *adguardProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	if scheme == "" {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("scheme"),
-			"Missing Adguard Home Scheme",
-			"The provider cannot create the Adguard Home client as there is a missing or empty value for the Adguard Home scheme. "+
-				"Set the scheme value in the configuration or use the ADGUARD_SCHEME environment variable. "+
-				"If either is already set, ensure the value is not empty.",
-		)
+		// default to https
+		scheme = "https"
 	}
 
 	if timeout == 0 {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("timeout"),
-			"Missing Adguard Home Timeout",
-			"The provider cannot create the Adguard Home client as there is a missing or zero value for the Adguard Home timeout. "+
-				"Set the timeout value in the configuration or use the ADGUARD_TIMEOUT environment variable. "+
-				"If either is already set, ensure the value is not zero.",
-		)
+		// default to 10 seconds
+		timeout = 10
 	}
 
 	if resp.Diagnostics.HasError() {

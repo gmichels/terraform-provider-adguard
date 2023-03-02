@@ -9,29 +9,17 @@ const (
 	// providerConfig is a shared configuration to combine with the actual
 	// test configuration so the Adguard Home client is properly configured.
 	// It is also possible to use the ADGUARD_ environment variables instead,
-	// such as updating the Makefile and running the testing through that tool.
+	// such as updating the Makefile and running the testing through that tool
 	providerConfig = `
 provider "adguard" {
-  host     = "dns-int.michels.link"
-  username = "gmichels"
-  password = "DJYxNF7Aav8Uzhr90uy8"
-  scheme = "https"
+  // host     = "localhost"
+  // username = "admin"
+  // password = "SecretP@ssw0rd"
+  // scheme   = "http"
+  // timeout  = 5
 }
 `
 )
-
-// var (
-// 	// providerConfig is a shared configuration to combine with the actual
-// 	// test configuration so the Adguard Home client is properly configured.
-// 	providerConfig = `
-// provider "adguard" {
-//   host  = "` + os.Getenv("ADGUARD_HOST") + `"
-//   username = "` + os.Getenv("ADGUARD_USERNAME") + `"
-//   password = "` + os.Getenv("ADGUARD_PASSWORD") + `"
-//   scheme = "` + os.Getenv("ADGUARD_SCHEME") + `"
-// }
-// `
-// )
 
 var (
 	// testAccProtoV6ProviderFactories are used to instantiate a provider during
