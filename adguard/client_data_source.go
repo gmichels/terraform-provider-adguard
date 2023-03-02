@@ -110,6 +110,13 @@ func (d *clientDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		)
 		return
 	}
+	if client == nil {
+		resp.Diagnostics.AddError(
+			"Unable to Locate AdGuard Home Client",
+			"No client with name `"+state.Name.ValueString()+"` exists in AdGuard Home.",
+		)
+		return
+	}
 
 	// map response body to model
 	state.Name = types.StringValue(client.Name)
