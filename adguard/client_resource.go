@@ -71,8 +71,7 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 			},
 			"ids": schema.ListAttribute{
 				ElementType: types.StringType,
-				// Computed:    true,
-				Optional: true,
+				Required:    true,
 			},
 			// default values are not yet an easy task using the plugin framework
 			// see https://github.com/hashicorp/terraform-plugin-framework/issues/668
