@@ -1,0 +1,22 @@
+{
+  "go.testFlags": ["-v", "-tags=all", "-args", "-test.v"],
+  "go.testEnvVars": {
+    "TF_ACC": "1"
+  },
+  "go.testEnvFile": "${workspaceFolder}/.env",
+  "[go]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    }
+  },
+  "gopls": {
+    "env": {
+      "GOFLAGS": "-tags=all"
+    },
+    "usePlaceholders": true, // add parameter placeholders when completing a function
+    // Experimental settings
+    "completeUnimported": true, // autocomplete unimported packages
+    "deepCompletion": true // enable deep completion
+  },
+}

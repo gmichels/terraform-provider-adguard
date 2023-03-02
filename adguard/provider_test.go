@@ -12,11 +12,11 @@ const (
 	// such as updating the Makefile and running the testing through that tool
 	providerConfig = `
 provider "adguard" {
-  host     = "localhost:8080"
-  username = "admin"
-  password = "SecretP@ssw0rd"
-  scheme   = "http"
-  timeout  = 5
+  // host     = "localhost:8080"
+  // username = "admin"
+  // password = "SecretP@ssw0rd"
+  // scheme   = "http"
+  // timeout  = 5
 }
 `
 )
