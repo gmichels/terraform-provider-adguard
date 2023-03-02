@@ -58,18 +58,22 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Description: "Internal identifier for this client",
+				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"last_updated": schema.StringAttribute{
-				Computed: true,
+				Description: "Timestamp of the last Terraform update of the client",
+				Computed:    true,
 			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Description: "Name of the client",
+				Required:    true,
 			},
 			"ids": schema.ListAttribute{
+				Description: "List of identifiers for this client (IP, CIDR, MAC, or ClientID)",
 				ElementType: types.StringType,
 				Required:    true,
 			},
@@ -77,56 +81,65 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 			// see https://github.com/hashicorp/terraform-plugin-framework/issues/668
 			// using instead https://github.com/terraform-community-providers/terraform-plugin-framework-utils/modifiers
 			"use_global_settings": schema.BoolAttribute{
-				Computed: true,
-				Optional: true,
+				Description: "Whether to use global settings on this client",
+				Computed:    true,
+				Optional:    true,
 				PlanModifiers: []planmodifier.Bool{
 					modifiers.DefaultBool(true),
 				},
 			},
 			"filtering_enabled": schema.BoolAttribute{
-				Computed: true,
-				Optional: true,
+				Description: "Whether to have filtering enabled on this client",
+				Computed:    true,
+				Optional:    true,
 				PlanModifiers: []planmodifier.Bool{
 					modifiers.DefaultBool(false),
 				},
 			},
 			"parental_enabled": schema.BoolAttribute{
-				Computed: true,
-				Optional: true,
+				Description: "Whether to have AdGuard parental controls enabled on this client",
+				Computed:    true,
+				Optional:    true,
 				PlanModifiers: []planmodifier.Bool{
 					modifiers.DefaultBool(false),
 				},
 			},
 			"safebrowsing_enabled": schema.BoolAttribute{
-				Computed: true,
-				Optional: true,
+				Description: "Whether to have AdGuard browsing security enabled on this client",
+				Computed:    true,
+				Optional:    true,
 				PlanModifiers: []planmodifier.Bool{
 					modifiers.DefaultBool(false),
 				},
 			},
 			"safesearch_enabled": schema.BoolAttribute{
-				Computed: true,
-				Optional: true,
+				Description: "Whether to enforce safe search on this client",
+				Computed:    true,
+				Optional:    true,
 				PlanModifiers: []planmodifier.Bool{
 					modifiers.DefaultBool(false),
 				},
 			},
 			"use_global_blocked_services": schema.BoolAttribute{
-				Computed: true,
-				Optional: true,
+				Description: "Whether to use global settings for blocked services",
+				Computed:    true,
+				Optional:    true,
 				PlanModifiers: []planmodifier.Bool{
 					modifiers.DefaultBool(true),
 				},
 			},
 			"blocked_services": schema.ListAttribute{
+				Description: "List of blocked services for this client",
 				ElementType: types.StringType,
 				Optional:    true,
 			},
 			"upstreams": schema.ListAttribute{
+				Description: "List of upstream DNS server for this client",
 				ElementType: types.StringType,
 				Optional:    true,
 			},
 			"tags": schema.ListAttribute{
+				Description: "List of tags for this client",
 				ElementType: types.StringType,
 				Optional:    true,
 			},

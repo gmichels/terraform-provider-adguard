@@ -69,7 +69,7 @@ func (p *adguardProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 				},
 			},
 			"timeout": schema.Int64Attribute{
-				Description: "The timeout (in seconds) for making requests to AdGuard Home. Defaults to 10",
+				Description: "The timeout (in seconds) for making requests to AdGuard Home. Defaults to **10**",
 				Optional:    true,
 				Validators: []validator.Int64{
 					int64validator.Between(1, int64(MAX_TIMEOUT)),

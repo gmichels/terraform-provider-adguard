@@ -51,42 +51,54 @@ func (d *clientDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Description: "Placeholder identifier attribute",
+				Computed:    true,
 			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Description: "Name of the client",
+				Required:    true,
 			},
 			"ids": schema.ListAttribute{
+				Description: "List of identifiers for this client (IP, CIDR, MAC, or ClientID)",
 				ElementType: types.StringType,
 				Optional:    true,
 			},
 			"use_global_settings": schema.BoolAttribute{
-				Optional: true,
+				Description: "Whether to use global settings on this client",
+				Optional:    true,
 			},
 			"filtering_enabled": schema.BoolAttribute{
-				Optional: true,
+				Description: "Whether to have filtering enabled on this client",
+				Optional:    true,
 			},
 			"parental_enabled": schema.BoolAttribute{
-				Optional: true,
+				Description: "Whether to have AdGuard parental controls enabled on this client",
+				Optional:    true,
 			},
 			"safebrowsing_enabled": schema.BoolAttribute{
-				Optional: true,
+				Description: "Whether to have AdGuard browsing security enabled on this client",
+				Optional:    true,
 			},
 			"safesearch_enabled": schema.BoolAttribute{
-				Optional: true,
+				Description: "Whether to enforce safe search on this client",
+				Optional:    true,
 			},
 			"use_global_blocked_services": schema.BoolAttribute{
-				Optional: true,
+				Description: "Whether to use global settings for blocked services",
+				Optional:    true,
 			},
 			"blocked_services": schema.ListAttribute{
+				Description: "List of blocked services for this client",
 				ElementType: types.StringType,
 				Optional:    true,
 			},
 			"upstreams": schema.ListAttribute{
+				Description: "List of upstream DNS server for this client",
 				ElementType: types.StringType,
 				Optional:    true,
 			},
 			"tags": schema.ListAttribute{
+				Description: "List of tags for this client",
 				ElementType: types.StringType,
 				Optional:    true,
 			},
