@@ -136,7 +136,20 @@ clients:
     rdns: true
     dhcp: true
     hosts: true
-  persistent: []
+  persistent:
+    - name: Test Client Data Source
+      tags:
+        - device_other
+      ids:
+        - 192.168.100.100
+      blocked_services: []
+      upstreams: []
+      use_global_settings: true
+      filtering_enabled: false
+      parental_enabled: false
+      safesearch_enabled: false
+      safebrowsing_enabled: false
+      use_global_blocked_services: true
 log_file: ""
 log_max_backups: 0
 log_max_size: 100

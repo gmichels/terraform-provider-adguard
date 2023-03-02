@@ -12,11 +12,14 @@ func TestAccClientDataSource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Read testing
 			{
-				Config: providerConfig + `data "adguard_client" "test" { name = "Amcrest-Left" }`,
+				Config: providerConfig + `data "adguard_client" "test" { name = "Test Client Data Source" }`,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.adguard_client.test", "name", "Amcrest-Left"),
+					resource.TestCheckResourceAttr("data.adguard_client.test", "name", "Test Client Data Source"),
 					resource.TestCheckResourceAttr("data.adguard_client.test", "ids.#", "1"),
-					resource.TestCheckResourceAttr("data.adguard_client.test", "ids.0", "172.16.128.53"),
+					resource.TestCheckResourceAttr("data.adguard_client.test", "ids.0", "192.168.100.100"),
+					resource.TestCheckResourceAttr("data.adguard_client.test", "tags.0", "device_other"),
+					resource.TestCheckResourceAttr("data.adguard_client.test", "use_global_settings", "true"),
+					resource.TestCheckResourceAttr("data.adguard_client.test", "use_global_blocked_services", "true"),
 
 					// Verify placeholder id attribute
 					resource.TestCheckResourceAttr("data.adguard_client.test", "id", "placeholder"),
