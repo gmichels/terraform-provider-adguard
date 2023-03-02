@@ -255,12 +255,12 @@ func (r *clientResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	// get refreshed client value from Adguard Home
+	// get refreshed client value from AdGuard Home
 	client, err := r.adg.GetClient(state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error Reading Adguard Home Client",
-			"Could not read Adguard Home client ID "+state.ID.ValueString()+": "+err.Error(),
+			"Error Reading AdGuard Home Client",
+			"Could not read AdGuard Home client ID "+state.ID.ValueString()+": "+err.Error(),
 		)
 		return
 	}
@@ -353,7 +353,7 @@ func (r *clientResource) Update(ctx context.Context, req resource.UpdateRequest,
 	_, err := r.adg.UpdateClient(clientUpdate)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error Updating Adguard Home Client",
+			"Error Updating AdGuard Home Client",
 			"Could not update client, unexpected error: "+err.Error(),
 		)
 		return
@@ -386,7 +386,7 @@ func (r *clientResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	err := r.adg.DeleteClient(clientDelete)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error Deleting Adguard Home Client",
+			"Error Deleting AdGuard Home Client",
 			"Could not delete client, unexpected error: "+err.Error(),
 		)
 		return

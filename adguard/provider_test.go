@@ -7,7 +7,7 @@ import (
 
 const (
 	// providerConfig is a shared configuration to combine with the actual
-	// test configuration so the Adguard Home client is properly configured.
+	// test configuration so the AdGuard Home client is properly configured.
 	// It is also possible to use the ADGUARD_ environment variables instead,
 	// such as updating the Makefile and running the testing through that tool
 	providerConfig = `

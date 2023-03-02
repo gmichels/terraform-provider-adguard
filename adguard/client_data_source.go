@@ -105,7 +105,7 @@ func (d *clientDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	client, err := d.adg.GetClient(state.Name.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to Read Adguard Home Client",
+			"Unable to Read AdGuard Home Client",
 			err.Error(),
 		)
 		return

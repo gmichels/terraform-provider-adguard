@@ -32,7 +32,7 @@ resource "adguard_client" "test" {
 				ResourceName:      "adguard_client.test",
 				ImportState:       true,
 				ImportStateVerify: true,
-				// The last_updated attribute does not exist in Adguard Home,
+				// The last_updated attribute does not exist in AdGuard Home,
 				// therefore there is no value for it during import
 				ImportStateVerifyIgnore: []string{"last_updated"},
 			},
