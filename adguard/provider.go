@@ -3,7 +3,6 @@ package adguard
 import (
 	"context"
 	"os"
-	// "strconv"
 
 	"github.com/gmichels/adguard-client-go"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"

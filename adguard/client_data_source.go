@@ -15,14 +15,30 @@ var (
 	_ datasource.DataSourceWithConfigure = &clientDataSource{}
 )
 
-// NewClientDataSource is a helper function to simplify the provider implementation
-func NewClientDataSource() datasource.DataSource {
-	return &clientDataSource{}
-}
-
 // clientDataSource is the data source implementation
 type clientDataSource struct {
 	adg *adguard.ADG
+}
+
+// clientDataModel maps client schema data
+type clientDataModel struct {
+	ID                       types.String `tfsdk:"id"`
+	Name                     types.String `tfsdk:"name"`
+	Ids                      types.List   `tfsdk:"ids"`
+	UseGlobalSettings        types.Bool   `tfsdk:"use_global_settings"`
+	FilteringEnabled         types.Bool   `tfsdk:"filtering_enabled"`
+	ParentalEnabled          types.Bool   `tfsdk:"parental_enabled"`
+	SafebrowsingEnabled      types.Bool   `tfsdk:"safebrowsing_enabled"`
+	SafesearchEnabled        types.Bool   `tfsdk:"safesearch_enabled"`
+	UseGlobalBlockedServices types.Bool   `tfsdk:"use_global_blocked_services"`
+	BlockedServices          types.List   `tfsdk:"blocked_services"`
+	Upstreams                types.List   `tfsdk:"upstreams"`
+	Tags                     types.List   `tfsdk:"tags"`
+}
+
+// NewClientDataSource is a helper function to simplify the provider implementation
+func NewClientDataSource() datasource.DataSource {
+	return &clientDataSource{}
 }
 
 // Metadata returns the data source type name
@@ -45,60 +61,45 @@ func (d *clientDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 				Optional:    true,
 			},
 			"use_global_settings": schema.BoolAttribute{
-				Computed: true,
 				Optional: true,
 			},
 			"filtering_enabled": schema.BoolAttribute{
-				Computed: true,
 				Optional: true,
 			},
 			"parental_enabled": schema.BoolAttribute{
-				Computed: true,
 				Optional: true,
 			},
 			"safebrowsing_enabled": schema.BoolAttribute{
-				Computed: true,
+				Optional: true,
+			},
+			"safesearch_enabled": schema.BoolAttribute{
+				Optional: true,
+			},
+			"use_global_blocked_services": schema.BoolAttribute{
 				Optional: true,
 			},
 			"blocked_services": schema.ListAttribute{
 				ElementType: types.StringType,
-				Computed:    true,
 				Optional:    true,
 			},
 			"upstreams": schema.ListAttribute{
 				ElementType: types.StringType,
-				Computed:    true,
 				Optional:    true,
 			},
 			"tags": schema.ListAttribute{
 				ElementType: types.StringType,
-				Computed:    true,
 				Optional:    true,
 			},
 		},
 	}
 }
 
-// clientDataModel maps client schema data
-type clientDataModel struct {
-	ID                  types.String   `tfsdk:"id"`
-	Name                types.String   `tfsdk:"name"`
-	Ids                 []types.String `tfsdk:"ids"`
-	UseGlobalSettings   types.Bool     `tfsdk:"use_global_settings"`
-	FilteringEnabled    types.Bool     `tfsdk:"filtering_enabled"`
-	ParentalEnabled     types.Bool     `tfsdk:"parental_enabled"`
-	SafebrowsingEnabled types.Bool     `tfsdk:"safebrowsing_enabled"`
-	BlockedServices     []types.String `tfsdk:"blocked_services"`
-	Upstreams           []types.String `tfsdk:"upstreams"`
-	Tags                []types.String `tfsdk:"tags"`
-}
-
 // Read refreshes the Terraform state with the latest data
 func (d *clientDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state clientDataModel
-
 	// read Terraform configuration data into the model
-	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
+	var state clientDataModel
+	diags := req.Config.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
 
 	// retrieve client info
 	client, err := d.adg.GetClient(state.Name.ValueString())
@@ -112,27 +113,38 @@ func (d *clientDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 
 	// map response body to model
 	state.Name = types.StringValue(client.Name)
-	for _, id := range client.Ids {
-		state.Ids = append(state.Ids, types.StringValue(id))
+	state.Ids, diags = types.ListValueFrom(ctx, types.StringType, client.Ids)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 	state.UseGlobalSettings = types.BoolValue(client.UseGlobalSettings)
 	state.FilteringEnabled = types.BoolValue(client.FilteringEnabled)
 	state.ParentalEnabled = types.BoolValue(client.ParentalEnabled)
 	state.SafebrowsingEnabled = types.BoolValue(client.SafebrowsingEnabled)
-	for _, blockedService := range client.BlockedServices {
-		state.BlockedServices = append(state.BlockedServices, types.StringValue(blockedService))
+	state.SafesearchEnabled = types.BoolValue(client.SafesearchEnabled)
+	state.UseGlobalBlockedServices = types.BoolValue(client.UseGlobalBlockedServices)
+	state.BlockedServices, diags = types.ListValueFrom(ctx, types.StringType, client.BlockedServices)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-	for _, upstream := range client.Upstreams {
-		state.Upstreams = append(state.Upstreams, types.StringValue(upstream))
+	state.Upstreams, diags = types.ListValueFrom(ctx, types.StringType, client.Upstreams)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-	for _, tag := range client.Tags {
-		state.Tags = append(state.Tags, types.StringValue(tag))
+	state.Tags, diags = types.ListValueFrom(ctx, types.StringType, client.Tags)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
+	// set ID placeholder for testing
 	state.ID = types.StringValue("placeholder")
 
 	// set state
-	diags := resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
