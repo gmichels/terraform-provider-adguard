@@ -15,12 +15,8 @@ provider "adguard" {
   timeout  = 5      # in seconds, defaults to 10
 }
 
-data "adguard_client" "test_client" {
+data "adguard_client" "test" {
   name = "Test Client Data Source"
-}
-
-output "amcrest_left" {
-  value = data.adguard_client.test_client
 }
 
 resource "adguard_client" "test" {
