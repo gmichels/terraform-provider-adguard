@@ -1,0 +1,11 @@
+version: "3"
+services:
+  adguardhome:
+    image: adguard/adguardhome
+    container_name: adguardhome
+    restart: unless-stopped
+    volumes:
+      - "./conf:/opt/adguardhome/conf"
+    ports:
+      - "8080:8080/tcp"
+      - "3000:3000/tcp"
