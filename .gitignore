@@ -16,3 +16,4 @@
 
 # Terraform
 .terraform*
+terraform.tfstate*
