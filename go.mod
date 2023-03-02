@@ -3,7 +3,7 @@ module github.com/gmichels/terraform-provider-adguard
 go 1.20
 
 require (
-	github.com/gmichels/adguard-client-go v0.0.0-20230301224317-5549f4712bf0
+	github.com/gmichels/adguard-client-go v0.1.0
 	github.com/hashicorp/terraform-plugin-docs v0.14.0
 	github.com/hashicorp/terraform-plugin-framework v1.1.1
 	github.com/hashicorp/terraform-plugin-framework-validators v0.10.0

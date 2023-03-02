@@ -44,8 +44,8 @@ github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYF
 github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568/go.mod h1:xEzjJPgXI435gkrCt3MPfRiAkVrwSbHsst4LCFVfpJc=
 github.com/frankban/quicktest v1.14.3 h1:FJKSZTDHjyhriyC81FLQ0LY93eSai0ZyR/ZIkd3ZUKE=
 github.com/gliderlabs/ssh v0.2.2/go.mod h1:U7qILu1NlMHj9FlMhZLlkCdDnU1DBEAqr0aevW3Awn0=
-github.com/gmichels/adguard-client-go v0.0.0-20230301224317-5549f4712bf0 h1:xF/IVPxid2ngy/Xr/pcX+9Z/MRig5SMC4i5eWzvES0Y=
-github.com/gmichels/adguard-client-go v0.0.0-20230301224317-5549f4712bf0/go.mod h1:77E8dDI1mhRP5E7tNJWvtF2PLqZiqwcmMrgBUCCc4KY=
+github.com/gmichels/adguard-client-go v0.1.0 h1:sgw3W+eT6uzGuVSQBGWoMKhmD6YUdsxIqnDLePXLh1Q=
+github.com/gmichels/adguard-client-go v0.1.0/go.mod h1:77E8dDI1mhRP5E7tNJWvtF2PLqZiqwcmMrgBUCCc4KY=
 github.com/go-git/gcfg v1.5.0 h1:Q5ViNfGF8zFgyJWPqYwA7qGFoMTEiBmdlkcfRmpIMa4=
 github.com/go-git/gcfg v1.5.0/go.mod h1:5m20vg6GwYabIxaOonVkTdrILxQMpEShl1xiMF4ua+E=
 github.com/go-git/go-billy/v5 v5.2.0/go.mod h1:pmpqyWchKfYfrkb/UVH4otLvyi/5gJlGI4Hb3ZqZ3W0=
