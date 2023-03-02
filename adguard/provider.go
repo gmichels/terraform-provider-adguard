@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // define a max AdGuard Home client timeout
@@ -89,6 +90,8 @@ type adguardProviderModel struct {
 
 // Configure prepares an AdGuard API client for data sources and resources
 func (p *adguardProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	tflog.Info(ctx, "Configuring AdGuard Home client")
+
 	var config adguardProviderModel
 
 	diags := req.Config.Get(ctx, &config)
@@ -247,6 +250,15 @@ func (p *adguardProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
+	ctx = tflog.SetField(ctx, "adguard_host", host)
+	ctx = tflog.SetField(ctx, "adguard_username", username)
+	ctx = tflog.SetField(ctx, "adguard_password", password)
+	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "adguard_password")
+	ctx = tflog.SetField(ctx, "adguard_scheme", scheme)
+	ctx = tflog.SetField(ctx, "adguard_timeout", timeout)
+
+	tflog.Debug(ctx, "Creating AdGuard Home client")
+
 	// create a new AdGuard Home client using the configuration values
 	client, err := adguard.NewClient(&host, &username, &password, &scheme, &timeout)
 	if err != nil {
@@ -262,6 +274,8 @@ func (p *adguardProvider) Configure(ctx context.Context, req provider.ConfigureR
 	// make the AdGuard Home client available during DataSource and Resource type Configure methods
 	resp.DataSourceData = client
 	resp.ResourceData = client
+
+	tflog.Info(ctx, "Configured AdGuardHome client", map[string]any{"success": true})
 }
 
 // DataSources defines the data sources implemented in the provider
