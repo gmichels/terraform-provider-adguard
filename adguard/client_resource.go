@@ -219,38 +219,9 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	// map response body to schema and populate Computed attribute values
+	// response sent by AdGuard Home is the same as the sent payload,
+	// just add missing attributes for state
 	plan.ID = types.StringValue(clientState.Name)
-	plan.Name = types.StringValue(clientState.Name)
-	plan.Ids, diags = types.ListValueFrom(ctx, types.StringType, clientState.Ids)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	plan.UseGlobalSettings = types.BoolValue(clientState.UseGlobalSettings)
-	plan.FilteringEnabled = types.BoolValue(clientState.FilteringEnabled)
-	plan.ParentalEnabled = types.BoolValue(clientState.ParentalEnabled)
-	plan.SafebrowsingEnabled = types.BoolValue(clientState.SafebrowsingEnabled)
-	plan.SafesearchEnabled = types.BoolValue(clientState.SafesearchEnabled)
-	plan.UseGlobalBlockedServices = types.BoolValue(clientState.UseGlobalBlockedServices)
-	if len(clientState.BlockedServices) > 0 {
-		plan.BlockedServices, diags = types.ListValueFrom(ctx, types.StringType, clientState.BlockedServices)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-	plan.Upstreams, diags = types.ListValueFrom(ctx, types.StringType, clientState.Upstreams)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	plan.Tags, diags = types.ListValueFrom(ctx, types.StringType, clientState.Tags)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	// add the last updated attribute
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 
