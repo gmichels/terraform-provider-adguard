@@ -5,11 +5,13 @@ import (
 	"time"
 
 	"github.com/gmichels/adguard-client-go"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/terraform-community-providers/terraform-plugin-framework-utils/modifiers"
 )
@@ -132,16 +134,19 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Description: "List of blocked services for this client",
 				ElementType: types.StringType,
 				Optional:    true,
+				Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 			},
 			"upstreams": schema.ListAttribute{
 				Description: "List of upstream DNS server for this client",
 				ElementType: types.StringType,
 				Optional:    true,
+				Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 			},
 			"tags": schema.ListAttribute{
 				Description: "List of tags for this client",
 				ElementType: types.StringType,
 				Optional:    true,
+				Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 			},
 		},
 	}
