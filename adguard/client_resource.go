@@ -251,6 +251,12 @@ func (r *clientResource) Read(ctx context.Context, req resource.ReadRequest, res
 			"Could not read AdGuard Home client ID "+state.ID.ValueString()+": "+err.Error(),
 		)
 		return
+	} else if client == nil {
+		resp.Diagnostics.AddError(
+			"Error Reading AdGuard Home Client",
+			"No such AdGuard Home client with ID "+state.ID.ValueString(),
+		)
+		return
 	}
 
 	// overwrite client with refreshed state
