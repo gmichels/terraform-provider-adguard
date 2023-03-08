@@ -2,10 +2,12 @@ package adguard
 
 import (
 	"context"
+	"regexp"
 	"time"
 
 	"github.com/gmichels/adguard-client-go"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -78,6 +80,14 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Description: "List of identifiers for this client (IP, CIDR, MAC, or ClientID)",
 				ElementType: types.StringType,
 				Required:    true,
+				Validators: []validator.List{
+					listvalidator.ValueStringsAre(
+						stringvalidator.RegexMatches(
+							regexp.MustCompile(`^[a-z0-9/.:-]+$`),
+							"must be an IP address/CIDR, MAC address, or only contain numbers, lowercase letters, and hyphens",
+						),
+					),
+				},
 			},
 			// default values are not yet an easy task using the plugin framework
 			// see https://github.com/hashicorp/terraform-plugin-framework/issues/668
