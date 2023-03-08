@@ -3,12 +3,12 @@
 page_title: "adguard Provider"
 subcategory: ""
 description: |-
-  
+  The AdGuard provider provides resources to interact with an AdGuard Home https://github.com/AdguardTeam/AdGuardHome server
 ---
 
 # adguard Provider
 
-
+The AdGuard provider provides resources to interact with an [AdGuard Home](https://github.com/AdguardTeam/AdGuardHome) server
 
 ## Example Usage
 

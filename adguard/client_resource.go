@@ -182,37 +182,37 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	// instantiate empty client for storing plan data
-	var clientPlan adguard.Client
+	var client adguard.Client
 
 	// populate client from plan
-	clientPlan.Name = plan.Name.ValueString()
-	diags = plan.Ids.ElementsAs(ctx, &clientPlan.Ids, false)
+	client.Name = plan.Name.ValueString()
+	diags = plan.Ids.ElementsAs(ctx, &client.Ids, false)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	clientPlan.UseGlobalSettings = plan.UseGlobalSettings.ValueBool()
-	clientPlan.FilteringEnabled = plan.FilteringEnabled.ValueBool()
-	clientPlan.ParentalEnabled = plan.ParentalEnabled.ValueBool()
-	clientPlan.SafebrowsingEnabled = plan.SafebrowsingEnabled.ValueBool()
-	clientPlan.SafesearchEnabled = plan.SafesearchEnabled.ValueBool()
-	clientPlan.UseGlobalBlockedServices = plan.UseGlobalBlockedServices.ValueBool()
+	client.UseGlobalSettings = plan.UseGlobalSettings.ValueBool()
+	client.FilteringEnabled = plan.FilteringEnabled.ValueBool()
+	client.ParentalEnabled = plan.ParentalEnabled.ValueBool()
+	client.SafebrowsingEnabled = plan.SafebrowsingEnabled.ValueBool()
+	client.SafesearchEnabled = plan.SafesearchEnabled.ValueBool()
+	client.UseGlobalBlockedServices = plan.UseGlobalBlockedServices.ValueBool()
 	if len(plan.BlockedServices.Elements()) > 0 {
-		diags = plan.BlockedServices.ElementsAs(ctx, &clientPlan.BlockedServices, false)
+		diags = plan.BlockedServices.ElementsAs(ctx, &client.BlockedServices, false)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 	}
 	if len(plan.Upstreams.Elements()) > 0 {
-		diags = plan.Upstreams.ElementsAs(ctx, &clientPlan.Upstreams, false)
+		diags = plan.Upstreams.ElementsAs(ctx, &client.Upstreams, false)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 	}
 	if len(plan.Tags.Elements()) > 0 {
-		diags = plan.Tags.ElementsAs(ctx, &clientPlan.Tags, false)
+		diags = plan.Tags.ElementsAs(ctx, &client.Tags, false)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -220,7 +220,7 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	// create new clientState using plan
-	clientState, err := r.adg.CreateClient(clientPlan)
+	clientState, err := r.adg.CreateClient(client)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating client",
