@@ -84,7 +84,7 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					listvalidator.ValueStringsAre(
 						stringvalidator.RegexMatches(
 							regexp.MustCompile(`^[a-z0-9/.:-]+$`),
-							"must only contain numbers, lowercase letters, and hyphens",
+							"must be an IP address/CIDR, MAC address, or only contain numbers, lowercase letters, and hyphens",
 						),
 					),
 				},
