@@ -1,7 +1,7 @@
 # AdGuard Home Terraform Provider (terraform-provider-adguard)
 
 [![Release](https://img.shields.io/github/v/release/gmichels/terraform-provider-adguard)](https://github.com/gmichels/terraform-provider-adguard/releases)
-[![Installs](https://img.shields.io/badge/dynamic/json?logo=terraform&label=installs&query=$.data.attributes.downloads&url=https%3A%2F%2Fregistry.terraform.io%2Fv2%2Fproviders%2F713)](https://registry.terraform.io/providers/gmichels/adguard)
+[![Installs](https://img.shields.io/badge/dynamic/json?logo=terraform&label=installs&query=$.data.attributes.downloads&url=https%3A%2F%2Fregistry.terraform.io%2Fv2%2Fproviders%2F3937)](https://registry.terraform.io/providers/gmichels/adguard)
 [![Registry](https://img.shields.io/badge/registry-doc%40latest-lightgrey?logo=terraform)](https://registry.terraform.io/providers/gmichels/adguard/latest/docs)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/gmichels/terraform-provider-adguard/blob/main/LICENSE)
 [![Status](https://github.com/gmichels/terraform-provider-adguard/workflows/Release/badge.svg)](https://github.com/gmichels/terraform-provider-adguard/actions)
