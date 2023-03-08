@@ -43,6 +43,7 @@ func (p *adguardProvider) Metadata(_ context.Context, _ provider.MetadataRequest
 // Schema defines the provider-level schema for configuration data
 func (p *adguardProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "The AdGuard provider provides resources to interact with an [AdGuard Home](https://github.com/AdguardTeam/AdGuardHome) server",
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
 				Description: "The hostname of the AdGuard Home instance. Include the port if not on a standard HTTP/HTTPS port",
