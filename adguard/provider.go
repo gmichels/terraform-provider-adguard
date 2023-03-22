@@ -283,6 +283,7 @@ func (p *adguardProvider) Configure(ctx context.Context, req provider.ConfigureR
 func (p *adguardProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewClientDataSource,
+		NewListFilterDataSource,
 	}
 }
 
