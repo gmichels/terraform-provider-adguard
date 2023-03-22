@@ -2,6 +2,8 @@ module github.com/gmichels/terraform-provider-adguard
 
 go 1.20
 
+replace github.com/gmichels/adguard-client-go => /Users/gmichels/git/adguard-client-go
+
 require (
 	github.com/gmichels/adguard-client-go v0.1.0
 	github.com/hashicorp/terraform-plugin-docs v0.14.0
