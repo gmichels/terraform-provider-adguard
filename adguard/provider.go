@@ -291,5 +291,6 @@ func (p *adguardProvider) DataSources(_ context.Context) []func() datasource.Dat
 func (p *adguardProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewClientResource,
+		NewListFilterResource,
 	}
 }
