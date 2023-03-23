@@ -1,4 +1,6 @@
 # manage user rules
+# NOTE: there can only be 1 (one) `adguard_user_rules` resource
+# specifying multiple resources will result in errors
 resource "adguard_user_rules" "test" {
   rules = [
     "! line 1 bang comment",
