@@ -20,7 +20,7 @@ type userRulesDataSource struct {
 	adg *adguard.ADG
 }
 
-// userRulesDataModel maps filter schema data
+// userRulesDataModel maps user rules schema data
 type userRulesDataModel struct {
 	ID    types.String `tfsdk:"id"`
 	Rules types.List   `tfsdk:"rules"`
@@ -60,11 +60,11 @@ func (d *userRulesDataSource) Read(ctx context.Context, req datasource.ReadReque
 	diags := req.Config.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 
-	// retrieve list filter info
+	// retrieve user rules info
 	userRules, err := d.adg.GetUserRules()
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to Read AdGuard Home List Filter",
+			"Unable to Read AdGuard Home User Rules",
 			err.Error(),
 		)
 		return
