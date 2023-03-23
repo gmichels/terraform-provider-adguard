@@ -50,7 +50,7 @@ func (d *listFilterDataSource) Schema(_ context.Context, _ datasource.SchemaRequ
 				Required:    true,
 			},
 			"whitelist": schema.BoolAttribute{
-				Description: "Then `true`, will consider this list filter of type whitelist",
+				Description: "When `true`, will consider this list filter of type whitelist",
 				Optional:    true,
 			},
 			"url": schema.StringAttribute{

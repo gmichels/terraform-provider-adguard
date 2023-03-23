@@ -14,7 +14,7 @@ func TestAccListFilterDataSource(t *testing.T) {
 			{
 				Config: providerConfig + `
 data "adguard_list_filter" "test_blacklist" {
-	name = "AdGuard DNS filter"
+  name = "AdGuard DNS filter"
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -28,8 +28,8 @@ data "adguard_list_filter" "test_blacklist" {
 			{
 				Config: providerConfig + `
 data "adguard_list_filter" "test_whitelist" {
-	name = "Test Allow List"
-	whitelist = true
+  name      = "Test Allow List"
+  whitelist = true
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(

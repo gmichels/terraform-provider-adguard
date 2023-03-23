@@ -16,7 +16,7 @@ func TestAccListFilterResource(t *testing.T) {
 				Config: providerConfig + `
 resource "adguard_list_filter" "test_blacklist" {
   name = "Test Blacklist Filter"
-  url = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_4.txt"
+  url  = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_4.txt"
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -40,7 +40,7 @@ resource "adguard_list_filter" "test_blacklist" {
 				Config: providerConfig + `
 resource "adguard_list_filter" "test_blacklist" {
   name = "Test Blacklist Filter Updated"
-  url = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_5.txt"
+  url  = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_5.txt"
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -55,10 +55,10 @@ resource "adguard_list_filter" "test_blacklist" {
 			{
 				Config: providerConfig + `
 resource "adguard_list_filter" "test_whitelist" {
-  name = "Test Whitelist Filter"
-  url = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_6.txt"
-	enabled = false
-	whitelist = true
+  name      = "Test Whitelist Filter"
+  url       = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_6.txt"
+  enabled   = false
+  whitelist = true
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -81,10 +81,10 @@ resource "adguard_list_filter" "test_whitelist" {
 			{
 				Config: providerConfig + `
 resource "adguard_list_filter" "test_whitelist" {
-  name = "Test Whitelist Filter Updated"
-  url = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_7.txt"
-	enabled = false
-	whitelist = true
+  name      = "Test Whitelist Filter Updated"
+  url       = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_7.txt"
+  enabled   = false
+  whitelist = true
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(

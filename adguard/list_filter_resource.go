@@ -76,7 +76,7 @@ func (r *listFilterResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Default:     booldefault.StaticBool(true),
 			},
 			"whitelist": schema.BoolAttribute{
-				Description: "Then `true`, will consider this list filter of type whitelist",
+				Description: "When `true`, will consider this list filter of type whitelist",
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
