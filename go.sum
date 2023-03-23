@@ -40,6 +40,8 @@ github.com/frankban/quicktest v1.14.3 h1:FJKSZTDHjyhriyC81FLQ0LY93eSai0ZyR/ZIkd3
 github.com/gliderlabs/ssh v0.2.2/go.mod h1:U7qILu1NlMHj9FlMhZLlkCdDnU1DBEAqr0aevW3Awn0=
 github.com/gmichels/adguard-client-go v0.2.0 h1:uozTy5NCQj3gt1/ifaeIs58PIOzHcHqAFxX/04BRxgA=
 github.com/gmichels/adguard-client-go v0.2.0/go.mod h1:77E8dDI1mhRP5E7tNJWvtF2PLqZiqwcmMrgBUCCc4KY=
+github.com/gmichels/adguard-client-go v0.2.1 h1:N+SArVllJixvN1jA2zSp+vsrtmZVmAQymY5q0dzhsMU=
+github.com/gmichels/adguard-client-go v0.2.1/go.mod h1:77E8dDI1mhRP5E7tNJWvtF2PLqZiqwcmMrgBUCCc4KY=
 github.com/go-git/gcfg v1.5.0 h1:Q5ViNfGF8zFgyJWPqYwA7qGFoMTEiBmdlkcfRmpIMa4=
 github.com/go-git/gcfg v1.5.0/go.mod h1:5m20vg6GwYabIxaOonVkTdrILxQMpEShl1xiMF4ua+E=
 github.com/go-git/go-billy/v5 v5.2.0/go.mod h1:pmpqyWchKfYfrkb/UVH4otLvyi/5gJlGI4Hb3ZqZ3W0=
