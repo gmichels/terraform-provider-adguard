@@ -293,5 +293,6 @@ func (p *adguardProvider) Resources(_ context.Context) []func() resource.Resourc
 	return []func() resource.Resource{
 		NewClientResource,
 		NewListFilterResource,
+		NewUserRulesResource,
 	}
 }
