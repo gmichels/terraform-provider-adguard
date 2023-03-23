@@ -6,6 +6,10 @@ on:
       - master
       - "feat/**"
       - "fix/**"
+    paths:
+      - "**.go"
+      - go.mod
+      - ".github/workflows/**"
   pull_request:
     types: ["opened", "synchronize"]
     paths:
@@ -21,7 +25,7 @@ env:
 jobs:
   testacc:
     runs-on: ubuntu-20.04
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
