@@ -116,7 +116,7 @@ func (r *listFilterResource) Create(ctx context.Context, req resource.CreateRequ
 	newListFilter, _, err := r.adg.CreateListFilter(listFilter)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating list filter",
+			"Error Creating AdGuard Home List Filter",
 			"Could not create list filter, unexpected error: "+err.Error(),
 		)
 		return
@@ -176,7 +176,7 @@ func (r *listFilterResource) Read(ctx context.Context, req resource.ReadRequest,
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Reading AdGuard Home List Filter",
-			"Could not read AdGuard Home list filter with id "+state.ID.ValueString()+": "+err.Error(),
+			"Could not read list filter with id "+state.ID.ValueString()+": "+err.Error(),
 		)
 		return
 	}
@@ -186,13 +186,13 @@ func (r *listFilterResource) Read(ctx context.Context, req resource.ReadRequest,
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Reading AdGuard Home List Filter",
-			"Could not read AdGuard Home list filter with id "+state.ID.ValueString()+": "+err.Error(),
+			"Could not read list filter with id "+state.ID.ValueString()+": "+err.Error(),
 		)
 		return
 	} else if listFilter == nil {
 		resp.Diagnostics.AddError(
 			"Error Reading AdGuard Home List Filter",
-			"No such AdGuard Home list filter with id "+state.ID.ValueString(),
+			"No such list filter with id "+state.ID.ValueString(),
 		)
 		return
 	}
@@ -236,7 +236,7 @@ func (r *listFilterResource) Update(ctx context.Context, req resource.UpdateRequ
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Reading AdGuard Home List Filter",
-			"Could not read AdGuard Home list filter with id "+state.ID.ValueString()+": "+err.Error(),
+			"Could not read list filter with id "+state.ID.ValueString()+": "+err.Error(),
 		)
 		return
 	}
