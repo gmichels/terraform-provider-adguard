@@ -284,6 +284,7 @@ func (p *adguardProvider) DataSources(_ context.Context) []func() datasource.Dat
 	return []func() datasource.DataSource{
 		NewClientDataSource,
 		NewListFilterDataSource,
+		NewUserRulesDataSource,
 	}
 }
 
