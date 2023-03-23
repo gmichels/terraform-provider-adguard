@@ -14,6 +14,8 @@ description: |-
 
 ```terraform
 # manage user rules
+# NOTE: there can only be 1 (one) `adguard_user_rules` resource
+# specifying multiple resources will result in errors
 resource "adguard_user_rules" "test" {
   rules = [
     "! line 1 bang comment",
@@ -45,6 +47,6 @@ Import is supported using the following syntax:
 
 ```shell
 # User rules can be imported by specifying the ID as `1`
-# NOTE: there can only be ONE `adguard_user_rules` resource, hence the hardcoded ID
+# NOTE: there can only be 1 (one) `adguard_user_rules` resource, hence the hardcoded ID
 terraform import adguard_user_rules.test "1"
 ```
