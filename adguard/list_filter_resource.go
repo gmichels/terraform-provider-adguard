@@ -26,10 +26,10 @@ type listFilterResource struct {
 
 // listFilterResourceModel maps list filter schema data
 type listFilterResourceModel struct {
+	ID          types.String `tfsdk:"id"`
 	Url         types.String `tfsdk:"url"`
 	Name        types.String `tfsdk:"name"`
 	LastUpdated types.String `tfsdk:"last_updated"`
-	Id          types.String `tfsdk:"id"`
 	RulesCount  types.Int64  `tfsdk:"rules_count"`
 	Enabled     types.Bool   `tfsdk:"enabled"`
 	Whitelist   types.Bool   `tfsdk:"whitelist"`
@@ -149,7 +149,7 @@ func (r *listFilterResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	// update plan with computed attributes
-	plan.Id = types.StringValue(strconv.FormatInt(newListFilter.Id, 10))
+	plan.ID = types.StringValue(strconv.FormatInt(newListFilter.Id, 10))
 	plan.LastUpdated = types.StringValue(newListFilter.LastUpdated)
 	plan.RulesCount = types.Int64Value(int64(newListFilter.RulesCount))
 
@@ -172,11 +172,11 @@ func (r *listFilterResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	// convert id to int64
-	id, err := strconv.ParseInt(state.Id.ValueString(), 10, 64)
+	id, err := strconv.ParseInt(state.ID.ValueString(), 10, 64)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Reading AdGuard Home List Filter",
-			"Could not read AdGuard Home list filter with id "+state.Id.ValueString()+": "+err.Error(),
+			"Could not read AdGuard Home list filter with id "+state.ID.ValueString()+": "+err.Error(),
 		)
 		return
 	}
@@ -186,13 +186,13 @@ func (r *listFilterResource) Read(ctx context.Context, req resource.ReadRequest,
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Reading AdGuard Home List Filter",
-			"Could not read AdGuard Home list filter with id "+state.Id.ValueString()+": "+err.Error(),
+			"Could not read AdGuard Home list filter with id "+state.ID.ValueString()+": "+err.Error(),
 		)
 		return
 	} else if listFilter == nil {
 		resp.Diagnostics.AddError(
 			"Error Reading AdGuard Home List Filter",
-			"No such AdGuard Home list filter with id "+state.Id.ValueString(),
+			"No such AdGuard Home list filter with id "+state.ID.ValueString(),
 		)
 		return
 	}
@@ -232,11 +232,11 @@ func (r *listFilterResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	// convert id to int64
-	id, err := strconv.ParseInt(state.Id.ValueString(), 10, 64)
+	id, err := strconv.ParseInt(state.ID.ValueString(), 10, 64)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Reading AdGuard Home List Filter",
-			"Could not read AdGuard Home list filter with id "+state.Id.ValueString()+": "+err.Error(),
+			"Could not read AdGuard Home list filter with id "+state.ID.ValueString()+": "+err.Error(),
 		)
 		return
 	}
@@ -272,7 +272,7 @@ func (r *listFilterResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	// update plan with computed attributes
-	plan.Id = state.Id
+	plan.ID = state.ID
 	plan.LastUpdated = types.StringValue(updatedlistFilter.LastUpdated)
 	plan.RulesCount = types.Int64Value(int64(updatedlistFilter.RulesCount))
 

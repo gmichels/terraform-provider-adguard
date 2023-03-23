@@ -22,10 +22,10 @@ type listFilterDataSource struct {
 
 // listFilterDataModel maps filter schema data
 type listFilterDataModel struct {
+	ID          types.Int64  `tfsdk:"id"`
 	Url         types.String `tfsdk:"url"`
 	Name        types.String `tfsdk:"name"`
 	LastUpdated types.String `tfsdk:"last_updated"`
-	Id          types.Int64  `tfsdk:"id"`
 	RulesCount  types.Int64  `tfsdk:"rules_count"`
 	Enabled     types.Bool   `tfsdk:"enabled"`
 	Whitelist   types.Bool   `tfsdk:"whitelist"`
@@ -104,7 +104,7 @@ func (d *listFilterDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	// map response body to model
 	state.Url = types.StringValue(listFilter.Url)
 	state.LastUpdated = types.StringValue(listFilter.LastUpdated)
-	state.Id = types.Int64Value(listFilter.Id)
+	state.ID = types.Int64Value(listFilter.Id)
 	state.RulesCount = types.Int64Value(int64(listFilter.RulesCount))
 	state.Enabled = types.BoolValue(listFilter.Enabled)
 	state.Whitelist = types.BoolValue(whitelist)
