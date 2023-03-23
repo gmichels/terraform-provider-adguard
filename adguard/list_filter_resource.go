@@ -71,11 +71,13 @@ func (r *listFilterResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			},
 			"enabled": schema.BoolAttribute{
 				Description: "Whether this list filter is enabled",
+				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
 			},
 			"whitelist": schema.BoolAttribute{
 				Description: "Then `true`, will consider this list filter of type whitelist",
+				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
 			},
@@ -111,13 +113,39 @@ func (r *listFilterResource) Create(ctx context.Context, req resource.CreateRequ
 	listFilter.Whitelist = plan.Whitelist.ValueBool()
 
 	// create new list filter using plan
-	newListFilter, err := r.adg.CreateListFilter(listFilter)
+	newListFilter, _, err := r.adg.CreateListFilter(listFilter)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating list filter",
 			"Could not create list filter, unexpected error: "+err.Error(),
 		)
 		return
+	}
+
+	// if list filter is expected to be disabled, need to update it after creation
+	// as the create endpoint does not have control over it
+	if !plan.Enabled.ValueBool() {
+
+		// generate API request body from plan
+		var updateListFilterData adguard.FilterSetUrlData
+		updateListFilterData.Enabled = plan.Enabled.ValueBool()
+		updateListFilterData.Name = plan.Name.ValueString()
+		updateListFilterData.Url = plan.Url.ValueString()
+
+		var updateListFilter adguard.FilterSetUrl
+		updateListFilter.Url = listFilter.Url
+		updateListFilter.Whitelist = plan.Whitelist.ValueBool()
+		updateListFilter.Data = updateListFilterData
+
+		// update existing list filter
+		_, _, err := r.adg.UpdateListFilter(updateListFilter)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error Updating AdGuard Home List Filter",
+				"Could not update list filter, unexpected error: "+err.Error(),
+			)
+			return
+		}
 	}
 
 	// update plan with computed attributes
@@ -143,14 +171,6 @@ func (r *listFilterResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	// default to a blacklist filter type
-	filterType := "blacklist"
-	whitelist := false
-	if state.Whitelist.ValueBool() {
-		filterType = "whitelist"
-		whitelist = true
-	}
-
 	// convert id to int64
 	id, err := strconv.ParseInt(state.Id.ValueString(), 10, 64)
 	if err != nil {
@@ -162,7 +182,7 @@ func (r *listFilterResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	// get refreshed list filter from AdGuard Home
-	listFilter, err := r.adg.GetListFilterById(id, filterType)
+	listFilter, whitelist, err := r.adg.GetListFilterById(id)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Reading AdGuard Home List Filter",
@@ -181,7 +201,6 @@ func (r *listFilterResource) Read(ctx context.Context, req resource.ReadRequest,
 	state.Name = types.StringValue(listFilter.Name)
 	state.Enabled = types.BoolValue(listFilter.Enabled)
 	state.LastUpdated = types.StringValue(listFilter.LastUpdated)
-	state.Name = types.StringValue(listFilter.Name)
 	state.Url = types.StringValue(listFilter.Url)
 	state.RulesCount = types.Int64Value(int64(listFilter.RulesCount))
 	state.Whitelist = types.BoolValue(whitelist)
@@ -212,12 +231,6 @@ func (r *listFilterResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	// default to a blacklist filter type
-	filterType := "blacklist"
-	if state.Whitelist.ValueBool() {
-		filterType = "whitelist"
-	}
-
 	// convert id to int64
 	id, err := strconv.ParseInt(state.Id.ValueString(), 10, 64)
 	if err != nil {
@@ -228,7 +241,7 @@ func (r *listFilterResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 	// retrieve current list filter as we need the current URL
-	currentListFilter, err := r.adg.GetListFilterById(id, filterType)
+	currentListFilter, _, err := r.adg.GetListFilterById(id)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Retrieving AdGuard Home List Filter",
@@ -249,7 +262,7 @@ func (r *listFilterResource) Update(ctx context.Context, req resource.UpdateRequ
 	updateListFilter.Data = updateListFilterData
 
 	// update existing list filter
-	updatedlistFilter, err := r.adg.UpdateListFilter(updateListFilter)
+	updatedlistFilter, _, err := r.adg.UpdateListFilter(updateListFilter)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Updating AdGuard Home List Filter",
