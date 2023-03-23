@@ -28,5 +28,7 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
       - uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
       - name: Run acceptance tests
         run: make testacc
