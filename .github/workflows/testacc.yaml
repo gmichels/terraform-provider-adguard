@@ -1,0 +1,32 @@
+name: Acceptance Tests
+
+on:
+  push:
+    branches:
+      - master
+      - "feat/**"
+      - "fix/**"
+  pull_request:
+    types: ["opened", "synchronize"]
+    paths:
+      - "**.go"
+      - go.mod
+      - ".github/workflows/**"
+
+env:
+  GOPROXY: https://proxy.golang.org,direct
+  DEBIAN_FRONTEND: noninteractive
+  GO_VERSION: "1.21"
+
+jobs:
+  testacc:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - uses: hashicorp/setup-terraform@v2
+      - name: Run acceptance tests
+        run: make testacc
