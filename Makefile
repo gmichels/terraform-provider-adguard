@@ -34,4 +34,7 @@ test:
 	echo $(TEST) | xargs -t -n4 go test $(TESTARGS) -timeout=30s -parallel=4
 
 testacc:
+	docker compose -f ./docker/docker-compose.yaml up -d
 	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m
+	docker compose -f ./docker/docker-compose.yaml down
+	git checkout HEAD -- ./docker/conf/AdGuardHome.yaml
