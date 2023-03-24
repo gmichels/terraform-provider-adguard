@@ -2,20 +2,16 @@ name: Acceptance Tests
 
 on:
   push:
-    branches:
-      - master
-      - "feat/**"
-      - "fix/**"
     paths:
       - "**.go"
       - go.mod
-      - ".github/workflows/**"
+      - ".github/workflows/testacc.yaml"
   pull_request:
     types: ["opened", "synchronize"]
     paths:
       - "**.go"
       - go.mod
-      - ".github/workflows/**"
+      - ".github/workflows/testacc.yaml"
 
 env:
   GOPROXY: https://proxy.golang.org,direct
