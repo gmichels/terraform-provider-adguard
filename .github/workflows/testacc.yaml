@@ -2,8 +2,8 @@ name: Acceptance Tests
 
 on:
   push:
-    tags-ignore:
-      - "v*"
+    # tags-ignore:
+    #   - "v*"
     paths:
       - "**.go"
       - go.mod
