@@ -1,11 +1,6 @@
 name: Acceptance Tests
 
 on:
-  push:
-    paths:
-      - "**.go"
-      - go.mod
-      - ".github/workflows/testacc.yaml"
   pull_request:
     types: ["opened", "synchronize"]
     paths:
