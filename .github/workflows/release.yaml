@@ -5,17 +5,18 @@ on:
   push:
     tags:
       - "v*"
-  workflow_run:
-    workflows: ["Acceptance Tests"]
-    types:
-      - completed
 
 # releases need permissions to read and write the repository contents
 permissions:
   contents: write
 
 jobs:
+  # run acceptance tests
+  tests:
+    uses: ./.github/workflows/testacc.yaml
   goreleaser:
+    # require tests to pass
+    needs: [tests]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

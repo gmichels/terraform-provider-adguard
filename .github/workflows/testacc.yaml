@@ -12,11 +12,14 @@ on:
       - "**.go"
       - go.mod
       - ".github/workflows/testacc.yaml"
+  # allow this workflow to be called from other workflows
+  workflow_call:
 
 env:
   GOPROXY: https://proxy.golang.org,direct
   DEBIAN_FRONTEND: noninteractive
   GO_VERSION: "1.20"
+  TERRAFORM_VERSION: "1.4.2"
 
 jobs:
   testacc:
@@ -29,6 +32,7 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
       - uses: hashicorp/setup-terraform@v2
         with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
           terraform_wrapper: false
       - name: Run acceptance tests
         run: make testacc
