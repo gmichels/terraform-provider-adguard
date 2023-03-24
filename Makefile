@@ -1,9 +1,9 @@
-TEST?=$$(go list ./... | grep -v 'vendor')
+TEST?=$$(go list ./adguard | grep -v 'vendor')
 HOSTNAME=registry.terraform.io
 NAMESPACE=gmichels
 NAME=adguard
 BINARY=terraform-provider-${NAME}
-VERSION=0.1.0
+VERSION=0.0.1
 OS_ARCH=darwin_amd64
 
 default: install
@@ -35,6 +35,6 @@ test:
 
 testacc:
 	docker compose -f ./docker/docker-compose.yaml up -d
-	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m
+	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 10m
 	docker compose -f ./docker/docker-compose.yaml down
 	git checkout HEAD -- ./docker/conf/AdGuardHome.yaml
