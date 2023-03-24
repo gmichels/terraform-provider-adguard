@@ -38,8 +38,6 @@ github.com/fatih/color v1.15.0/go.mod h1:0h5ZqXfHYED7Bhv2ZJamyIOUej9KtShiJESRwBD
 github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568/go.mod h1:xEzjJPgXI435gkrCt3MPfRiAkVrwSbHsst4LCFVfpJc=
 github.com/frankban/quicktest v1.14.3 h1:FJKSZTDHjyhriyC81FLQ0LY93eSai0ZyR/ZIkd3ZUKE=
 github.com/gliderlabs/ssh v0.2.2/go.mod h1:U7qILu1NlMHj9FlMhZLlkCdDnU1DBEAqr0aevW3Awn0=
-github.com/gmichels/adguard-client-go v0.2.0 h1:uozTy5NCQj3gt1/ifaeIs58PIOzHcHqAFxX/04BRxgA=
-github.com/gmichels/adguard-client-go v0.2.0/go.mod h1:77E8dDI1mhRP5E7tNJWvtF2PLqZiqwcmMrgBUCCc4KY=
 github.com/gmichels/adguard-client-go v0.2.1 h1:N+SArVllJixvN1jA2zSp+vsrtmZVmAQymY5q0dzhsMU=
 github.com/gmichels/adguard-client-go v0.2.1/go.mod h1:77E8dDI1mhRP5E7tNJWvtF2PLqZiqwcmMrgBUCCc4KY=
 github.com/go-git/gcfg v1.5.0 h1:Q5ViNfGF8zFgyJWPqYwA7qGFoMTEiBmdlkcfRmpIMa4=
@@ -199,8 +197,6 @@ github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.2 h1:4jaiDzPyXQvSd7D0EjG45355tLlV3VOECpq10pLC+8s=
 github.com/stretchr/testify v1.7.2/go.mod h1:R6va5+xMeoiuVRoj+gSkQ7d3FALtqAAGI1FQKckRals=
-github.com/terraform-community-providers/terraform-plugin-framework-utils v0.3.0 h1:9p3a6Y9H/RiBpeY+V28R3nSPLAOG8z4lP17QyunXMfE=
-github.com/terraform-community-providers/terraform-plugin-framework-utils v0.3.0/go.mod h1:qxBCEJqhF0NPLX+FrRYALlpxXSi1nhTx/x1aimUEqRY=
 github.com/vmihailenco/msgpack v3.3.3+incompatible/go.mod h1:fy3FlTQTDXWkZ7Bh6AcGMlsjHatGryHQYUTf1ShIgkk=
 github.com/vmihailenco/msgpack v4.0.4+incompatible h1:dSLoQfGFAo3F6OoNhwUmLwVgaUXK79GlxNBwueZn0xI=
 github.com/vmihailenco/msgpack v4.0.4+incompatible/go.mod h1:fy3FlTQTDXWkZ7Bh6AcGMlsjHatGryHQYUTf1ShIgkk=

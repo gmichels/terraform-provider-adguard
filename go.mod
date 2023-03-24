@@ -13,7 +13,6 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.14.3
 	github.com/hashicorp/terraform-plugin-log v0.8.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.26.1
-	github.com/terraform-community-providers/terraform-plugin-framework-utils v0.3.0
 )
 
 require (
