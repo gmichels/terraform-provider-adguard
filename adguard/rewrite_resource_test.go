@@ -15,7 +15,7 @@ func TestAccRewriteResource(t *testing.T) {
 				Config: providerConfig + `
 resource "adguard_rewrite" "test" {
   domain = "example.com"
-	answer = "4.3.2.1"
+  answer = "4.3.2.1"
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
