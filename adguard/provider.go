@@ -295,5 +295,6 @@ func (p *adguardProvider) Resources(_ context.Context) []func() resource.Resourc
 		NewClientResource,
 		NewListFilterResource,
 		NewUserRulesResource,
+		NewRewriteResource,
 	}
 }
