@@ -75,6 +75,9 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 			"name": schema.StringAttribute{
 				Description: "Name of the client",
 				Required:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"ids": schema.ListAttribute{
 				Description: "List of identifiers for this client (IP, CIDR, MAC, or ClientID)",
