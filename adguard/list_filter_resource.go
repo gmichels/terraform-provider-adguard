@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -64,6 +66,9 @@ func (r *listFilterResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			"id": schema.StringAttribute{
 				Description: "Identifier attribute",
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"rules_count": schema.Int64Attribute{
 				Description: "Number of rules in the list filter",
@@ -223,20 +228,12 @@ func (r *listFilterResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	// retrieve current state as we need the id
-	var state listFilterResourceModel
-	diags = req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	// convert id to int64
-	id, err := strconv.ParseInt(state.ID.ValueString(), 10, 64)
+	id, err := strconv.ParseInt(plan.ID.ValueString(), 10, 64)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Reading AdGuard Home List Filter",
-			"Could not read list filter with id "+state.ID.ValueString()+": "+err.Error(),
+			"Could not read list filter with id "+plan.ID.ValueString()+": "+err.Error(),
 		)
 		return
 	}
@@ -272,7 +269,6 @@ func (r *listFilterResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	// update plan with computed attributes
-	plan.ID = state.ID
 	plan.LastUpdated = types.StringValue(updatedlistFilter.LastUpdated)
 	plan.RulesCount = types.Int64Value(int64(updatedlistFilter.RulesCount))
 

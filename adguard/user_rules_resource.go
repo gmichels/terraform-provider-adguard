@@ -8,6 +8,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -47,6 +49,9 @@ func (r *userRulesResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			"id": schema.StringAttribute{
 				Description: "Identifier attribute",
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"rules": schema.ListAttribute{
 				Description: "List of user rules",
@@ -160,14 +165,6 @@ func (r *userRulesResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	// retrieve current state as we need the id
-	var state userRulesResourceModel
-	diags = req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	// instantiate empty client for storing plan data
 	var userRules adguard.SetRulesRequest
 
@@ -191,7 +188,6 @@ func (r *userRulesResource) Update(ctx context.Context, req resource.UpdateReque
 	}
 
 	// populate plan with computed attributes
-	plan.ID = state.ID
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 
 	// update state
