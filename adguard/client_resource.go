@@ -275,10 +275,14 @@ func (r *clientResource) Read(ctx context.Context, req resource.ReadRequest, res
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	state.Upstreams, diags = types.ListValueFrom(ctx, types.StringType, client.Upstreams)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	// API response returns an actual empty list instead of null for upstreams, therefore
+	// only make the conversion if there are any upstreams
+	if len(client.Upstreams) > 0 {
+		state.Upstreams, diags = types.ListValueFrom(ctx, types.StringType, client.Upstreams)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 	state.Tags, diags = types.ListValueFrom(ctx, types.StringType, client.Tags)
 	resp.Diagnostics.Append(diags...)
