@@ -75,6 +75,9 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 			"name": schema.StringAttribute{
 				Description: "Name of the client",
 				Required:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"ids": schema.ListAttribute{
 				Description: "List of identifiers for this client (IP, CIDR, MAC, or ClientID)",
@@ -89,9 +92,6 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					),
 				},
 			},
-			// default values are not yet an easy task using the plugin framework
-			// see https://github.com/hashicorp/terraform-plugin-framework/issues/668
-			// using instead https://github.com/terraform-community-providers/terraform-plugin-framework-utils/modifiers
 			"use_global_settings": schema.BoolAttribute{
 				Description: "Whether to use global settings on this client",
 				Computed:    true,
@@ -207,11 +207,11 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 		}
 	}
 
-	// create new clientState using plan
-	clientState, err := r.adg.CreateClient(client)
+	// create new client using plan
+	newClient, err := r.adg.CreateClient(client)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating client",
+			"Error Creating Client",
 			"Could not create client, unexpected error: "+err.Error(),
 		)
 		return
@@ -219,7 +219,7 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	// response sent by AdGuard Home is the same as the sent payload,
 	// just add missing attributes for state
-	plan.ID = types.StringValue(clientState.Name)
+	plan.ID = types.StringValue(newClient.Name)
 	// add the last updated attribute
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 
@@ -305,36 +305,36 @@ func (r *clientResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// generate API request body from plan
-	var clientUpdate adguard.ClientUpdate
-	clientUpdate.Name = plan.Name.ValueString()
-	clientUpdate.Data.Name = plan.Name.ValueString()
-	diags = plan.Ids.ElementsAs(ctx, &clientUpdate.Data.Ids, false)
+	var updateClient adguard.ClientUpdate
+	updateClient.Name = plan.ID.ValueString()
+	updateClient.Data.Name = plan.Name.ValueString()
+	diags = plan.Ids.ElementsAs(ctx, &updateClient.Data.Ids, false)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	clientUpdate.Data.UseGlobalSettings = plan.UseGlobalSettings.ValueBool()
-	clientUpdate.Data.FilteringEnabled = plan.FilteringEnabled.ValueBool()
-	clientUpdate.Data.ParentalEnabled = plan.ParentalEnabled.ValueBool()
-	clientUpdate.Data.SafebrowsingEnabled = plan.SafebrowsingEnabled.ValueBool()
-	clientUpdate.Data.SafesearchEnabled = plan.SafesearchEnabled.ValueBool()
-	clientUpdate.Data.UseGlobalBlockedServices = plan.UseGlobalBlockedServices.ValueBool()
+	updateClient.Data.UseGlobalSettings = plan.UseGlobalSettings.ValueBool()
+	updateClient.Data.FilteringEnabled = plan.FilteringEnabled.ValueBool()
+	updateClient.Data.ParentalEnabled = plan.ParentalEnabled.ValueBool()
+	updateClient.Data.SafebrowsingEnabled = plan.SafebrowsingEnabled.ValueBool()
+	updateClient.Data.SafesearchEnabled = plan.SafesearchEnabled.ValueBool()
+	updateClient.Data.UseGlobalBlockedServices = plan.UseGlobalBlockedServices.ValueBool()
 	if len(plan.BlockedServices.Elements()) > 0 {
-		diags = plan.BlockedServices.ElementsAs(ctx, &clientUpdate.Data.BlockedServices, false)
+		diags = plan.BlockedServices.ElementsAs(ctx, &updateClient.Data.BlockedServices, false)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 	}
 	if len(plan.Upstreams.Elements()) > 0 {
-		diags = plan.Upstreams.ElementsAs(ctx, &clientUpdate.Data.Upstreams, false)
+		diags = plan.Upstreams.ElementsAs(ctx, &updateClient.Data.Upstreams, false)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 	}
 	if len(plan.Tags.Elements()) > 0 {
-		diags = plan.Tags.ElementsAs(ctx, &clientUpdate.Data.Tags, false)
+		diags = plan.Tags.ElementsAs(ctx, &updateClient.Data.Tags, false)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -342,7 +342,7 @@ func (r *clientResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// update existing client
-	_, err := r.adg.UpdateClient(clientUpdate)
+	_, err := r.adg.UpdateClient(updateClient)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Updating AdGuard Home Client",
@@ -372,10 +372,10 @@ func (r *clientResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
-	var clientDelete adguard.ClientDelete
-	clientDelete.Name = state.ID.ValueString()
+	var deleteClient adguard.ClientDelete
+	deleteClient.Name = state.ID.ValueString()
 	// delete existing client
-	err := r.adg.DeleteClient(clientDelete)
+	err := r.adg.DeleteClient(deleteClient)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Client",

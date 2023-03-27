@@ -49,6 +49,20 @@ resource "adguard_client" "test" {
 					resource.TestCheckResourceAttr("adguard_client.test", "ids.2", "another-test-client"),
 				),
 			},
+			// Update client name testing (requires recreate)
+			{
+				Config: providerConfig + `
+resource "adguard_client" "test" {
+  name = "Test Client Name Updated"
+  ids  = ["192.168.100.15", "test-client", "another-test-client"]
+}
+`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("adguard_client.test", "name", "Test Client Name Updated"),
+					resource.TestCheckResourceAttr("adguard_client.test", "ids.#", "3"),
+					resource.TestCheckResourceAttr("adguard_client.test", "ids.2", "another-test-client"),
+				),
+			},
 			// Delete testing automatically occurs in TestCase
 		},
 	})
