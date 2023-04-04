@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gmichels/adguard-client-go"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -87,6 +88,7 @@ func (r *dnsConfigResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
+				Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 				Default: listdefault.StaticValue(
 					types.ListValueMust(
 						types.StringType,
@@ -104,6 +106,7 @@ func (r *dnsConfigResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
+				Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 				Default: listdefault.StaticValue(
 					types.ListValueMust(
 						types.StringType,
@@ -236,6 +239,7 @@ func (r *dnsConfigResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Description: "List of private reverse DNS servers",
 				ElementType: types.StringType,
 				Optional:    true,
+				Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 			},
 		},
 	}
