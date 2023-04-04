@@ -221,7 +221,10 @@ func (r *dnsConfigResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Description: "Upstream DNS resolvers usage strategy",
 				Optional:    true,
 				Computed:    true,
-				Default:     stringdefault.StaticString(""),
+				Default:     stringdefault.StaticString("load_balance"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("load_balance", "parallel", "fastest_addr"),
+				},
 			},
 			"use_private_ptr_resolvers": schema.BoolAttribute{
 				Description: "Whether to use private reverse DNS resolvers",
@@ -294,7 +297,11 @@ func (r *dnsConfigResource) Create(ctx context.Context, req resource.CreateReque
 	dnsConfig.CacheTtlMin = uint(plan.CacheTtlMin.ValueInt64())
 	dnsConfig.CacheTtlMax = uint(plan.CacheTtlMax.ValueInt64())
 	dnsConfig.CacheOptimistic = plan.CacheOptimistic.ValueBool()
-	dnsConfig.UpstreamMode = plan.UpstreamMode.ValueString()
+	if plan.UpstreamMode.ValueString() == "load_balance" {
+		dnsConfig.UpstreamMode = ""
+	} else {
+		dnsConfig.UpstreamMode = plan.UpstreamMode.ValueString()
+	}
 	dnsConfig.UsePrivatePtrResolvers = plan.UsePrivatePtrResolvers.ValueBool()
 	dnsConfig.ResolveClients = plan.ResolveClients.ValueBool()
 	if len(plan.LocalPtrUpstreams.Elements()) > 0 {
@@ -380,7 +387,11 @@ func (r *dnsConfigResource) Read(ctx context.Context, req resource.ReadRequest, 
 	state.CacheTtlMin = types.Int64Value(int64(dnsConfig.CacheTtlMin))
 	state.CacheTtlMax = types.Int64Value(int64(dnsConfig.CacheTtlMax))
 	state.CacheOptimistic = types.BoolValue(dnsConfig.CacheOptimistic)
-	state.UpstreamMode = types.StringValue(dnsConfig.UpstreamMode)
+	if dnsConfig.UpstreamMode != "" {
+		state.UpstreamMode = types.StringValue(dnsConfig.UpstreamMode)
+	} else {
+		state.UpstreamMode = types.StringValue("load_balance")
+	}
 	state.UsePrivatePtrResolvers = types.BoolValue(dnsConfig.UsePrivatePtrResolvers)
 	state.ResolveClients = types.BoolValue(dnsConfig.ResolveClients)
 	if len(dnsConfig.LocalPtrUpstreams) > 0 {
@@ -441,7 +452,11 @@ func (r *dnsConfigResource) Update(ctx context.Context, req resource.UpdateReque
 	dnsConfig.CacheTtlMin = uint(plan.CacheTtlMin.ValueInt64())
 	dnsConfig.CacheTtlMax = uint(plan.CacheTtlMax.ValueInt64())
 	dnsConfig.CacheOptimistic = plan.CacheOptimistic.ValueBool()
-	dnsConfig.UpstreamMode = plan.UpstreamMode.ValueString()
+	if plan.UpstreamMode.ValueString() == "load_balance" {
+		dnsConfig.UpstreamMode = ""
+	} else {
+		dnsConfig.UpstreamMode = plan.UpstreamMode.ValueString()
+	}
 	dnsConfig.UsePrivatePtrResolvers = plan.UsePrivatePtrResolvers.ValueBool()
 	dnsConfig.ResolveClients = plan.ResolveClients.ValueBool()
 	if len(plan.LocalPtrUpstreams.Elements()) > 0 {
