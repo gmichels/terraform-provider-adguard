@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gmichels/adguard-client-go"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -15,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -127,18 +129,39 @@ func (r *dnsConfigResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Optional:    true,
 				Computed:    true,
 				Default:     stringdefault.StaticString("default"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("default", "refused", "nxdomain", "null_ip", "custom_ip"),
+				},
 			},
 			"blocking_ipv4": schema.StringAttribute{
 				Description: "When `blocking_mode` is set to `custom_ip`, the IPv4 address to be returned for a blocked A request",
 				Optional:    true,
 				Computed:    true,
 				Default:     stringdefault.StaticString(""),
+				Validators: []validator.String{
+					stringvalidator.All(
+						checkBlockingMode("custom_ip"),
+						stringvalidator.AlsoRequires(path.Expressions{
+							path.MatchRoot("blocking_mode"),
+							path.MatchRoot("blocking_ipv6"),
+						}...),
+					),
+				},
 			},
 			"blocking_ipv6": schema.StringAttribute{
 				Description: "When `blocking_mode` is set to `custom_ip`, the IPv6 address to be returned for a blocked A request",
 				Optional:    true,
 				Computed:    true,
 				Default:     stringdefault.StaticString(""),
+				Validators: []validator.String{
+					stringvalidator.All(
+						checkBlockingMode("custom_ip"),
+						stringvalidator.AlsoRequires(path.Expressions{
+							path.MatchRoot("blocking_mode"),
+							path.MatchRoot("blocking_ipv4"),
+						}...),
+					),
+				},
 			},
 			"edns_cs_enabled": schema.BoolAttribute{
 				Description: "Whether EDNS Client Subnet (ECS) is enabled",
