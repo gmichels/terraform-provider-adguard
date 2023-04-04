@@ -465,6 +465,8 @@ func (r *dnsConfigResource) Update(ctx context.Context, req resource.UpdateReque
 		if resp.Diagnostics.HasError() {
 			return
 		}
+	} else {
+		dnsConfig.LocalPtrUpstreams = []string{}
 	}
 
 	// set DNS Config using plan
