@@ -286,6 +286,7 @@ func (p *adguardProvider) DataSources(_ context.Context) []func() datasource.Dat
 		NewListFilterDataSource,
 		NewUserRulesDataSource,
 		NewRewriteDataSource,
+		NewDnsConfigDataSource,
 	}
 }
 
