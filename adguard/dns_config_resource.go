@@ -37,7 +37,7 @@ type dnsConfigResourceModel struct {
 	BootstrapDns           types.List   `tfsdk:"bootstrap_dns"`
 	UpstreamDns            types.List   `tfsdk:"upstream_dns"`
 	UpstreamDnsFile        types.String `tfsdk:"upstream_dns_file"`
-	RateLimit              types.Int64  `tfsdk:"ratelimit"`
+	RateLimit              types.Int64  `tfsdk:"rate_limit"`
 	BlockingMode           types.String `tfsdk:"blocking_mode"`
 	BlockingIpv4           types.String `tfsdk:"blocking_ipv4"`
 	BlockingIpv6           types.String `tfsdk:"blocking_ipv6"`
@@ -116,7 +116,7 @@ func (r *dnsConfigResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Computed:    true,
 				Default:     stringdefault.StaticString(""),
 			},
-			"ratelimit": schema.Int64Attribute{
+			"rate_limit": schema.Int64Attribute{
 				Description: "The number of requests per second allowed per client",
 				Optional:    true,
 				Computed:    true,

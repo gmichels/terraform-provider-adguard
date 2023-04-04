@@ -15,11 +15,13 @@ func TestAccDnsConfigResource(t *testing.T) {
 				Config: providerConfig + `
 resource "adguard_dns_config" "test" {
   upstream_dns = ["https://1.1.1.1/dns-query",  "https://1.0.0.1/dns-query"]
+	rate_limit = 30
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("adguard_dns_config.test", "upstream_dns.#", "2"),
 					resource.TestCheckResourceAttr("adguard_dns_config.test", "upstream_dns.1", "https://1.0.0.1/dns-query"),
+					resource.TestCheckResourceAttr("adguard_dns_config.test", "rate_limit", "30"),
 					// Verify dynamic values have any value set in the state.
 					resource.TestCheckResourceAttrSet("adguard_dns_config.test", "id"),
 					resource.TestCheckResourceAttrSet("adguard_dns_config.test", "last_updated"),
@@ -39,11 +41,11 @@ resource "adguard_dns_config" "test" {
 				Config: providerConfig + `
 resource "adguard_dns_config" "test" {
   upstream_dns = ["https://1.1.1.1/dns-query",  "https://1.0.0.1/dns-query"]
-	ratelimit    = 25
+	rate_limit    = 25
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("adguard_dns_config.test", "ratelimit", "25"),
+					resource.TestCheckResourceAttr("adguard_dns_config.test", "rate_limit", "25"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
