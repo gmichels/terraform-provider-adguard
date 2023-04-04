@@ -26,8 +26,6 @@ type dnsConfigDataModel struct {
 	BootstrapDns             types.List   `tfsdk:"bootstrap_dns"`
 	UpstreamDns              types.List   `tfsdk:"upstream_dns"`
 	UpstreamDnsFile          types.String `tfsdk:"upstream_dns_file"`
-	ProtectionEnabled        types.Bool   `tfsdk:"protection_enabled"`
-	DhcpAvailable            types.Bool   `tfsdk:"dhcp_available"`
 	RateLimit                types.Int64  `tfsdk:"ratelimit"`
 	BlockingMode             types.String `tfsdk:"blocking_mode"`
 	BlockingIpv4             types.String `tfsdk:"blocking_ipv4"`
@@ -76,14 +74,6 @@ func (d *dnsConfigDataSource) Schema(_ context.Context, _ datasource.SchemaReque
 			},
 			"upstream_dns_file": schema.StringAttribute{
 				Description: "File with upstream DNS servers",
-				Computed:    true,
-			},
-			"protection_enabled": schema.BoolAttribute{
-				Description: "Whether protection is enabled",
-				Computed:    true,
-			},
-			"dhcp_available": schema.BoolAttribute{
-				Description: "Whether DHCP is enabled",
 				Computed:    true,
 			},
 			"ratelimit": schema.Int64Attribute{
@@ -185,8 +175,6 @@ func (d *dnsConfigDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 	state.UpstreamDnsFile = types.StringValue(dnsConfig.UpstreamDnsFile)
-	state.ProtectionEnabled = types.BoolValue(dnsConfig.ProtectionEnabled)
-	state.DhcpAvailable = types.BoolValue(dnsConfig.DhcpAvailable)
 	state.RateLimit = types.Int64Value(int64(dnsConfig.RateLimit))
 	state.BlockingMode = types.StringValue(dnsConfig.BlockingMode)
 	state.BlockingIpv4 = types.StringValue(dnsConfig.BlockingIpv4)

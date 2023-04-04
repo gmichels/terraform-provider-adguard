@@ -19,8 +19,6 @@ func TestAccDnsConfigDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr("data.adguard_dns_config.test", "upstream_dns.#", "1"),
 					resource.TestCheckResourceAttr("data.adguard_dns_config.test", "upstream_dns.0", "https://dns10.quad9.net/dns-query"),
 					resource.TestCheckResourceAttr("data.adguard_dns_config.test", "upstream_dns_file", ""),
-					resource.TestCheckResourceAttr("data.adguard_dns_config.test", "protection_enabled", "true"),
-					resource.TestCheckResourceAttr("data.adguard_dns_config.test", "dhcp_available", "false"),
 					resource.TestCheckResourceAttr("data.adguard_dns_config.test", "ratelimit", "20"),
 					resource.TestCheckResourceAttr("data.adguard_dns_config.test", "blocking_mode", "default"),
 					resource.TestCheckResourceAttr("data.adguard_dns_config.test", "blocking_ipv4", ""),
