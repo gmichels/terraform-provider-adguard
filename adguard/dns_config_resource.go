@@ -360,8 +360,15 @@ func (r *dnsConfigResource) Read(ctx context.Context, req resource.ReadRequest, 
 	state.UpstreamDnsFile = types.StringValue(dnsConfig.UpstreamDnsFile)
 	state.RateLimit = types.Int64Value(int64(dnsConfig.RateLimit))
 	state.BlockingMode = types.StringValue(dnsConfig.BlockingMode)
-	state.BlockingIpv4 = types.StringValue(dnsConfig.BlockingIpv4)
-	state.BlockingIpv6 = types.StringValue(dnsConfig.BlockingIpv6)
+	// upstream API does not unset blocking_ipv4 and blocking_ipv6 when previously set
+	// and blocking mode changes, so force state to empty values here
+	if dnsConfig.BlockingMode != "custom_ip" {
+		state.BlockingIpv4 = types.StringValue("")
+		state.BlockingIpv6 = types.StringValue("")
+	} else {
+		state.BlockingIpv4 = types.StringValue(dnsConfig.BlockingIpv4)
+		state.BlockingIpv6 = types.StringValue(dnsConfig.BlockingIpv6)
+	}
 	state.EDnsCsEnabled = types.BoolValue(dnsConfig.EDnsCsEnabled)
 	state.DisableIpv6 = types.BoolValue(dnsConfig.DisableIpv6)
 	state.DnsSecEnabled = types.BoolValue(dnsConfig.DnsSecEnabled)
