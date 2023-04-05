@@ -134,7 +134,13 @@ func (r *dnsConfigResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Computed:    true,
 				Default:     stringdefault.StaticString("default"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("default", "refused", "nxdomain", "null_ip", "custom_ip"),
+					stringvalidator.All(
+						stringvalidator.OneOf("default", "refused", "nxdomain", "null_ip", "custom_ip"),
+					),
+					stringvalidator.AlsoRequires(path.Expressions{
+						path.MatchRoot("blocking_ipv4"),
+						path.MatchRoot("blocking_ipv6"),
+					}...),
 				},
 			},
 			"blocking_ipv4": schema.StringAttribute{
