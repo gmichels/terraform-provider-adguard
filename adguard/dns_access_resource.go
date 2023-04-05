@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
-	// "github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -71,9 +70,6 @@ func (r *dnsAccessResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
-				// PlanModifiers: []planmodifier.List{
-				// 	listplanmodifier.UseStateForUnknown(),
-				// },
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 					listvalidator.ValueStringsAre(
@@ -89,20 +85,14 @@ func (r *dnsAccessResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
-				// PlanModifiers: []planmodifier.List{
-				// 	listplanmodifier.UseStateForUnknown(),
-				// },
-				Validators: []validator.List{listvalidator.SizeAtLeast(1)},
+				Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 			},
 			"blocked_hosts": schema.ListAttribute{
 				Description: "Disallowed domains",
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
-				// PlanModifiers: []planmodifier.List{
-				// 	listplanmodifier.UseStateForUnknown(),
-				// },
-				Validators: []validator.List{listvalidator.SizeAtLeast(1)},
+				Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 				Default: listdefault.StaticValue(
 					types.ListValueMust(
 						types.StringType,
