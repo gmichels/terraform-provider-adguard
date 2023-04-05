@@ -13,10 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // ensure the implementation satisfies the expected interfaces
@@ -70,6 +72,12 @@ func (r *dnsAccessResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
+				Default: listdefault.StaticValue(
+					basetypes.NewListNull(types.StringType),
+				),
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.UseStateForUnknown(),
+				},
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 					listvalidator.ValueStringsAre(
@@ -85,6 +93,12 @@ func (r *dnsAccessResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
+				Default: listdefault.StaticValue(
+					basetypes.NewListNull(types.StringType),
+				),
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.UseStateForUnknown(),
+				},
 				Validators: []validator.List{
 					listvalidator.All(
 						listvalidator.SizeAtLeast(1),
@@ -105,7 +119,10 @@ func (r *dnsAccessResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
-				Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.List{listvalidator.SizeAtLeast(1)},
 				Default: listdefault.StaticValue(
 					types.ListValueMust(
 						types.StringType,
@@ -150,12 +167,6 @@ func (r *dnsAccessResource) Create(ctx context.Context, req resource.CreateReque
 		if resp.Diagnostics.HasError() {
 			return
 		}
-	} else {
-		plan.AllowedClients, diags = types.ListValueFrom(ctx, types.StringType, []string{})
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
 	}
 
 	if len(plan.DisallowedClients.Elements()) > 0 {
@@ -164,22 +175,10 @@ func (r *dnsAccessResource) Create(ctx context.Context, req resource.CreateReque
 		if resp.Diagnostics.HasError() {
 			return
 		}
-	} else {
-		plan.DisallowedClients, diags = types.ListValueFrom(ctx, types.StringType, []string{})
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
 	}
 
 	if len(plan.BlockedHosts.Elements()) > 0 {
 		diags = plan.BlockedHosts.ElementsAs(ctx, &dnsAccess.BlockedHosts, false)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	} else {
-		plan.BlockedHosts, diags = types.ListValueFrom(ctx, types.StringType, []string{})
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -231,21 +230,29 @@ func (r *dnsAccessResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	// overwrite DNS DNS Access List with refreshed state
-	state.AllowedClients, diags = types.ListValueFrom(ctx, types.StringType, dnsAccess.AllowedClients)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	// overwrite DNS Access List with refreshed state
+	if len(dnsAccess.AllowedClients) > 0 {
+		state.AllowedClients, diags = types.ListValueFrom(ctx, types.StringType, dnsAccess.AllowedClients)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
-	state.DisallowedClients, diags = types.ListValueFrom(ctx, types.StringType, dnsAccess.DisallowedClients)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+
+	if len(dnsAccess.DisallowedClients) > 0 {
+		state.DisallowedClients, diags = types.ListValueFrom(ctx, types.StringType, dnsAccess.DisallowedClients)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
-	state.BlockedHosts, diags = types.ListValueFrom(ctx, types.StringType, dnsAccess.BlockedHosts)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+
+	if len(dnsAccess.BlockedHosts) > 0 {
+		state.BlockedHosts, diags = types.ListValueFrom(ctx, types.StringType, dnsAccess.BlockedHosts)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	// set refreshed state
@@ -276,14 +283,6 @@ func (r *dnsAccessResource) Update(ctx context.Context, req resource.UpdateReque
 		if resp.Diagnostics.HasError() {
 			return
 		}
-	} else {
-		dnsAccess.AllowedClients = []string{}
-		plan.AllowedClients = types.ListNull(types.StringType)
-		plan.AllowedClients, diags = types.ListValueFrom(ctx, types.StringType, []string{})
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
 	}
 
 	if len(plan.DisallowedClients.Elements()) > 0 {
@@ -292,24 +291,10 @@ func (r *dnsAccessResource) Update(ctx context.Context, req resource.UpdateReque
 		if resp.Diagnostics.HasError() {
 			return
 		}
-	} else {
-		dnsAccess.DisallowedClients = []string{}
-		plan.DisallowedClients, diags = types.ListValueFrom(ctx, types.StringType, []string{})
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
 	}
 
 	if len(plan.BlockedHosts.Elements()) > 0 {
 		diags = plan.BlockedHosts.ElementsAs(ctx, &dnsAccess.BlockedHosts, false)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	} else {
-		dnsAccess.BlockedHosts = []string{}
-		plan.BlockedHosts, diags = types.ListValueFrom(ctx, types.StringType, []string{})
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
