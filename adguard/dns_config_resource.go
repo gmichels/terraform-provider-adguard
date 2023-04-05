@@ -403,7 +403,7 @@ func (r *dnsConfigResource) Read(ctx context.Context, req resource.ReadRequest, 
 // Update updates the resource and sets the updated Terraform state on success
 func (r *dnsConfigResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	// updating is exactly the same as creating and unfortunately I don't know
-	// of a way to reuse the code, hence the duplication
+	// of a way to reuse the code due to the different argument types, hence the duplication
 
 	// retrieve values from plan
 	var plan dnsConfigResourceModel
