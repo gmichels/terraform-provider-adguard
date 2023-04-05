@@ -85,7 +85,20 @@ func (r *dnsAccessResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
-				Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
+				Validators: []validator.List{
+					listvalidator.All(
+						listvalidator.SizeAtLeast(1),
+						listvalidator.ConflictsWith(path.Expressions{
+							path.MatchRoot("allowed_clients"),
+						}...),
+					),
+					listvalidator.ValueStringsAre(
+						stringvalidator.RegexMatches(
+							regexp.MustCompile(`^[a-z0-9/.:-]+$`),
+							"must be an IP address/CIDR or only contain numbers, lowercase letters, and hyphens",
+						),
+					),
+				},
 			},
 			"blocked_hosts": schema.ListAttribute{
 				Description: "Disallowed domains",
