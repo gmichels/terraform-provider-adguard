@@ -25,7 +25,6 @@ type dnsConfigDataModel struct {
 	ID                       types.String `tfsdk:"id"`
 	BootstrapDns             types.List   `tfsdk:"bootstrap_dns"`
 	UpstreamDns              types.List   `tfsdk:"upstream_dns"`
-	UpstreamDnsFile          types.String `tfsdk:"upstream_dns_file"`
 	RateLimit                types.Int64  `tfsdk:"rate_limit"`
 	BlockingMode             types.String `tfsdk:"blocking_mode"`
 	BlockingIpv4             types.String `tfsdk:"blocking_ipv4"`
@@ -70,10 +69,6 @@ func (d *dnsConfigDataSource) Schema(_ context.Context, _ datasource.SchemaReque
 			"upstream_dns": schema.ListAttribute{
 				Description: "Upstream DNS servers",
 				ElementType: types.StringType,
-				Computed:    true,
-			},
-			"upstream_dns_file": schema.StringAttribute{
-				Description: "File with upstream DNS servers",
 				Computed:    true,
 			},
 			"rate_limit": schema.Int64Attribute{
@@ -174,7 +169,6 @@ func (d *dnsConfigDataSource) Read(ctx context.Context, req datasource.ReadReque
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	state.UpstreamDnsFile = types.StringValue(dnsConfig.UpstreamDnsFile)
 	state.RateLimit = types.Int64Value(int64(dnsConfig.RateLimit))
 	state.BlockingMode = types.StringValue(dnsConfig.BlockingMode)
 	state.BlockingIpv4 = types.StringValue(dnsConfig.BlockingIpv4)

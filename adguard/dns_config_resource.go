@@ -40,7 +40,6 @@ type dnsConfigResourceModel struct {
 	LastUpdated            types.String `tfsdk:"last_updated"`
 	BootstrapDns           types.List   `tfsdk:"bootstrap_dns"`
 	UpstreamDns            types.List   `tfsdk:"upstream_dns"`
-	UpstreamDnsFile        types.String `tfsdk:"upstream_dns_file"`
 	RateLimit              types.Int64  `tfsdk:"rate_limit"`
 	BlockingMode           types.String `tfsdk:"blocking_mode"`
 	BlockingIpv4           types.String `tfsdk:"blocking_ipv4"`
@@ -115,12 +114,6 @@ func (r *dnsConfigResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 						},
 					),
 				),
-			},
-			"upstream_dns_file": schema.StringAttribute{
-				Description: "File with upstream DNS servers",
-				Optional:    true,
-				Computed:    true,
-				Default:     stringdefault.StaticString(""),
 			},
 			"rate_limit": schema.Int64Attribute{
 				Description: "The number of requests per second allowed per client",
@@ -285,7 +278,6 @@ func (r *dnsConfigResource) Create(ctx context.Context, req resource.CreateReque
 			return
 		}
 	}
-	dnsConfig.UpstreamDnsFile = plan.UpstreamDnsFile.ValueString()
 	dnsConfig.RateLimit = uint(plan.RateLimit.ValueInt64())
 	dnsConfig.BlockingMode = plan.BlockingMode.ValueString()
 	dnsConfig.BlockingIpv4 = plan.BlockingIpv4.ValueString()
@@ -368,7 +360,6 @@ func (r *dnsConfigResource) Read(ctx context.Context, req resource.ReadRequest, 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	state.UpstreamDnsFile = types.StringValue(dnsConfig.UpstreamDnsFile)
 	state.RateLimit = types.Int64Value(int64(dnsConfig.RateLimit))
 	state.BlockingMode = types.StringValue(dnsConfig.BlockingMode)
 	// upstream API does not unset blocking_ipv4 and blocking_ipv6 when previously set
@@ -440,7 +431,6 @@ func (r *dnsConfigResource) Update(ctx context.Context, req resource.UpdateReque
 			return
 		}
 	}
-	dnsConfig.UpstreamDnsFile = plan.UpstreamDnsFile.ValueString()
 	dnsConfig.RateLimit = uint(plan.RateLimit.ValueInt64())
 	dnsConfig.BlockingMode = plan.BlockingMode.ValueString()
 	dnsConfig.BlockingIpv4 = plan.BlockingIpv4.ValueString()
