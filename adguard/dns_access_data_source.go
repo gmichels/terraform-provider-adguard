@@ -20,7 +20,7 @@ type dnsAccessDataSource struct {
 	adg *adguard.ADG
 }
 
-// dnsAccessDataModel maps DNS Config schema data
+// dnsAccessDataModel maps DNS Access List schema data
 type dnsAccessDataModel struct {
 	ID                types.String `tfsdk:"id"`
 	AllowedClients    types.List   `tfsdk:"allowed_clients"`
@@ -57,7 +57,7 @@ func (d *dnsAccessDataSource) Schema(_ context.Context, _ datasource.SchemaReque
 				Computed:    true,
 			},
 			"blocked_hosts": schema.ListAttribute{
-				Description: "The blocklist of hosts",
+				Description: "Disallowed domains",
 				ElementType: types.StringType,
 				Computed:    true,
 			},
@@ -72,11 +72,11 @@ func (d *dnsAccessDataSource) Read(ctx context.Context, req datasource.ReadReque
 	diags := req.Config.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 
-	// retrieve Access info
+	// retrieve DNS Access List info
 	dnsAccess, err := d.adg.GetAccess()
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to Read AdGuard Home Access",
+			"Unable to Read AdGuard Home DNS Access List",
 			err.Error(),
 		)
 		return
@@ -110,7 +110,7 @@ func (d *dnsAccessDataSource) Read(ctx context.Context, req datasource.ReadReque
 	}
 }
 
-// Configure adds the provider configured dnsAccess to the data source
+// Configure adds the provider configured DNS Access List to the data source
 func (d *dnsAccessDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
