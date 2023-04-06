@@ -57,14 +57,14 @@ func (r *dnsAccessResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description: "Internal identifier for this dnsAccess",
+				Description: "Internal identifier of the DNS access list",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"last_updated": schema.StringAttribute{
-				Description: "Timestamp of the last Terraform update of the dnsAccess",
+				Description: "Timestamp of the last Terraform update of the DNS access list",
 				Computed:    true,
 			},
 			"allowed_clients": schema.ListAttribute{
@@ -220,7 +220,7 @@ func (r *dnsAccessResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	// get refreshed DNS Access List value from AdGuard Home
+	// get refreshed DNS Access List from AdGuard Home
 	dnsAccess, err := r.adg.GetAccess()
 	if err != nil {
 		resp.Diagnostics.AddError(
