@@ -33,12 +33,12 @@ resource "adguard_dns_config" "test" {
 
 - `blocking_ipv4` (String) When `blocking_mode` is set to `custom_ip`, the IPv4 address to be returned for a blocked A request
 - `blocking_ipv6` (String) When `blocking_mode` is set to `custom_ip`, the IPv6 address to be returned for a blocked A request
-- `blocking_mode` (String) DNS response sent when request is blocked
+- `blocking_mode` (String) DNS response sent when request is blocked. Valid values are `default`, `refused`, `nxdomain`, `null_ip` or `custom_ip`
 - `bootstrap_dns` (List of String) Booststrap DNS servers
 - `cache_optimistic` (Boolean) Whether optimistic DNS caching is enabled
 - `cache_size` (Number) DNS cache size (in bytes)
-- `cache_ttl_max` (Number) Overridden maximum TTL received from upstream DNS servers
-- `cache_ttl_min` (Number) Overridden minimum TTL received from upstream DNS servers
+- `cache_ttl_max` (Number) Overridden maximum TTL (in seconds) received from upstream DNS servers
+- `cache_ttl_min` (Number) Overridden minimum TTL (in seconds) received from upstream DNS servers
 - `disable_ipv6` (Boolean) Whether dropping of all IPv6 DNS queries is enabled
 - `dnssec_enabled` (Boolean) Whether outgoing DNSSEC is enabled
 - `edns_cs_enabled` (Boolean) Whether EDNS Client Subnet (ECS) is enabled
@@ -46,13 +46,13 @@ resource "adguard_dns_config" "test" {
 - `rate_limit` (Number) The number of requests per second allowed per client
 - `resolve_clients` (Boolean) Whether reverse DNS resolution of clients' IP addresses is enabled
 - `upstream_dns` (List of String) Upstream DNS servers
-- `upstream_mode` (String) Upstream DNS resolvers usage strategy
+- `upstream_mode` (String) Upstream DNS resolvers usage strategy. Valid values are `load_balance` (default), `parallel` and `fastest_addr`
 - `use_private_ptr_resolvers` (Boolean) Whether to use private reverse DNS resolvers
 
 ### Read-Only
 
-- `id` (String) Internal identifier for this dnsConfig
-- `last_updated` (String) Timestamp of the last Terraform update of the dnsConfig
+- `id` (String) Internal identifier for this DNS config
+- `last_updated` (String) Timestamp of the last Terraform update of the DNS config
 
 ## Import
 

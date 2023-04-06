@@ -72,14 +72,14 @@ func (r *dnsConfigResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description: "Internal identifier for this dnsConfig",
+				Description: "Internal identifier for this DNS config",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"last_updated": schema.StringAttribute{
-				Description: "Timestamp of the last Terraform update of the dnsConfig",
+				Description: "Timestamp of the last Terraform update of the DNS config",
 				Computed:    true,
 			},
 			"bootstrap_dns": schema.ListAttribute{
@@ -122,7 +122,7 @@ func (r *dnsConfigResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Default:     int64default.StaticInt64(20),
 			},
 			"blocking_mode": schema.StringAttribute{
-				Description: "DNS response sent when request is blocked",
+				Description: "DNS response sent when request is blocked. Valid values are `default`, `refused`, `nxdomain`, `null_ip` or `custom_ip`",
 				Optional:    true,
 				Computed:    true,
 				Default:     stringdefault.StaticString("default"),
@@ -193,13 +193,13 @@ func (r *dnsConfigResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Default:     int64default.StaticInt64(4194304),
 			},
 			"cache_ttl_min": schema.Int64Attribute{
-				Description: "Overridden minimum TTL received from upstream DNS servers",
+				Description: "Overridden minimum TTL (in seconds) received from upstream DNS servers",
 				Optional:    true,
 				Computed:    true,
 				Default:     int64default.StaticInt64(0),
 			},
 			"cache_ttl_max": schema.Int64Attribute{
-				Description: "Overridden maximum TTL received from upstream DNS servers",
+				Description: "Overridden maximum TTL (in seconds) received from upstream DNS servers",
 				Optional:    true,
 				Computed:    true,
 				Default:     int64default.StaticInt64(0),
@@ -211,7 +211,7 @@ func (r *dnsConfigResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Default:     booldefault.StaticBool(false),
 			},
 			"upstream_mode": schema.StringAttribute{
-				Description: "Upstream DNS resolvers usage strategy",
+				Description: "Upstream DNS resolvers usage strategy. Valid values are `load_balance` (default), `parallel` and `fastest_addr`",
 				Optional:    true,
 				Computed:    true,
 				Default:     stringdefault.StaticString("load_balance"),
@@ -339,7 +339,7 @@ func (r *dnsConfigResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	// get refreshed DNS dnsConfig rule value from AdGuard Home
+	// get refreshed DNS Config value from AdGuard Home
 	dnsConfig, err := r.adg.GetDnsInfo()
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -349,7 +349,7 @@ func (r *dnsConfigResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	// overwrite DNS dnsConfig rule with refreshed state
+	// overwrite DNS Config with refreshed state
 	state.BootstrapDns, diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.BootstrapDns)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

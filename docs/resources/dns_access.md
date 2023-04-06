@@ -32,8 +32,8 @@ resource "adguard_dns_access" "test" {
 
 ### Read-Only
 
-- `id` (String) Internal identifier for this dnsAccess
-- `last_updated` (String) Timestamp of the last Terraform update of the dnsAccess
+- `id` (String) Internal identifier of the DNS access list
+- `last_updated` (String) Timestamp of the last Terraform update of the DNS access list
 
 ## Import
 
