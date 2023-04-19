@@ -25,6 +25,7 @@ type configDataModel struct {
 	ID                      types.String `tfsdk:"id"`
 	FilteringEnabled        types.Bool   `tfsdk:"filtering_enabled"`
 	FilteringUpdateInterval types.Int64  `tfsdk:"filtering_update_interval"`
+	SafeBrowsingEnabled     types.Bool   `tfsdk:"safebrowsing_enabled"`
 }
 
 // NewConfigDataSource is a helper function to simplify the provider implementation
@@ -53,6 +54,10 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 				Description: "Update interval for all list-based filters, in hours",
 				Computed:    true,
 			},
+			"safebrowsing_enabled": schema.BoolAttribute{
+				Description: "Whether Safe Browsing is enabled",
+				Computed:    true,
+			},
 		},
 	}
 }
@@ -64,8 +69,18 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	diags := req.Config.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 
-	// retrieve config info
-	config, err := d.adg.GetAllFilters()
+	// retrieve filter config info
+	filterConfig, err := d.adg.GetAllFilters()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+
+	// retrieve safe browsing info
+	safeBrowsingEnabled, err := d.adg.GetSafeBrowsingStatus()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read AdGuard Home Config",
@@ -75,8 +90,9 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	}
 
 	// map response body to model
-	state.FilteringEnabled = types.BoolValue(config.Enabled)
-	state.FilteringUpdateInterval = types.Int64Value(int64(config.Interval))
+	state.FilteringEnabled = types.BoolValue(filterConfig.Enabled)
+	state.FilteringUpdateInterval = types.Int64Value(int64(filterConfig.Interval))
+	state.SafeBrowsingEnabled = types.BoolValue(*safeBrowsingEnabled)
 
 	// set ID placeholder for testing
 	state.ID = types.StringValue("placeholder")

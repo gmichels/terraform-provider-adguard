@@ -35,6 +35,7 @@ type configResourceModel struct {
 	LastUpdated             types.String `tfsdk:"last_updated"`
 	FilteringEnabled        types.Bool   `tfsdk:"filtering_enabled"`
 	FilteringUpdateInterval types.Int64  `tfsdk:"filtering_update_interval"`
+	SafeBrowsingEnabled     types.Bool   `tfsdk:"safebrowsing_enabled"`
 }
 
 // NewConfigResource is a helper function to simplify the provider implementation
@@ -77,6 +78,12 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					int64validator.OneOf([]int64{1, 12, 24, 72, 168}...),
 				},
 			},
+			"safebrowsing_enabled": schema.BoolAttribute{
+				Description: "Whether Safe Browsing is enabled",
+				Computed:    true,
+				Optional:    true,
+				Default:     booldefault.StaticBool(false),
+			},
 		},
 	}
 }
@@ -103,12 +110,22 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 	// instantiate empty objects for storing plan data
 	var filterConfig adguard.FilterConfig
 
-	// populate config from plan
+	// populate filter config from plan
 	filterConfig.Enabled = plan.FilteringEnabled.ValueBool()
 	filterConfig.Interval = uint(plan.FilteringUpdateInterval.ValueInt64())
 
-	// create new filter config using plan
+	// set filter config using plan
 	_, err := r.adg.ConfigureFiltering(filterConfig)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Creating Config",
+			"Could not create config, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// set safe browsing status using plan
+	err = r.adg.SetSafeBrowsingStatus(plan.SafeBrowsingEnabled.ValueBool())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Creating Config",
@@ -144,7 +161,17 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 	filterConfig, err := r.adg.GetAllFilters()
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error Reading AdGuard Home config",
+			"Error Reading AdGuard Home Config",
+			"Could not read AdGuard Home config ID "+state.ID.ValueString()+": "+err.Error(),
+		)
+		return
+	}
+
+	// get refreshed safe browsing status from AdGuard Home
+	safeBrowsingStatus, err := r.adg.GetSafeBrowsingStatus()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Reading AdGuard Home Config",
 			"Could not read AdGuard Home config ID "+state.ID.ValueString()+": "+err.Error(),
 		)
 		return
@@ -153,6 +180,7 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 	// overwrite config with refreshed state
 	state.FilteringEnabled = types.BoolValue(filterConfig.Enabled)
 	state.FilteringUpdateInterval = types.Int64Value(int64(filterConfig.Interval))
+	state.SafeBrowsingEnabled = types.BoolValue(*safeBrowsingStatus)
 
 	// set refreshed state
 	diags = resp.State.Set(ctx, &state)
@@ -179,6 +207,16 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 	// update existing config
 	_, err := r.adg.ConfigureFiltering(filterConfig)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Updating AdGuard Home Config",
+			"Could not update config, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// update safebrowsing status
+	err = r.adg.SetSafeBrowsingStatus(plan.SafeBrowsingEnabled.ValueBool())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Updating AdGuard Home Config",
@@ -214,6 +252,16 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
 			"Could not delete config, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// set safebrowsing to default
+	err = r.adg.SetSafeBrowsingStatus(false)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Deleting AdGuard Home Config",
+			"Could not update config, unexpected error: "+err.Error(),
 		)
 		return
 	}
