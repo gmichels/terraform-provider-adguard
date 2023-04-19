@@ -18,6 +18,10 @@ func TestAccConfigDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr("data.adguard_config.test", "filtering_update_interval", "24"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "safebrowsing_enabled", "false"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "parental_enabled", "false"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "safesearch_enabled", "false"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "safesearch_services.#", "6"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "safesearch_services.0", "bing"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "safesearch_services.4", "yandex"),
 
 					// Verify placeholder id attribute
 					resource.TestCheckResourceAttr("data.adguard_config.test", "id", "placeholder"),

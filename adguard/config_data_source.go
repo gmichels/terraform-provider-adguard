@@ -2,6 +2,8 @@ package adguard
 
 import (
 	"context"
+	"reflect"
+	"strings"
 
 	"github.com/gmichels/adguard-client-go"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -27,6 +29,8 @@ type configDataModel struct {
 	FilteringUpdateInterval types.Int64  `tfsdk:"filtering_update_interval"`
 	SafeBrowsingEnabled     types.Bool   `tfsdk:"safebrowsing_enabled"`
 	ParentalEnabled         types.Bool   `tfsdk:"parental_enabled"`
+	SafeSearchEnabled       types.Bool   `tfsdk:"safesearch_enabled"`
+	SafeSearchServices      types.Set    `tfsdk:"safesearch_services"`
 }
 
 // NewConfigDataSource is a helper function to simplify the provider implementation
@@ -61,6 +65,15 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 			},
 			"parental_enabled": schema.BoolAttribute{
 				Description: "Whether Parental Control is enabled",
+				Computed:    true,
+			},
+			"safesearch_enabled": schema.BoolAttribute{
+				Description: "Whether Safe Search is enabled",
+				Computed:    true,
+			},
+			"safesearch_services": schema.SetAttribute{
+				Description: "Services which SafeSearch is enabled",
+				ElementType: types.StringType,
 				Computed:    true,
 			},
 		},
@@ -104,11 +117,46 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
+	// retrieve safe search info
+	safeSearchConfig, err := d.adg.GetSafeSearchConfig()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// initialize list for holding the enabled safe search services
+	var enabledSafeSearchServices []string
+
+	// logic to map enabled safe search services to a list
+	// perform reflection of safeSearchConfig object
+	reflected := reflect.ValueOf(safeSearchConfig).Elem()
+	// grab the type of the reflected object
+	reflectedType := reflected.Type()
+
+	// loop over all safeSearchConfig fields
+	for i := 0; i < reflected.NumField(); i++ {
+		// skip the Enabled field
+		if reflectedType.Field(i).Name != "Enabled" {
+			// add service to list if its value is true
+			if reflected.Field(i).Interface().(bool) {
+				enabledSafeSearchServices = append(enabledSafeSearchServices, strings.ToLower(reflectedType.Field(i).Name))
+			}
+		}
+	}
+
 	// map response body to model
 	state.FilteringEnabled = types.BoolValue(filterConfig.Enabled)
 	state.FilteringUpdateInterval = types.Int64Value(int64(filterConfig.Interval))
 	state.SafeBrowsingEnabled = types.BoolValue(*safeBrowsingEnabled)
 	state.ParentalEnabled = types.BoolValue(*parentalEnabled)
+	state.SafeSearchEnabled = types.BoolValue(safeSearchConfig.Enabled)
+	state.SafeSearchServices, diags = types.SetValueFrom(ctx, types.StringType, enabledSafeSearchServices)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// set ID placeholder for testing
 	state.ID = types.StringValue("placeholder")
