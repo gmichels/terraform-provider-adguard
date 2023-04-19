@@ -301,5 +301,6 @@ func (p *adguardProvider) Resources(_ context.Context) []func() resource.Resourc
 		NewRewriteResource,
 		NewDnsConfigResource,
 		NewDnsAccessResource,
+		NewConfigResource,
 	}
 }
