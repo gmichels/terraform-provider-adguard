@@ -17,12 +17,14 @@ resource "adguard_config" "test" {
   filtering_enabled         = false
   filtering_update_interval = 1
 	safebrowsing_enabled      = true
+	parental_enabled          = true
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("adguard_config.test", "filtering_enabled", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "filtering_update_interval", "1"),
 					resource.TestCheckResourceAttr("adguard_config.test", "safebrowsing_enabled", "true"),
+					resource.TestCheckResourceAttr("adguard_config.test", "parental_enabled", "true"),
 					// Verify dynamic values have any value set in the state.
 					resource.TestCheckResourceAttrSet("adguard_config.test", "id"),
 					resource.TestCheckResourceAttrSet("adguard_config.test", "last_updated"),
@@ -48,6 +50,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "filtering_enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "filtering_update_interval", "72"),
 					resource.TestCheckResourceAttr("adguard_config.test", "safebrowsing_enabled", "false"),
+					resource.TestCheckResourceAttr("adguard_config.test", "parental_enabled", "false"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

@@ -26,6 +26,7 @@ type configDataModel struct {
 	FilteringEnabled        types.Bool   `tfsdk:"filtering_enabled"`
 	FilteringUpdateInterval types.Int64  `tfsdk:"filtering_update_interval"`
 	SafeBrowsingEnabled     types.Bool   `tfsdk:"safebrowsing_enabled"`
+	ParentalEnabled         types.Bool   `tfsdk:"parental_enabled"`
 }
 
 // NewConfigDataSource is a helper function to simplify the provider implementation
@@ -56,6 +57,10 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 			},
 			"safebrowsing_enabled": schema.BoolAttribute{
 				Description: "Whether Safe Browsing is enabled",
+				Computed:    true,
+			},
+			"parental_enabled": schema.BoolAttribute{
+				Description: "Whether Parental Control is enabled",
 				Computed:    true,
 			},
 		},
@@ -89,10 +94,21 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
+	// retrieve parental control info
+	parentalEnabled, err := d.adg.GetParentalStatus()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+
 	// map response body to model
 	state.FilteringEnabled = types.BoolValue(filterConfig.Enabled)
 	state.FilteringUpdateInterval = types.Int64Value(int64(filterConfig.Interval))
 	state.SafeBrowsingEnabled = types.BoolValue(*safeBrowsingEnabled)
+	state.ParentalEnabled = types.BoolValue(*parentalEnabled)
 
 	// set ID placeholder for testing
 	state.ID = types.StringValue("placeholder")

@@ -15,8 +15,9 @@ func TestAccConfigDataSource(t *testing.T) {
 				Config: providerConfig + `data "adguard_config" "test" {}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.adguard_config.test", "filtering_enabled", "true"),
-					resource.TestCheckResourceAttr("data.adguard_config.test", "filtering_update_interval", "12"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "filtering_update_interval", "24"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "safebrowsing_enabled", "false"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "parental_enabled", "false"),
 
 					// Verify placeholder id attribute
 					resource.TestCheckResourceAttr("data.adguard_config.test", "id", "placeholder"),
