@@ -3,7 +3,6 @@ package adguard
 import (
 	"context"
 	"reflect"
-	"strings"
 
 	"github.com/gmichels/adguard-client-go"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -126,25 +125,13 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		)
 		return
 	}
-	// initialize list for holding the enabled safe search services
-	var enabledSafeSearchServices []string
 
-	// logic to map enabled safe search services to a list
 	// perform reflection of safeSearchConfig object
-	reflected := reflect.ValueOf(safeSearchConfig).Elem()
+	v := reflect.ValueOf(safeSearchConfig).Elem()
 	// grab the type of the reflected object
-	reflectedType := reflected.Type()
-
-	// loop over all safeSearchConfig fields
-	for i := 0; i < reflected.NumField(); i++ {
-		// skip the Enabled field
-		if reflectedType.Field(i).Name != "Enabled" {
-			// add service to list if its value is true
-			if reflected.Field(i).Interface().(bool) {
-				enabledSafeSearchServices = append(enabledSafeSearchServices, strings.ToLower(reflectedType.Field(i).Name))
-			}
-		}
-	}
+	t := v.Type()
+	// map the reflected object to a list
+	enabledSafeSearchServices := mapSafeSearchConfigFields(v, t)
 
 	// map response body to model
 	state.FilteringEnabled = types.BoolValue(filterConfig.Enabled)
