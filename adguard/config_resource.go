@@ -2,16 +2,21 @@ package adguard
 
 import (
 	"context"
+	"reflect"
 	"time"
 
 	"github.com/gmichels/adguard-client-go"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -37,6 +42,8 @@ type configResourceModel struct {
 	FilteringUpdateInterval types.Int64  `tfsdk:"filtering_update_interval"`
 	SafeBrowsingEnabled     types.Bool   `tfsdk:"safebrowsing_enabled"`
 	ParentalEnabled         types.Bool   `tfsdk:"parental_enabled"`
+	SafeSearchEnabled       types.Bool   `tfsdk:"safesearch_enabled"`
+	SafeSearchServices      types.Set    `tfsdk:"safesearch_services"`
 }
 
 // NewConfigResource is a helper function to simplify the provider implementation
@@ -91,6 +98,42 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Optional:    true,
 				Default:     booldefault.StaticBool(false),
 			},
+			"safesearch_enabled": schema.BoolAttribute{
+				Description: "Whether Safe Search is enabled",
+				Computed:    true,
+				Optional:    true,
+				Default:     booldefault.StaticBool(false),
+			},
+			"safesearch_services": schema.SetAttribute{
+				Description: "Services which SafeSearch is enabled",
+				ElementType: types.StringType,
+				Computed:    true,
+				Optional:    true,
+				Validators: []validator.Set{
+					setvalidator.AlsoRequires(path.Expressions{
+						path.MatchRoot("safesearch_enabled"),
+					}...),
+					setvalidator.SizeAtLeast(1),
+					setvalidator.ValueStringsAre(
+						stringvalidator.OneOf(
+							"bing", "duckduckgo", "google", "pixabay", "yandex", "youtube",
+						),
+					),
+				},
+				Default: setdefault.StaticValue(
+					types.SetValueMust(
+						types.StringType,
+						[]attr.Value{
+							types.StringValue("bing"),
+							types.StringValue("duckduckgo"),
+							types.StringValue("google"),
+							types.StringValue("pixabay"),
+							types.StringValue("yandex"),
+							types.StringValue("youtube"),
+						},
+					),
+				),
+			},
 		},
 	}
 }
@@ -116,6 +159,7 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	// instantiate empty objects for storing plan data
 	var filterConfig adguard.FilterConfig
+	var safeSearchConfig adguard.SafeSearchConfig
 
 	// populate filtering config from plan
 	filterConfig.Enabled = plan.FilteringEnabled.ValueBool()
@@ -143,6 +187,32 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	// set parental status using plan
 	err = r.adg.SetParentalStatus(plan.ParentalEnabled.ValueBool())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Creating Config",
+			"Could not create config, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// populate search config using plan
+	safeSearchConfig.Enabled = plan.SafeSearchEnabled.ValueBool()
+	if len(plan.SafeSearchServices.Elements()) > 0 {
+		var safeSearchServicesEnabled []string
+		diags = plan.SafeSearchServices.ElementsAs(ctx, &safeSearchServicesEnabled, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		// use reflection to set each safeSearchConfig service value dynamically
+		v := reflect.ValueOf(&safeSearchConfig).Elem()
+		t := v.Type()
+		setSafeSearchConfigFields(v, t, safeSearchServicesEnabled)
+	}
+
+	// set safe search config using plan
+	_, err = r.adg.SetSafeSearchConfig(safeSearchConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Creating Config",
@@ -204,11 +274,33 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
+	// retrieve safe search info
+	safeSearchConfig, err := r.adg.GetSafeSearchConfig()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Reading AdGuard Home Config",
+			"Could not read AdGuard Home config ID "+state.ID.ValueString()+": "+err.Error(),
+		)
+		return
+	}
+	// perform reflection of safeSearchConfig object
+	v := reflect.ValueOf(safeSearchConfig).Elem()
+	// grab the type of the reflected object
+	t := v.Type()
+	// map the reflected object to a list
+	enabledSafeSearchServices := mapSafeSearchConfigFields(v, t)
+
 	// overwrite config with refreshed state
 	state.FilteringEnabled = types.BoolValue(filterConfig.Enabled)
 	state.FilteringUpdateInterval = types.Int64Value(int64(filterConfig.Interval))
 	state.SafeBrowsingEnabled = types.BoolValue(*safeBrowsingStatus)
 	state.ParentalEnabled = types.BoolValue(*parentalStatus)
+	state.SafeSearchEnabled = types.BoolValue(safeSearchConfig.Enabled)
+	state.SafeSearchServices, diags = types.SetValueFrom(ctx, types.StringType, enabledSafeSearchServices)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// set refreshed state
 	diags = resp.State.Set(ctx, &state)
@@ -230,6 +322,8 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 	// generate API request body from plan
 	var filterConfig adguard.FilterConfig
+	var safeSearchConfig adguard.SafeSearchConfig
+
 	filterConfig.Enabled = plan.FilteringEnabled.ValueBool()
 	filterConfig.Interval = uint(plan.FilteringUpdateInterval.ValueInt64())
 
@@ -263,6 +357,32 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
+	// populate search config using plan
+	safeSearchConfig.Enabled = plan.SafeSearchEnabled.ValueBool()
+	if len(plan.SafeSearchServices.Elements()) > 0 {
+		var safeSearchServicesEnabled []string
+		diags = plan.SafeSearchServices.ElementsAs(ctx, &safeSearchServicesEnabled, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		// use reflection to set each safeSearchConfig service value dynamically
+		v := reflect.ValueOf(&safeSearchConfig).Elem()
+		t := v.Type()
+		setSafeSearchConfigFields(v, t, safeSearchServicesEnabled)
+	}
+
+	// set safe search config using plan
+	_, err = r.adg.SetSafeSearchConfig(safeSearchConfig)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Creating Config",
+			"Could not create config, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
 	// update resource state with updated items and timestamp
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 
@@ -279,6 +399,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	// there is no "real" delete for the configuration, so this means "restore defaults"
 
 	var filterConfig adguard.FilterConfig
+	var safeSearchConfig adguard.SafeSearchConfig
 
 	// populate filtering config with default values
 	filterConfig.Enabled = true
@@ -306,6 +427,24 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	// set parental to default
 	err = r.adg.SetParentalStatus(false)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Deleting AdGuard Home Config",
+			"Could not update config, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// set safe search to default
+	safeSearchConfig.Enabled = false
+	safeSearchConfig.Bing = true
+	safeSearchConfig.Duckduckgo = true
+	safeSearchConfig.Google = true
+	safeSearchConfig.Pixabay = true
+	safeSearchConfig.Yandex = true
+	safeSearchConfig.Youtube = true
+
+	_, err = r.adg.SetSafeSearchConfig(safeSearchConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
