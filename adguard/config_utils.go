@@ -6,7 +6,7 @@ import (
 )
 
 // mapSafeSearchConfigFields - will return the list of safe search services that are enabled
-func mapSafeSearchConfigFields(v reflect.Value, t reflect.Type) []string {
+func mapSafeSearchConfigServices(v reflect.Value, t reflect.Type) []string {
 	// initalize output
 	var services []string
 
@@ -23,8 +23,8 @@ func mapSafeSearchConfigFields(v reflect.Value, t reflect.Type) []string {
 	return services
 }
 
-// setSafeSearchConfigFields - based on a list of enabled safe search services, will set the safeSearchConfig fields appropriately
-func setSafeSearchConfigFields(v reflect.Value, t reflect.Type, services []string) {
+// setSafeSearchConfigServices - based on a list of enabled safe search services, will set the safeSearchConfig fields appropriately
+func setSafeSearchConfigServices(v reflect.Value, t reflect.Type, services []string) {
 	for i := 0; i < v.NumField(); i++ {
 		fieldName := strings.ToLower(t.Field(i).Name)
 		if contains(services, fieldName) {

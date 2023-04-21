@@ -131,7 +131,7 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	// grab the type of the reflected object
 	t := v.Type()
 	// map the reflected object to a list
-	enabledSafeSearchServices := mapSafeSearchConfigFields(v, t)
+	enabledSafeSearchServices := mapSafeSearchConfigServices(v, t)
 
 	// map response body to model
 	state.FilteringEnabled = types.BoolValue(filterConfig.Enabled)
