@@ -108,8 +108,11 @@ tls:
   private_key_path: ""
   strict_sni_check: false
 querylog:
-  ignored: []
-  interval: 2160h
+  ignored:
+    - abc.com
+    - example.com
+    - test.com
+  interval: 4h
   size_memory: 1000
   enabled: true
   file_enabled: true

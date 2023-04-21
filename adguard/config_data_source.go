@@ -28,6 +28,7 @@ type configDataModel struct {
 	SafeBrowsing    types.Object `tfsdk:"safebrowsing"`
 	ParentalControl types.Object `tfsdk:"parental"`
 	SafeSearch      types.Object `tfsdk:"safesearch"`
+	QueryLog        types.Object `tfsdk:"querylog"`
 }
 
 // NewConfigDataSource is a helper function to simplify the provider implementation
@@ -79,7 +80,6 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 					},
 				},
 			},
-
 			"safesearch": schema.SingleNestedAttribute{
 				Computed: true,
 				Attributes: map[string]schema.Attribute{
@@ -89,6 +89,28 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 					},
 					"services": schema.SetAttribute{
 						Description: "Services which SafeSearch is enabled",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+				},
+			},
+			"querylog": schema.SingleNestedAttribute{
+				Computed: true,
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: "Whether the query log is enabled",
+						Computed:    true,
+					},
+					"interval": schema.Int64Attribute{
+						Description: "Time period for query log rotation, in hours",
+						Computed:    true,
+					},
+					"anonymize_client_ip": schema.BoolAttribute{
+						Description: "Whether anonymizing clients' IP addresses is enabled",
+						Computed:    true,
+					},
+					"ignored": schema.SetAttribute{
+						Description: "List of host names which should not be written to log",
 						ElementType: types.StringType,
 						Computed:    true,
 					},
@@ -171,11 +193,31 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
+	// retrieve Query Log Config info
+	queryLogConfig, err := d.adg.GetQueryLogConfig()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	var stateQueryLogConfig queryLogConfigModel
+	stateQueryLogConfig.Enabled = types.BoolValue(queryLogConfig.Enabled)
+	stateQueryLogConfig.Interval = types.Int64Value(int64(queryLogConfig.Interval / 1000 / 3600))
+	stateQueryLogConfig.AnonymizeClientIp = types.BoolValue(queryLogConfig.AnonymizeClientIp)
+	stateQueryLogConfig.Ignored, diags = types.SetValueFrom(ctx, types.StringType, queryLogConfig.Ignored)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// map response body to model
 	state.Filtering, _ = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)
 	state.SafeBrowsing, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateSafeBrowsingStatus)
 	state.ParentalControl, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateParentalStatus)
 	state.SafeSearch, _ = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchConfig)
+	state.QueryLog, _ = types.ObjectValueFrom(ctx, queryLogConfigModel{}.attrTypes(), &stateQueryLogConfig)
 
 	// set ID placeholder for testing
 	state.ID = types.StringValue("placeholder")

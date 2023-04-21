@@ -22,7 +22,13 @@ func TestAccConfigDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr("data.adguard_config.test", "safesearch.services.#", "6"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "safesearch.services.0", "bing"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "safesearch.services.4", "yandex"),
-
+					resource.TestCheckResourceAttr("data.adguard_config.test", "querylog.enabled", "true"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "querylog.anonymize_client_ip", "false"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "querylog.interval", "4"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "querylog.ignored.#", "3"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "querylog.ignored.0", "abc.com"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "querylog.ignored.1", "example.com"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "querylog.ignored.2", "test.com"),
 					// Verify placeholder id attribute
 					resource.TestCheckResourceAttr("data.adguard_config.test", "id", "placeholder"),
 				),

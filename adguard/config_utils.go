@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 var DEFAULT_SAFESEARCH_SERVICES = []string{"bing", "duckduckgo", "google", "pixabay", "yandex", "youtube"}
@@ -77,6 +78,34 @@ func (o safeSearchModel) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
 		"enabled":  types.BoolValue(false),
 		"services": types.SetValueMust(types.StringType, services),
+	}
+}
+
+// queryLogConfigModel maps query log configuration schema data
+type queryLogConfigModel struct {
+	Enabled           types.Bool  `tfsdk:"enabled"`
+	Interval          types.Int64 `tfsdk:"interval"`
+	AnonymizeClientIp types.Bool  `tfsdk:"anonymize_client_ip"`
+	Ignored           types.Set   `tfsdk:"ignored"`
+}
+
+// attrTypes - return attribute types for this model
+func (o queryLogConfigModel) attrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"enabled":             types.BoolType,
+		"interval":            types.Int64Type,
+		"anonymize_client_ip": types.BoolType,
+		"ignored":             types.SetType{ElemType: types.StringType},
+	}
+}
+
+// defaultObject - return default object for this model
+func (o queryLogConfigModel) defaultObject() map[string]attr.Value {
+	return map[string]attr.Value{
+		"enabled":             types.BoolValue(true),
+		"interval":            types.Int64Value(90 * 86400 * 1000),
+		"anonymize_client_ip": types.BoolValue(false),
+		"ignored":             basetypes.NewSetNull(types.StringType),
 	}
 }
 
