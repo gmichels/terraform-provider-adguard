@@ -15,11 +15,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // ensure the implementation satisfies the expected interfaces
@@ -36,14 +38,12 @@ type configResource struct {
 
 // configResourceModel maps config schema data
 type configResourceModel struct {
-	ID                      types.String `tfsdk:"id"`
-	LastUpdated             types.String `tfsdk:"last_updated"`
-	FilteringEnabled        types.Bool   `tfsdk:"filtering_enabled"`
-	FilteringUpdateInterval types.Int64  `tfsdk:"filtering_update_interval"`
-	SafeBrowsingEnabled     types.Bool   `tfsdk:"safebrowsing_enabled"`
-	ParentalEnabled         types.Bool   `tfsdk:"parental_enabled"`
-	SafeSearchEnabled       types.Bool   `tfsdk:"safesearch_enabled"`
-	SafeSearchServices      types.Set    `tfsdk:"safesearch_services"`
+	ID              types.String `tfsdk:"id"`
+	LastUpdated     types.String `tfsdk:"last_updated"`
+	Filtering       types.Object `tfsdk:"filtering"`
+	SafeBrowsing    types.Object `tfsdk:"safebrowsing"`
+	ParentalControl types.Object `tfsdk:"parental_control"`
+	SafeSearch      types.Object `tfsdk:"safesearch"`
 }
 
 // NewConfigResource is a helper function to simplify the provider implementation
@@ -71,68 +71,104 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Description: "Timestamp of the last Terraform update of the config",
 				Computed:    true,
 			},
-			"filtering_enabled": schema.BoolAttribute{
-				Description: "Whether DNS filtering is enabled",
-				Computed:    true,
-				Optional:    true,
-				Default:     booldefault.StaticBool(true),
-			},
-			"filtering_update_interval": schema.Int64Attribute{
-				Description: "Update interval for all list-based filters, in hours",
-				Computed:    true,
-				Optional:    true,
-				Default:     int64default.StaticInt64(24),
-				Validators: []validator.Int64{
-					int64validator.OneOf([]int64{1, 12, 24, 72, 168}...),
-				},
-			},
-			"safebrowsing_enabled": schema.BoolAttribute{
-				Description: "Whether Safe Browsing is enabled",
-				Computed:    true,
-				Optional:    true,
-				Default:     booldefault.StaticBool(false),
-			},
-			"parental_enabled": schema.BoolAttribute{
-				Description: "Whether Safe Browsing is enabled",
-				Computed:    true,
-				Optional:    true,
-				Default:     booldefault.StaticBool(false),
-			},
-			"safesearch_enabled": schema.BoolAttribute{
-				Description: "Whether Safe Search is enabled",
-				Computed:    true,
-				Optional:    true,
-				Default:     booldefault.StaticBool(false),
-			},
-			"safesearch_services": schema.SetAttribute{
-				Description: "Services which SafeSearch is enabled",
-				ElementType: types.StringType,
-				Computed:    true,
-				Optional:    true,
-				Validators: []validator.Set{
-					setvalidator.AlsoRequires(path.Expressions{
-						path.MatchRoot("safesearch_enabled"),
-					}...),
-					setvalidator.SizeAtLeast(1),
-					setvalidator.ValueStringsAre(
-						stringvalidator.OneOf(
-							"bing", "duckduckgo", "google", "pixabay", "yandex", "youtube",
-						),
-					),
-				},
-				Default: setdefault.StaticValue(
-					types.SetValueMust(
-						types.StringType,
-						[]attr.Value{
-							types.StringValue("bing"),
-							types.StringValue("duckduckgo"),
-							types.StringValue("google"),
-							types.StringValue("pixabay"),
-							types.StringValue("yandex"),
-							types.StringValue("youtube"),
-						},
-					),
+			"filtering": schema.SingleNestedAttribute{
+				Computed: true,
+				Optional: true,
+				Default: objectdefault.StaticValue(types.ObjectValueMust(
+					filteringModel{}.attrTypes(), filteringModel{}.defaultObject()),
 				),
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: "Whether DNS filtering is enabled",
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(true),
+					},
+					"update_interval": schema.Int64Attribute{
+						Description: "Update interval for all list-based filters, in hours",
+						Computed:    true,
+						Optional:    true,
+						Default:     int64default.StaticInt64(24),
+						Validators: []validator.Int64{
+							int64validator.OneOf([]int64{1, 12, 24, 72, 168}...),
+						},
+					},
+				},
+			},
+			"safebrowsing": schema.SingleNestedAttribute{
+				Computed: true,
+				Optional: true,
+				Default: objectdefault.StaticValue(types.ObjectValueMust(
+					enabledModel{}.attrTypes(), enabledModel{}.defaultObject()),
+				),
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: "Whether Safe Browsing is enabled",
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(false),
+					},
+				},
+			},
+			"parental_control": schema.SingleNestedAttribute{
+				Computed: true,
+				Optional: true,
+				Default: objectdefault.StaticValue(types.ObjectValueMust(
+					enabledModel{}.attrTypes(), enabledModel{}.defaultObject()),
+				),
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: "Whether Parental Control is enabled",
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(false),
+					},
+				},
+			},
+			"safesearch": schema.SingleNestedAttribute{
+				Computed: true,
+				Optional: true,
+				Default: objectdefault.StaticValue(types.ObjectValueMust(
+					safeSearchModel{}.attrTypes(), safeSearchModel{}.defaultObject()),
+				),
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: "Whether Safe Search is enabled",
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(false),
+					},
+					"services": schema.SetAttribute{
+						Description: "Services which SafeSearch is enabled",
+						ElementType: types.StringType,
+						Computed:    true,
+						Optional:    true,
+						Validators: []validator.Set{
+							setvalidator.AlsoRequires(path.Expressions{
+								path.MatchRelative().AtParent().AtName("enabled"),
+							}...),
+							setvalidator.SizeAtLeast(1),
+							setvalidator.ValueStringsAre(
+								stringvalidator.OneOf(
+									"bing", "duckduckgo", "google", "pixabay", "yandex", "youtube",
+								),
+							),
+						},
+						Default: setdefault.StaticValue(
+							types.SetValueMust(
+								types.StringType,
+								[]attr.Value{
+									types.StringValue("bing"),
+									types.StringValue("duckduckgo"),
+									types.StringValue("google"),
+									types.StringValue("pixabay"),
+									types.StringValue("yandex"),
+									types.StringValue("youtube"),
+								},
+							),
+						),
+					},
+				},
 			},
 		},
 	}
@@ -157,16 +193,26 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
+	// unpack nested attributes from plan
+	var planFiltering filteringModel
+	var planSafeBrowsing enabledModel
+	var planParentalControl enabledModel
+	var planSafeSearch safeSearchModel
+	_ = plan.Filtering.As(ctx, &planFiltering, basetypes.ObjectAsOptions{})
+	_ = plan.SafeBrowsing.As(ctx, &planSafeBrowsing, basetypes.ObjectAsOptions{})
+	_ = plan.ParentalControl.As(ctx, &planParentalControl, basetypes.ObjectAsOptions{})
+	_ = plan.SafeSearch.As(ctx, &planSafeSearch, basetypes.ObjectAsOptions{})
+
 	// instantiate empty objects for storing plan data
-	var filterConfig adguard.FilterConfig
+	var filteringConfig adguard.FilterConfig
 	var safeSearchConfig adguard.SafeSearchConfig
 
 	// populate filtering config from plan
-	filterConfig.Enabled = plan.FilteringEnabled.ValueBool()
-	filterConfig.Interval = uint(plan.FilteringUpdateInterval.ValueInt64())
+	filteringConfig.Enabled = planFiltering.Enabled.ValueBool()
+	filteringConfig.Interval = uint(planFiltering.UpdateInterval.ValueInt64())
 
 	// set filtering config using plan
-	_, err := r.adg.ConfigureFiltering(filterConfig)
+	_, err := r.adg.ConfigureFiltering(filteringConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Creating Config",
@@ -176,7 +222,7 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	// set safe browsing status using plan
-	err = r.adg.SetSafeBrowsingStatus(plan.SafeBrowsingEnabled.ValueBool())
+	err = r.adg.SetSafeBrowsingStatus(planSafeBrowsing.Enabled.ValueBool())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Creating Config",
@@ -185,8 +231,8 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	// set parental status using plan
-	err = r.adg.SetParentalStatus(plan.ParentalEnabled.ValueBool())
+	// set parental control status using plan
+	err = r.adg.SetParentalStatus(planParentalControl.Enabled.ValueBool())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Creating Config",
@@ -196,10 +242,10 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	// populate search config using plan
-	safeSearchConfig.Enabled = plan.SafeSearchEnabled.ValueBool()
-	if len(plan.SafeSearchServices.Elements()) > 0 {
+	safeSearchConfig.Enabled = planSafeSearch.Enabled.ValueBool()
+	if len(planSafeSearch.Services.Elements()) > 0 {
 		var safeSearchServicesEnabled []string
-		diags = plan.SafeSearchServices.ElementsAs(ctx, &safeSearchServicesEnabled, false)
+		diags = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -208,7 +254,7 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 		// use reflection to set each safeSearchConfig service value dynamically
 		v := reflect.ValueOf(&safeSearchConfig).Elem()
 		t := v.Type()
-		setSafeSearchConfigFields(v, t, safeSearchServicesEnabled)
+		setSafeSearchConfigServices(v, t, safeSearchServicesEnabled)
 	}
 
 	// set safe search config using plan
@@ -245,7 +291,7 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 
 	// get refreshed filtering config value from AdGuard Home
-	filterConfig, err := r.adg.GetAllFilters()
+	filteringConfig, err := r.adg.GetAllFilters()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Reading AdGuard Home Config",
@@ -253,6 +299,10 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 		)
 		return
 	}
+	// map filter config to state
+	var stateFilteringConfig filteringModel
+	stateFilteringConfig.Enabled = types.BoolValue(filteringConfig.Enabled)
+	stateFilteringConfig.UpdateInterval = types.Int64Value(int64(filteringConfig.Interval))
 
 	// get refreshed safe browsing status from AdGuard Home
 	safeBrowsingStatus, err := r.adg.GetSafeBrowsingStatus()
@@ -263,8 +313,11 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 		)
 		return
 	}
+	// map safe browsing config to state
+	var stateSafeBrowsingStatus enabledModel
+	stateSafeBrowsingStatus.Enabled = types.BoolValue(*safeBrowsingStatus)
 
-	// get refreshed safe browsing status from AdGuard Home
+	// get refreshed safe parental control status from AdGuard Home
 	parentalStatus, err := r.adg.GetParentalStatus()
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -273,6 +326,9 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 		)
 		return
 	}
+	// map parental control config to state
+	var stateParentalStatus enabledModel
+	stateParentalStatus.Enabled = types.BoolValue(*parentalStatus)
 
 	// retrieve safe search info
 	safeSearchConfig, err := r.adg.GetSafeSearchConfig()
@@ -287,20 +343,23 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 	v := reflect.ValueOf(safeSearchConfig).Elem()
 	// grab the type of the reflected object
 	t := v.Type()
-	// map the reflected object to a list
-	enabledSafeSearchServices := mapSafeSearchConfigFields(v, t)
+	// map the reflected object to a list of enabled services
+	enabledSafeSearchServices := mapSafeSearchConfigServices(v, t)
 
-	// overwrite config with refreshed state
-	state.FilteringEnabled = types.BoolValue(filterConfig.Enabled)
-	state.FilteringUpdateInterval = types.Int64Value(int64(filterConfig.Interval))
-	state.SafeBrowsingEnabled = types.BoolValue(*safeBrowsingStatus)
-	state.ParentalEnabled = types.BoolValue(*parentalStatus)
-	state.SafeSearchEnabled = types.BoolValue(safeSearchConfig.Enabled)
-	state.SafeSearchServices, diags = types.SetValueFrom(ctx, types.StringType, enabledSafeSearchServices)
+	// map safe search to state
+	var stateSafeSearchConfig safeSearchModel
+	stateSafeSearchConfig.Enabled = types.BoolValue(safeSearchConfig.Enabled)
+	stateSafeSearchConfig.Services, diags = types.SetValueFrom(ctx, types.StringType, enabledSafeSearchServices)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// overwrite config with refreshed state
+	state.Filtering, _ = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)
+	state.SafeBrowsing, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateSafeBrowsingStatus)
+	state.ParentalControl, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateParentalStatus)
+	state.SafeSearch, _ = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchConfig)
 
 	// set refreshed state
 	diags = resp.State.Set(ctx, &state)
@@ -320,15 +379,25 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
+	// unpack nested attributes from plan
+	var planFiltering filteringModel
+	var planSafeBrowsing enabledModel
+	var planParentalControl enabledModel
+	var planSafeSearch safeSearchModel
+	_ = plan.Filtering.As(ctx, &planFiltering, basetypes.ObjectAsOptions{})
+	_ = plan.SafeBrowsing.As(ctx, &planSafeBrowsing, basetypes.ObjectAsOptions{})
+	_ = plan.ParentalControl.As(ctx, &planParentalControl, basetypes.ObjectAsOptions{})
+	_ = plan.SafeSearch.As(ctx, &planSafeSearch, basetypes.ObjectAsOptions{})
+
 	// generate API request body from plan
-	var filterConfig adguard.FilterConfig
+	var filteringConfig adguard.FilterConfig
 	var safeSearchConfig adguard.SafeSearchConfig
 
-	filterConfig.Enabled = plan.FilteringEnabled.ValueBool()
-	filterConfig.Interval = uint(plan.FilteringUpdateInterval.ValueInt64())
+	filteringConfig.Enabled = planFiltering.Enabled.ValueBool()
+	filteringConfig.Interval = uint(planFiltering.UpdateInterval.ValueInt64())
 
 	// update existing filtering config
-	_, err := r.adg.ConfigureFiltering(filterConfig)
+	_, err := r.adg.ConfigureFiltering(filteringConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Updating AdGuard Home Config",
@@ -337,8 +406,8 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	// update safebrowsing status
-	err = r.adg.SetSafeBrowsingStatus(plan.SafeBrowsingEnabled.ValueBool())
+	// update safe browsing status
+	err = r.adg.SetSafeBrowsingStatus(planSafeBrowsing.Enabled.ValueBool())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Updating AdGuard Home Config",
@@ -348,7 +417,7 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// update parental status
-	err = r.adg.SetParentalStatus(plan.ParentalEnabled.ValueBool())
+	err = r.adg.SetParentalStatus(planParentalControl.Enabled.ValueBool())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Updating AdGuard Home Config",
@@ -358,10 +427,10 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// populate search config using plan
-	safeSearchConfig.Enabled = plan.SafeSearchEnabled.ValueBool()
-	if len(plan.SafeSearchServices.Elements()) > 0 {
+	safeSearchConfig.Enabled = planSafeSearch.Enabled.ValueBool()
+	if len(planSafeSearch.Services.Elements()) > 0 {
 		var safeSearchServicesEnabled []string
-		diags = plan.SafeSearchServices.ElementsAs(ctx, &safeSearchServicesEnabled, false)
+		diags = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -370,7 +439,7 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 		// use reflection to set each safeSearchConfig service value dynamically
 		v := reflect.ValueOf(&safeSearchConfig).Elem()
 		t := v.Type()
-		setSafeSearchConfigFields(v, t, safeSearchServicesEnabled)
+		setSafeSearchConfigServices(v, t, safeSearchServicesEnabled)
 	}
 
 	// set safe search config using plan
@@ -435,7 +504,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
-	// set safe search to default
+	// set safe search to defaults
 	safeSearchConfig.Enabled = false
 	safeSearchConfig.Bing = true
 	safeSearchConfig.Duckduckgo = true
