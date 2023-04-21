@@ -14,12 +14,12 @@ func TestAccConfigResource(t *testing.T) {
 			{
 				Config: providerConfig + `
 resource "adguard_config" "test" {
-  filtering = {
-  	update_interval = 1
+	filtering = {
+		update_interval = 1
 	}
 	safesearch = {
 		enabled  = true
-	  services = ["bing", "youtube", "google"]
+		services = ["bing", "youtube", "google"]
 	}
 }
 `,

@@ -79,13 +79,13 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				),
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
-						Description: "Whether DNS filtering is enabled",
+						Description: "Whether DNS filtering is enabled. Defaults to `true`",
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
 					},
 					"update_interval": schema.Int64Attribute{
-						Description: "Update interval for all list-based filters, in hours",
+						Description: "Update interval for all list-based filters, in hours. Defaults to `24`",
 						Computed:    true,
 						Optional:    true,
 						Default:     int64default.StaticInt64(24),
@@ -103,7 +103,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				),
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
-						Description: "Whether Safe Browsing is enabled",
+						Description: "Whether Safe Browsing is enabled. Defaults to `false`",
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
@@ -118,7 +118,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				),
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
-						Description: "Whether Parental Control is enabled",
+						Description: "Whether Parental Control is enabled. Defaults to `false`",
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
@@ -133,13 +133,13 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				),
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
-						Description: "Whether Safe Search is enabled",
+						Description: "Whether Safe Search is enabled. Defaults to `false`",
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
 					},
 					"services": schema.SetAttribute{
-						Description: "Services which SafeSearch is enabled",
+						Description: "Services which SafeSearch is enabled. Defaults to Bing, DuckDuckGo, Google, Pixabay, Yandex and YouTube",
 						ElementType: types.StringType,
 						Computed:    true,
 						Optional:    true,
