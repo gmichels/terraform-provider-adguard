@@ -22,12 +22,43 @@ data "adguard_config" "test" {}
 
 ### Read-Only
 
-- `filtering_enabled` (Boolean) Whether DNS filtering is enabled
-- `filtering_update_interval` (Number) Update interval for all list-based filters, in hours
+- `filtering` (Attributes) (see [below for nested schema](#nestedatt--filtering))
 - `id` (String) Identifier attribute
-- `parental_enabled` (Boolean) Whether Parental Control is enabled
-- `safebrowsing_enabled` (Boolean) Whether Safe Browsing is enabled
-- `safesearch_enabled` (Boolean) Whether Safe Search is enabled
-- `safesearch_services` (Set of String) Services which SafeSearch is enabled
+- `parental` (Attributes) (see [below for nested schema](#nestedatt--parental))
+- `safebrowsing` (Attributes) (see [below for nested schema](#nestedatt--safebrowsing))
+- `safesearch` (Attributes) (see [below for nested schema](#nestedatt--safesearch))
+
+<a id="nestedatt--filtering"></a>
+### Nested Schema for `filtering`
+
+Read-Only:
+
+- `enabled` (Boolean) Whether DNS filtering is enabled
+- `update_interval` (Number) Update interval for all list-based filters, in hours
+
+
+<a id="nestedatt--parental"></a>
+### Nested Schema for `parental`
+
+Read-Only:
+
+- `enabled` (Boolean) Whether Parental Control is enabled
+
+
+<a id="nestedatt--safebrowsing"></a>
+### Nested Schema for `safebrowsing`
+
+Read-Only:
+
+- `enabled` (Boolean) Whether Safe Browsing is enabled
+
+
+<a id="nestedatt--safesearch"></a>
+### Nested Schema for `safesearch`
+
+Read-Only:
+
+- `enabled` (Boolean) Whether Safe Search is enabled
+- `services` (Set of String) Services which SafeSearch is enabled
 
 

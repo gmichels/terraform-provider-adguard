@@ -23,13 +23,11 @@ type configDataSource struct {
 
 // configDataModel maps Config schema data
 type configDataModel struct {
-	ID                      types.String `tfsdk:"id"`
-	FilteringEnabled        types.Bool   `tfsdk:"filtering_enabled"`
-	FilteringUpdateInterval types.Int64  `tfsdk:"filtering_update_interval"`
-	SafeBrowsingEnabled     types.Bool   `tfsdk:"safebrowsing_enabled"`
-	ParentalEnabled         types.Bool   `tfsdk:"parental_enabled"`
-	SafeSearchEnabled       types.Bool   `tfsdk:"safesearch_enabled"`
-	SafeSearchServices      types.Set    `tfsdk:"safesearch_services"`
+	ID              types.String `tfsdk:"id"`
+	Filtering       types.Object `tfsdk:"filtering"`
+	SafeBrowsing    types.Object `tfsdk:"safebrowsing"`
+	ParentalControl types.Object `tfsdk:"parental"`
+	SafeSearch      types.Object `tfsdk:"safesearch"`
 }
 
 // NewConfigDataSource is a helper function to simplify the provider implementation
@@ -50,30 +48,51 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 				Description: "Identifier attribute",
 				Computed:    true,
 			},
-			"filtering_enabled": schema.BoolAttribute{
-				Description: "Whether DNS filtering is enabled",
-				Computed:    true,
+			"filtering": schema.SingleNestedAttribute{
+				Computed: true,
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: "Whether DNS filtering is enabled",
+						Computed:    true,
+					},
+					"update_interval": schema.Int64Attribute{
+						Description: "Update interval for all list-based filters, in hours",
+						Computed:    true,
+					},
+				},
 			},
-			"filtering_update_interval": schema.Int64Attribute{
-				Description: "Update interval for all list-based filters, in hours",
-				Computed:    true,
+			"safebrowsing": schema.SingleNestedAttribute{
+				Computed: true,
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: "Whether Safe Browsing is enabled",
+						Computed:    true,
+					},
+				},
 			},
-			"safebrowsing_enabled": schema.BoolAttribute{
-				Description: "Whether Safe Browsing is enabled",
-				Computed:    true,
+			"parental": schema.SingleNestedAttribute{
+				Computed: true,
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: "Whether Parental Control is enabled",
+						Computed:    true,
+					},
+				},
 			},
-			"parental_enabled": schema.BoolAttribute{
-				Description: "Whether Parental Control is enabled",
-				Computed:    true,
-			},
-			"safesearch_enabled": schema.BoolAttribute{
-				Description: "Whether Safe Search is enabled",
-				Computed:    true,
-			},
-			"safesearch_services": schema.SetAttribute{
-				Description: "Services which SafeSearch is enabled",
-				ElementType: types.StringType,
-				Computed:    true,
+
+			"safesearch": schema.SingleNestedAttribute{
+				Computed: true,
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: "Whether Safe Search is enabled",
+						Computed:    true,
+					},
+					"services": schema.SetAttribute{
+						Description: "Services which SafeSearch is enabled",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+				},
 			},
 		},
 	}
@@ -86,8 +105,8 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	diags := req.Config.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 
-	// retrieve filter config info
-	filterConfig, err := d.adg.GetAllFilters()
+	// get refreshed filtering config value from AdGuard Home
+	filteringConfig, err := d.adg.GetAllFilters()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read AdGuard Home Config",
@@ -95,9 +114,13 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		)
 		return
 	}
+	// map filter config to state
+	var stateFilteringConfig filteringModel
+	stateFilteringConfig.Enabled = types.BoolValue(filteringConfig.Enabled)
+	stateFilteringConfig.UpdateInterval = types.Int64Value(int64(filteringConfig.Interval))
 
-	// retrieve safe browsing info
-	safeBrowsingEnabled, err := d.adg.GetSafeBrowsingStatus()
+	// get refreshed safe browsing status from AdGuard Home
+	safeBrowsingStatus, err := d.adg.GetSafeBrowsingStatus()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read AdGuard Home Config",
@@ -105,9 +128,12 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		)
 		return
 	}
+	// map safe browsing config to state
+	var stateSafeBrowsingStatus enabledModel
+	stateSafeBrowsingStatus.Enabled = types.BoolValue(*safeBrowsingStatus)
 
-	// retrieve parental control info
-	parentalEnabled, err := d.adg.GetParentalStatus()
+	// get refreshed safe parental control status from AdGuard Home
+	parentalStatus, err := d.adg.GetParentalStatus()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read AdGuard Home Config",
@@ -115,6 +141,9 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		)
 		return
 	}
+	// map parental control config to state
+	var stateParentalStatus enabledModel
+	stateParentalStatus.Enabled = types.BoolValue(*parentalStatus)
 
 	// retrieve safe search info
 	safeSearchConfig, err := d.adg.GetSafeSearchConfig()
@@ -133,17 +162,20 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	// map the reflected object to a list
 	enabledSafeSearchServices := mapSafeSearchConfigServices(v, t)
 
-	// map response body to model
-	state.FilteringEnabled = types.BoolValue(filterConfig.Enabled)
-	state.FilteringUpdateInterval = types.Int64Value(int64(filterConfig.Interval))
-	state.SafeBrowsingEnabled = types.BoolValue(*safeBrowsingEnabled)
-	state.ParentalEnabled = types.BoolValue(*parentalEnabled)
-	state.SafeSearchEnabled = types.BoolValue(safeSearchConfig.Enabled)
-	state.SafeSearchServices, diags = types.SetValueFrom(ctx, types.StringType, enabledSafeSearchServices)
+	// map safe search to state
+	var stateSafeSearchConfig safeSearchModel
+	stateSafeSearchConfig.Enabled = types.BoolValue(safeSearchConfig.Enabled)
+	stateSafeSearchConfig.Services, diags = types.SetValueFrom(ctx, types.StringType, enabledSafeSearchServices)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// map response body to model
+	state.Filtering, _ = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)
+	state.SafeBrowsing, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateSafeBrowsingStatus)
+	state.ParentalControl, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateParentalStatus)
+	state.SafeSearch, _ = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchConfig)
 
 	// set ID placeholder for testing
 	state.ID = types.StringValue("placeholder")
