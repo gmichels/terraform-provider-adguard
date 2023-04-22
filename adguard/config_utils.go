@@ -103,7 +103,7 @@ func (o queryLogConfigModel) attrTypes() map[string]attr.Type {
 func (o queryLogConfigModel) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
 		"enabled":             types.BoolValue(true),
-		"interval":            types.Int64Value(90 * 86400 * 1000),
+		"interval":            types.Int64Value(90 * 24),
 		"anonymize_client_ip": types.BoolValue(false),
 		"ignored":             basetypes.NewSetNull(types.StringType),
 	}

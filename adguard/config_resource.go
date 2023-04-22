@@ -3,6 +3,7 @@ package adguard
 import (
 	"context"
 	"reflect"
+	"regexp"
 	"time"
 
 	"github.com/gmichels/adguard-client-go"
@@ -44,6 +45,7 @@ type configResourceModel struct {
 	SafeBrowsing    types.Object `tfsdk:"safebrowsing"`
 	ParentalControl types.Object `tfsdk:"parental_control"`
 	SafeSearch      types.Object `tfsdk:"safesearch"`
+	QueryLog        types.Object `tfsdk:"querylog"`
 }
 
 // NewConfigResource is a helper function to simplify the provider implementation
@@ -170,6 +172,54 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					},
 				},
 			},
+			"querylog": schema.SingleNestedAttribute{
+				Computed: true,
+				Optional: true,
+				Default: objectdefault.StaticValue(types.ObjectValueMust(
+					queryLogConfigModel{}.attrTypes(), queryLogConfigModel{}.defaultObject()),
+				),
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: "Whether the query log is enabled. Defaults to `true`",
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(true),
+					},
+					"interval": schema.Int64Attribute{
+						Description: "Time period for query log rotation, in hours. Defaults to `2160` (90 days)",
+						Computed:    true,
+						Optional:    true,
+						Default:     int64default.StaticInt64(24),
+					},
+					"anonymize_client_ip": schema.BoolAttribute{
+						Description: "Whether anonymizing clients' IP addresses is enabled",
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(false),
+					},
+					"ignored": schema.SetAttribute{
+						Description: "List of host names which should not be written to log",
+						ElementType: types.StringType,
+						Computed:    true,
+						Optional:    true,
+						Validators: []validator.Set{
+							setvalidator.AlsoRequires(path.Expressions{
+								path.MatchRelative().AtParent().AtName("enabled"),
+							}...),
+							setvalidator.SizeAtLeast(1),
+							setvalidator.ValueStringsAre(
+								stringvalidator.RegexMatches(
+									regexp.MustCompile(`^[a-z0-9.-_]+$`),
+									"must be a valid domain name",
+								),
+							),
+						},
+						Default: setdefault.StaticValue(
+							types.SetNull(types.StringType),
+						),
+					},
+				},
+			},
 		},
 	}
 }
@@ -198,15 +248,15 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 	var planSafeBrowsing enabledModel
 	var planParentalControl enabledModel
 	var planSafeSearch safeSearchModel
+	var planQueryLogConfig queryLogConfigModel
 	_ = plan.Filtering.As(ctx, &planFiltering, basetypes.ObjectAsOptions{})
 	_ = plan.SafeBrowsing.As(ctx, &planSafeBrowsing, basetypes.ObjectAsOptions{})
 	_ = plan.ParentalControl.As(ctx, &planParentalControl, basetypes.ObjectAsOptions{})
 	_ = plan.SafeSearch.As(ctx, &planSafeSearch, basetypes.ObjectAsOptions{})
+	_ = plan.QueryLog.As(ctx, &planQueryLogConfig, basetypes.ObjectAsOptions{})
 
-	// instantiate empty objects for storing plan data
+	// instantiate empty object for storing plan data
 	var filteringConfig adguard.FilterConfig
-	var safeSearchConfig adguard.SafeSearchConfig
-
 	// populate filtering config from plan
 	filteringConfig.Enabled = planFiltering.Enabled.ValueBool()
 	filteringConfig.Interval = uint(planFiltering.UpdateInterval.ValueInt64())
@@ -241,6 +291,8 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
+	// instantiate empty object for storing plan data
+	var safeSearchConfig adguard.SafeSearchConfig
 	// populate search config using plan
 	safeSearchConfig.Enabled = planSafeSearch.Enabled.ValueBool()
 	if len(planSafeSearch.Services.Elements()) > 0 {
@@ -259,6 +311,31 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	// set safe search config using plan
 	_, err = r.adg.SetSafeSearchConfig(safeSearchConfig)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Creating Config",
+			"Could not create config, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// instantiate empty object for storing plan data
+	var queryLogConfig adguard.GetQueryLogConfigResponse
+	// populate Query Log Config from plan
+	queryLogConfig.Enabled = planQueryLogConfig.Enabled.ValueBool()
+	queryLogConfig.Interval = uint(planQueryLogConfig.Interval.ValueInt64() * 3600 * 1000)
+	queryLogConfig.AnonymizeClientIp = planQueryLogConfig.AnonymizeClientIp.ValueBool()
+
+	if len(planQueryLogConfig.Ignored.Elements()) > 0 {
+		diags = planQueryLogConfig.Ignored.ElementsAs(ctx, &queryLogConfig.Ignored, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
+	// set query log config using plan
+	_, err = r.adg.SetQueryLogConfig(queryLogConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Creating Config",
@@ -355,11 +432,32 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
+	// retrieve Query Log Config info
+	queryLogConfig, err := r.adg.GetQueryLogConfig()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Reading AdGuard Home Config",
+			"Could not read AdGuard Home config ID "+state.ID.ValueString()+": "+err.Error(),
+		)
+		return
+	}
+	var stateQueryLogConfig queryLogConfigModel
+	stateQueryLogConfig.Enabled = types.BoolValue(queryLogConfig.Enabled)
+	stateQueryLogConfig.Interval = types.Int64Value(int64(queryLogConfig.Interval / 1000 / 3600))
+	stateQueryLogConfig.AnonymizeClientIp = types.BoolValue(queryLogConfig.AnonymizeClientIp)
+	stateQueryLogConfig.Ignored, diags = types.SetValueFrom(ctx, types.StringType, queryLogConfig.Ignored)
+	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// overwrite config with refreshed state
 	state.Filtering, _ = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)
 	state.SafeBrowsing, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateSafeBrowsingStatus)
 	state.ParentalControl, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateParentalStatus)
 	state.SafeSearch, _ = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchConfig)
+	state.QueryLog, _ = types.ObjectValueFrom(ctx, queryLogConfigModel{}.attrTypes(), &stateQueryLogConfig)
 
 	// set refreshed state
 	diags = resp.State.Set(ctx, &state)
@@ -384,15 +482,16 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 	var planSafeBrowsing enabledModel
 	var planParentalControl enabledModel
 	var planSafeSearch safeSearchModel
+	var planQueryLogConfig queryLogConfigModel
 	_ = plan.Filtering.As(ctx, &planFiltering, basetypes.ObjectAsOptions{})
 	_ = plan.SafeBrowsing.As(ctx, &planSafeBrowsing, basetypes.ObjectAsOptions{})
 	_ = plan.ParentalControl.As(ctx, &planParentalControl, basetypes.ObjectAsOptions{})
 	_ = plan.SafeSearch.As(ctx, &planSafeSearch, basetypes.ObjectAsOptions{})
+	_ = plan.QueryLog.As(ctx, &planQueryLogConfig, basetypes.ObjectAsOptions{})
 
-	// generate API request body from plan
+	// instantiate empty object for storing plan data
 	var filteringConfig adguard.FilterConfig
-	var safeSearchConfig adguard.SafeSearchConfig
-
+	// populate filtering config from plan
 	filteringConfig.Enabled = planFiltering.Enabled.ValueBool()
 	filteringConfig.Interval = uint(planFiltering.UpdateInterval.ValueInt64())
 
@@ -426,6 +525,8 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
+	// instantiate empty object for storing plan data
+	var safeSearchConfig adguard.SafeSearchConfig
 	// populate search config using plan
 	safeSearchConfig.Enabled = planSafeSearch.Enabled.ValueBool()
 	if len(planSafeSearch.Services.Elements()) > 0 {
@@ -446,8 +547,33 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 	_, err = r.adg.SetSafeSearchConfig(safeSearchConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error Creating Config",
-			"Could not create config, unexpected error: "+err.Error(),
+			"Error Updating AdGuard Home Config",
+			"Could not update config, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// instantiate empty object for storing plan data
+	var queryLogConfig adguard.GetQueryLogConfigResponse
+	// populate Query Log Config from plan
+	queryLogConfig.Enabled = planQueryLogConfig.Enabled.ValueBool()
+	queryLogConfig.Interval = uint(planQueryLogConfig.Interval.ValueInt64() * 3600 * 1000)
+	queryLogConfig.AnonymizeClientIp = planQueryLogConfig.AnonymizeClientIp.ValueBool()
+
+	if len(planQueryLogConfig.Ignored.Elements()) > 0 {
+		diags = planQueryLogConfig.Ignored.ElementsAs(ctx, &queryLogConfig.Ignored, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
+	// set query log config using plan
+	_, err = r.adg.SetQueryLogConfig(queryLogConfig)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Updating AdGuard Home Config",
+			"Could not update config, unexpected error: "+err.Error(),
 		)
 		return
 	}
@@ -467,10 +593,8 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	// there is no "real" delete for the configuration, so this means "restore defaults"
 
-	var filterConfig adguard.FilterConfig
-	var safeSearchConfig adguard.SafeSearchConfig
-
 	// populate filtering config with default values
+	var filterConfig adguard.FilterConfig
 	filterConfig.Enabled = true
 	filterConfig.Interval = 24
 
@@ -504,7 +628,8 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
-	// set safe search to defaults
+	// populate safe search with default values
+	var safeSearchConfig adguard.SafeSearchConfig
 	safeSearchConfig.Enabled = false
 	safeSearchConfig.Bing = true
 	safeSearchConfig.Duckduckgo = true
@@ -513,7 +638,25 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	safeSearchConfig.Yandex = true
 	safeSearchConfig.Youtube = true
 
+	// set safe search to defaults
 	_, err = r.adg.SetSafeSearchConfig(safeSearchConfig)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Deleting AdGuard Home Config",
+			"Could not update config, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// populate query log config with default values
+	var queryLogConfig adguard.GetQueryLogConfigResponse
+	queryLogConfig.Enabled = true
+	queryLogConfig.Interval = 90 * 86400 * 1000
+	queryLogConfig.AnonymizeClientIp = false
+	queryLogConfig.Ignored = []string{}
+
+	// set query log config to defaults
+	_, err = r.adg.SetQueryLogConfig(queryLogConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
