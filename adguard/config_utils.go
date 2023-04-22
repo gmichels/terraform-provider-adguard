@@ -1,9 +1,11 @@
 package adguard
 
 import (
+	"context"
 	"reflect"
 	"strings"
 
+	"github.com/gmichels/adguard-client-go"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -107,6 +109,89 @@ func (o queryLogConfigModel) defaultObject() map[string]attr.Value {
 		"anonymize_client_ip": types.BoolValue(false),
 		"ignored":             basetypes.NewSetNull(types.StringType),
 	}
+}
+
+func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan configResourceModel) (configResourceModel, error) {
+	// unpack nested attributes from plan
+	var planFiltering filteringModel
+	var planSafeBrowsing enabledModel
+	var planParentalControl enabledModel
+	var planSafeSearch safeSearchModel
+	var planQueryLogConfig queryLogConfigModel
+	_ = plan.Filtering.As(ctx, &planFiltering, basetypes.ObjectAsOptions{})
+	_ = plan.SafeBrowsing.As(ctx, &planSafeBrowsing, basetypes.ObjectAsOptions{})
+	_ = plan.ParentalControl.As(ctx, &planParentalControl, basetypes.ObjectAsOptions{})
+	_ = plan.SafeSearch.As(ctx, &planSafeSearch, basetypes.ObjectAsOptions{})
+	_ = plan.QueryLog.As(ctx, &planQueryLogConfig, basetypes.ObjectAsOptions{})
+
+	// instantiate empty object for storing plan data
+	var filteringConfig adguard.FilterConfig
+	// populate filtering config from plan
+	filteringConfig.Enabled = planFiltering.Enabled.ValueBool()
+	filteringConfig.Interval = uint(planFiltering.UpdateInterval.ValueInt64())
+
+	// set filtering config using plan
+	_, err := r.adg.ConfigureFiltering(filteringConfig)
+	if err != nil {
+		return plan, err
+	}
+
+	// set safe browsing status using plan
+	err = r.adg.SetSafeBrowsingStatus(planSafeBrowsing.Enabled.ValueBool())
+	if err != nil {
+		return plan, err
+	}
+
+	// set parental control status using plan
+	err = r.adg.SetParentalStatus(planParentalControl.Enabled.ValueBool())
+	if err != nil {
+		return plan, err
+	}
+
+	// instantiate empty object for storing plan data
+	var safeSearchConfig adguard.SafeSearchConfig
+	// populate search config using plan
+	safeSearchConfig.Enabled = planSafeSearch.Enabled.ValueBool()
+	if len(planSafeSearch.Services.Elements()) > 0 {
+		var safeSearchServicesEnabled []string
+		_ = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
+		// diags = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
+		// resp.Diagnostics.Append(diags...)
+		// if resp.Diagnostics.HasError() {
+		// 	return
+		// }
+
+		// use reflection to set each safeSearchConfig service value dynamically
+		v := reflect.ValueOf(&safeSearchConfig).Elem()
+		t := v.Type()
+		setSafeSearchConfigServices(v, t, safeSearchServicesEnabled)
+	}
+
+	// set safe search config using plan
+	_, err = r.adg.SetSafeSearchConfig(safeSearchConfig)
+	if err != nil {
+		return plan, err
+	}
+
+	// instantiate empty object for storing plan data
+	var queryLogConfig adguard.GetQueryLogConfigResponse
+	// populate Query Log Config from plan
+	queryLogConfig.Enabled = planQueryLogConfig.Enabled.ValueBool()
+	queryLogConfig.Interval = uint(planQueryLogConfig.Interval.ValueInt64() * 3600 * 1000)
+	queryLogConfig.AnonymizeClientIp = planQueryLogConfig.AnonymizeClientIp.ValueBool()
+
+	if len(planQueryLogConfig.Ignored.Elements()) > 0 {
+		_ = planQueryLogConfig.Ignored.ElementsAs(ctx, &queryLogConfig.Ignored, false)
+	}
+
+	// set query log config using plan
+	_, err = r.adg.SetQueryLogConfig(queryLogConfig)
+	if err != nil {
+		return plan, err
+	}
+
+	// return the modified plan
+	return plan, nil
 }
 
 // mapSafeSearchConfigFields - will return the list of safe search services that are enabled

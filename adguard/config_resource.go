@@ -22,7 +22,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // ensure the implementation satisfies the expected interfaces
@@ -243,103 +242,12 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	// unpack nested attributes from plan
-	var planFiltering filteringModel
-	var planSafeBrowsing enabledModel
-	var planParentalControl enabledModel
-	var planSafeSearch safeSearchModel
-	var planQueryLogConfig queryLogConfigModel
-	_ = plan.Filtering.As(ctx, &planFiltering, basetypes.ObjectAsOptions{})
-	_ = plan.SafeBrowsing.As(ctx, &planSafeBrowsing, basetypes.ObjectAsOptions{})
-	_ = plan.ParentalControl.As(ctx, &planParentalControl, basetypes.ObjectAsOptions{})
-	_ = plan.SafeSearch.As(ctx, &planSafeSearch, basetypes.ObjectAsOptions{})
-	_ = plan.QueryLog.As(ctx, &planQueryLogConfig, basetypes.ObjectAsOptions{})
-
-	// instantiate empty object for storing plan data
-	var filteringConfig adguard.FilterConfig
-	// populate filtering config from plan
-	filteringConfig.Enabled = planFiltering.Enabled.ValueBool()
-	filteringConfig.Interval = uint(planFiltering.UpdateInterval.ValueInt64())
-
-	// set filtering config using plan
-	_, err := r.adg.ConfigureFiltering(filteringConfig)
+	// defer to common function to create or update the resource
+	plan, err := r.CreateOrUpdateConfigResource(ctx, plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error Creating Config",
-			"Could not create config, unexpected error: "+err.Error(),
-		)
-		return
-	}
-
-	// set safe browsing status using plan
-	err = r.adg.SetSafeBrowsingStatus(planSafeBrowsing.Enabled.ValueBool())
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Creating Config",
-			"Could not create config, unexpected error: "+err.Error(),
-		)
-		return
-	}
-
-	// set parental control status using plan
-	err = r.adg.SetParentalStatus(planParentalControl.Enabled.ValueBool())
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Creating Config",
-			"Could not create config, unexpected error: "+err.Error(),
-		)
-		return
-	}
-
-	// instantiate empty object for storing plan data
-	var safeSearchConfig adguard.SafeSearchConfig
-	// populate search config using plan
-	safeSearchConfig.Enabled = planSafeSearch.Enabled.ValueBool()
-	if len(planSafeSearch.Services.Elements()) > 0 {
-		var safeSearchServicesEnabled []string
-		diags = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
-		// use reflection to set each safeSearchConfig service value dynamically
-		v := reflect.ValueOf(&safeSearchConfig).Elem()
-		t := v.Type()
-		setSafeSearchConfigServices(v, t, safeSearchServicesEnabled)
-	}
-
-	// set safe search config using plan
-	_, err = r.adg.SetSafeSearchConfig(safeSearchConfig)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Creating Config",
-			"Could not create config, unexpected error: "+err.Error(),
-		)
-		return
-	}
-
-	// instantiate empty object for storing plan data
-	var queryLogConfig adguard.GetQueryLogConfigResponse
-	// populate Query Log Config from plan
-	queryLogConfig.Enabled = planQueryLogConfig.Enabled.ValueBool()
-	queryLogConfig.Interval = uint(planQueryLogConfig.Interval.ValueInt64() * 3600 * 1000)
-	queryLogConfig.AnonymizeClientIp = planQueryLogConfig.AnonymizeClientIp.ValueBool()
-
-	if len(planQueryLogConfig.Ignored.Elements()) > 0 {
-		diags = planQueryLogConfig.Ignored.ElementsAs(ctx, &queryLogConfig.Ignored, false)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-
-	// set query log config using plan
-	_, err = r.adg.SetQueryLogConfig(queryLogConfig)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Creating Config",
-			"Could not create config, unexpected error: "+err.Error(),
+			"Error Creating AdGuard Home Config",
+			"Could not create AdGuard Home config: "+err.Error(),
 		)
 		return
 	}
@@ -477,103 +385,12 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	// unpack nested attributes from plan
-	var planFiltering filteringModel
-	var planSafeBrowsing enabledModel
-	var planParentalControl enabledModel
-	var planSafeSearch safeSearchModel
-	var planQueryLogConfig queryLogConfigModel
-	_ = plan.Filtering.As(ctx, &planFiltering, basetypes.ObjectAsOptions{})
-	_ = plan.SafeBrowsing.As(ctx, &planSafeBrowsing, basetypes.ObjectAsOptions{})
-	_ = plan.ParentalControl.As(ctx, &planParentalControl, basetypes.ObjectAsOptions{})
-	_ = plan.SafeSearch.As(ctx, &planSafeSearch, basetypes.ObjectAsOptions{})
-	_ = plan.QueryLog.As(ctx, &planQueryLogConfig, basetypes.ObjectAsOptions{})
-
-	// instantiate empty object for storing plan data
-	var filteringConfig adguard.FilterConfig
-	// populate filtering config from plan
-	filteringConfig.Enabled = planFiltering.Enabled.ValueBool()
-	filteringConfig.Interval = uint(planFiltering.UpdateInterval.ValueInt64())
-
-	// update existing filtering config
-	_, err := r.adg.ConfigureFiltering(filteringConfig)
+	// defer to common function to create or update the resource
+	plan, err := r.CreateOrUpdateConfigResource(ctx, plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error Updating AdGuard Home Config",
-			"Could not update config, unexpected error: "+err.Error(),
-		)
-		return
-	}
-
-	// update safe browsing status
-	err = r.adg.SetSafeBrowsingStatus(planSafeBrowsing.Enabled.ValueBool())
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Updating AdGuard Home Config",
-			"Could not update config, unexpected error: "+err.Error(),
-		)
-		return
-	}
-
-	// update parental status
-	err = r.adg.SetParentalStatus(planParentalControl.Enabled.ValueBool())
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Updating AdGuard Home Config",
-			"Could not update config, unexpected error: "+err.Error(),
-		)
-		return
-	}
-
-	// instantiate empty object for storing plan data
-	var safeSearchConfig adguard.SafeSearchConfig
-	// populate search config using plan
-	safeSearchConfig.Enabled = planSafeSearch.Enabled.ValueBool()
-	if len(planSafeSearch.Services.Elements()) > 0 {
-		var safeSearchServicesEnabled []string
-		diags = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
-		// use reflection to set each safeSearchConfig service value dynamically
-		v := reflect.ValueOf(&safeSearchConfig).Elem()
-		t := v.Type()
-		setSafeSearchConfigServices(v, t, safeSearchServicesEnabled)
-	}
-
-	// set safe search config using plan
-	_, err = r.adg.SetSafeSearchConfig(safeSearchConfig)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Updating AdGuard Home Config",
-			"Could not update config, unexpected error: "+err.Error(),
-		)
-		return
-	}
-
-	// instantiate empty object for storing plan data
-	var queryLogConfig adguard.GetQueryLogConfigResponse
-	// populate Query Log Config from plan
-	queryLogConfig.Enabled = planQueryLogConfig.Enabled.ValueBool()
-	queryLogConfig.Interval = uint(planQueryLogConfig.Interval.ValueInt64() * 3600 * 1000)
-	queryLogConfig.AnonymizeClientIp = planQueryLogConfig.AnonymizeClientIp.ValueBool()
-
-	if len(planQueryLogConfig.Ignored.Elements()) > 0 {
-		diags = planQueryLogConfig.Ignored.ElementsAs(ctx, &queryLogConfig.Ignored, false)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-
-	// set query log config using plan
-	_, err = r.adg.SetQueryLogConfig(queryLogConfig)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Updating AdGuard Home Config",
-			"Could not update config, unexpected error: "+err.Error(),
+			"Error Creating AdGuard Home Config",
+			"Could not create AdGuard Home config: "+err.Error(),
 		)
 		return
 	}
