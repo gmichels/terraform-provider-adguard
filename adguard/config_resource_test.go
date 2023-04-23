@@ -27,6 +27,11 @@ resource "adguard_config" "test" {
 		anonymize_client_ip = true
 		ignored             = ["test2.com", "example2.com"]
 	}
+	stats = {
+		enabled  = false
+		interval = 2
+		ignored  = ["test3.net", "example4.com"]
+	}
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -43,6 +48,11 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.ignored.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.ignored.0", "example2.com"),
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.ignored.1", "test2.com"),
+					resource.TestCheckResourceAttr("adguard_config.test", "stats.enabled", "false"),
+					resource.TestCheckResourceAttr("adguard_config.test", "stats.interval", "2"),
+					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.#", "2"),
+					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.0", "example4.com"),
+					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.1", "test3.net"),
 					// Verify dynamic values have any value set in the state.
 					resource.TestCheckResourceAttrSet("adguard_config.test", "id"),
 					resource.TestCheckResourceAttrSet("adguard_config.test", "last_updated"),
@@ -65,8 +75,10 @@ resource "adguard_config" "test" {
 		update_interval = 72
 	}
 	querylog = {
-		enabled = true
 		ignored = ["test2.com", "example2.com", "abc2.com"]
+	}
+	stats = {
+		ignored  = ["test9.com", "example15.com", "abc5.com"]
 	}
 }
 `,
@@ -84,6 +96,12 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.ignored.0", "abc2.com"),
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.ignored.1", "example2.com"),
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.ignored.2", "test2.com"),
+					resource.TestCheckResourceAttr("adguard_config.test", "stats.enabled", "true"),
+					resource.TestCheckResourceAttr("adguard_config.test", "stats.interval", "24"),
+					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.#", "3"),
+					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.0", "abc5.com"),
+					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.1", "example15.com"),
+					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.2", "test9.com"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

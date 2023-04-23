@@ -45,6 +45,7 @@ type configResourceModel struct {
 	ParentalControl types.Object `tfsdk:"parental_control"`
 	SafeSearch      types.Object `tfsdk:"safesearch"`
 	QueryLog        types.Object `tfsdk:"querylog"`
+	Stats           types.Object `tfsdk:"stats"`
 }
 
 // NewConfigResource is a helper function to simplify the provider implementation
@@ -219,6 +220,48 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					},
 				},
 			},
+			"stats": schema.SingleNestedAttribute{
+				Computed: true,
+				Optional: true,
+				Default: objectdefault.StaticValue(types.ObjectValueMust(
+					queryLogConfigModel{}.attrTypes(), queryLogConfigModel{}.defaultObject()),
+				),
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: "Whether server statistics are enabled. Defaults to `true`",
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(true),
+					},
+					"interval": schema.Int64Attribute{
+						Description: "Time period for server statistics rotation, in hours. Defaults to `24` (1 day)",
+						Computed:    true,
+						Optional:    true,
+						Default:     int64default.StaticInt64(24),
+					},
+					"ignored": schema.SetAttribute{
+						Description: "List of host names which should not be counted in the server statistics",
+						ElementType: types.StringType,
+						Computed:    true,
+						Optional:    true,
+						Validators: []validator.Set{
+							setvalidator.AlsoRequires(path.Expressions{
+								path.MatchRelative().AtParent().AtName("enabled"),
+							}...),
+							setvalidator.SizeAtLeast(1),
+							setvalidator.ValueStringsAre(
+								stringvalidator.RegexMatches(
+									regexp.MustCompile(`^[a-z0-9.-_]+$`),
+									"must be a valid domain name",
+								),
+							),
+						},
+						Default: setdefault.StaticValue(
+							types.SetNull(types.StringType),
+						),
+					},
+				},
+			},
 		},
 	}
 }
@@ -284,7 +327,7 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 		)
 		return
 	}
-	// map filter config to state
+	// map filtering config to state
 	var stateFilteringConfig filteringModel
 	stateFilteringConfig.Enabled = types.BoolValue(filteringConfig.Enabled)
 	stateFilteringConfig.UpdateInterval = types.Int64Value(int64(filteringConfig.Interval))
@@ -302,7 +345,7 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 	var stateSafeBrowsingStatus enabledModel
 	stateSafeBrowsingStatus.Enabled = types.BoolValue(*safeBrowsingStatus)
 
-	// get refreshed safe parental control status from AdGuard Home
+	// get refreshed parental control status from AdGuard Home
 	parentalStatus, err := r.adg.GetParentalStatus()
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -340,7 +383,7 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	// retrieve Query Log Config info
+	// retrieve query log config info
 	queryLogConfig, err := r.adg.GetQueryLogConfig()
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -360,12 +403,32 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
+	// retrieve stats config info
+	statsConfig, err := r.adg.GetStatsConfig()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Reading AdGuard Home Config",
+			"Could not read AdGuard Home config ID "+state.ID.ValueString()+": "+err.Error(),
+		)
+		return
+	}
+	var stateStatsConfig statsConfigModel
+	stateStatsConfig.Enabled = types.BoolValue(statsConfig.Enabled)
+	stateStatsConfig.Interval = types.Int64Value(int64(statsConfig.Interval / 1000 / 3600))
+	stateStatsConfig.Ignored, diags = types.SetValueFrom(ctx, types.StringType, statsConfig.Ignored)
+	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// overwrite config with refreshed state
 	state.Filtering, _ = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)
 	state.SafeBrowsing, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateSafeBrowsingStatus)
 	state.ParentalControl, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateParentalStatus)
 	state.SafeSearch, _ = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchConfig)
 	state.QueryLog, _ = types.ObjectValueFrom(ctx, queryLogConfigModel{}.attrTypes(), &stateQueryLogConfig)
+	state.Stats, _ = types.ObjectValueFrom(ctx, statsConfigModel{}.attrTypes(), &stateStatsConfig)
 
 	// set refreshed state
 	diags = resp.State.Set(ctx, &state)
@@ -478,6 +541,22 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
 			"Could not update config, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// populate server statistics config with default values
+	var statsConfig adguard.GetStatsConfigResponse
+	statsConfig.Enabled = true
+	statsConfig.Interval = 1 * 86400 * 1000
+	statsConfig.Ignored = []string{}
+
+	// set server statistics to defaults
+	_, err = r.adg.SetStatsConfig(statsConfig)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Deleting Server Statistics Config",
+			"Could not delete server statistics configuration, unexpected error: "+err.Error(),
 		)
 		return
 	}

@@ -143,11 +143,13 @@ func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan 
 	var planParentalControl enabledModel
 	var planSafeSearch safeSearchModel
 	var planQueryLogConfig queryLogConfigModel
+	var planStatsConfig statsConfigModel
 	_ = plan.Filtering.As(ctx, &planFiltering, basetypes.ObjectAsOptions{})
 	_ = plan.SafeBrowsing.As(ctx, &planSafeBrowsing, basetypes.ObjectAsOptions{})
 	_ = plan.ParentalControl.As(ctx, &planParentalControl, basetypes.ObjectAsOptions{})
 	_ = plan.SafeSearch.As(ctx, &planSafeSearch, basetypes.ObjectAsOptions{})
 	_ = plan.QueryLog.As(ctx, &planQueryLogConfig, basetypes.ObjectAsOptions{})
+	_ = plan.Stats.As(ctx, &planStatsConfig, basetypes.ObjectAsOptions{})
 
 	// instantiate empty object for storing plan data
 	var filteringConfig adguard.FilterConfig
@@ -175,11 +177,12 @@ func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan 
 
 	// instantiate empty object for storing plan data
 	var safeSearchConfig adguard.SafeSearchConfig
-	// populate search config using plan
+	// populate safe search config using plan
 	safeSearchConfig.Enabled = planSafeSearch.Enabled.ValueBool()
 	if len(planSafeSearch.Services.Elements()) > 0 {
 		var safeSearchServicesEnabled []string
 		_ = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
+		// TODO
 		// diags = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
 		// resp.Diagnostics.Append(diags...)
 		// if resp.Diagnostics.HasError() {
@@ -200,7 +203,7 @@ func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan 
 
 	// instantiate empty object for storing plan data
 	var queryLogConfig adguard.GetQueryLogConfigResponse
-	// populate Query Log Config from plan
+	// populate query log config from plan
 	queryLogConfig.Enabled = planQueryLogConfig.Enabled.ValueBool()
 	queryLogConfig.Interval = uint(planQueryLogConfig.Interval.ValueInt64() * 3600 * 1000)
 	queryLogConfig.AnonymizeClientIp = planQueryLogConfig.AnonymizeClientIp.ValueBool()
@@ -211,6 +214,22 @@ func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan 
 
 	// set query log config using plan
 	_, err = r.adg.SetQueryLogConfig(queryLogConfig)
+	if err != nil {
+		return plan, err
+	}
+
+	// instantiate empty object for storing plan data
+	var statsConfig adguard.GetStatsConfigResponse
+	// populate stats from plan
+	statsConfig.Enabled = planStatsConfig.Enabled.ValueBool()
+	statsConfig.Interval = uint(planStatsConfig.Interval.ValueInt64() * 3600 * 1000)
+
+	if len(planStatsConfig.Ignored.Elements()) > 0 {
+		_ = planStatsConfig.Ignored.ElementsAs(ctx, &statsConfig.Ignored, false)
+	}
+
+	// set stats config using plan
+	_, err = r.adg.SetStatsConfig(statsConfig)
 	if err != nil {
 		return plan, err
 	}
