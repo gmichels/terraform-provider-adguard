@@ -117,8 +117,11 @@ querylog:
   enabled: true
   file_enabled: true
 statistics:
-  ignored: []
-  interval: 24h
+  ignored:
+    - domain1.com
+    - ignored.net
+    - test3.zyx
+  interval: 8h
   enabled: true
 filters:
   - enabled: true

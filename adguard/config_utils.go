@@ -111,6 +111,31 @@ func (o queryLogConfigModel) defaultObject() map[string]attr.Value {
 	}
 }
 
+// statsConfigModel maps stats configuration schema data
+type statsConfigModel struct {
+	Enabled  types.Bool  `tfsdk:"enabled"`
+	Interval types.Int64 `tfsdk:"interval"`
+	Ignored  types.Set   `tfsdk:"ignored"`
+}
+
+// attrTypes - return attribute types for this model
+func (o statsConfigModel) attrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"enabled":  types.BoolType,
+		"interval": types.Int64Type,
+		"ignored":  types.SetType{ElemType: types.StringType},
+	}
+}
+
+// defaultObject - return default object for this model
+func (o statsConfigModel) defaultObject() map[string]attr.Value {
+	return map[string]attr.Value{
+		"enabled":  types.BoolValue(true),
+		"interval": types.Int64Value(1 * 24),
+		"ignored":  basetypes.NewSetNull(types.StringType),
+	}
+}
+
 func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan configResourceModel) (configResourceModel, error) {
 	// unpack nested attributes from plan
 	var planFiltering filteringModel

@@ -29,6 +29,12 @@ func TestAccConfigDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr("data.adguard_config.test", "querylog.ignored.0", "abc.com"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "querylog.ignored.1", "example.com"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "querylog.ignored.2", "test.com"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "stats.enabled", "true"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "stats.interval", "8"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "stats.ignored.#", "3"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "stats.ignored.0", "domain1.com"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "stats.ignored.1", "ignored.net"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "stats.ignored.2", "test3.zyx"),
 					// Verify placeholder id attribute
 					resource.TestCheckResourceAttr("data.adguard_config.test", "id", "placeholder"),
 				),

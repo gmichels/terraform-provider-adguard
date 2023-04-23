@@ -29,6 +29,7 @@ type configDataModel struct {
 	ParentalControl types.Object `tfsdk:"parental"`
 	SafeSearch      types.Object `tfsdk:"safesearch"`
 	QueryLog        types.Object `tfsdk:"querylog"`
+	Stats           types.Object `tfsdk:"stats"`
 }
 
 // NewConfigDataSource is a helper function to simplify the provider implementation
@@ -116,6 +117,24 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 					},
 				},
 			},
+			"stats": schema.SingleNestedAttribute{
+				Computed: true,
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: "Whether server statistics enabled",
+						Computed:    true,
+					},
+					"interval": schema.Int64Attribute{
+						Description: "Time period for the server statistics rotation, in hours",
+						Computed:    true,
+					},
+					"ignored": schema.SetAttribute{
+						Description: "List of host names which should not be counted in the server statistics",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+				},
+			},
 		},
 	}
 }
@@ -193,7 +212,7 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	// retrieve Query Log Config info
+	// retrieve query log config info
 	queryLogConfig, err := d.adg.GetQueryLogConfig()
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -212,12 +231,31 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
+	// retrieve server statistics config info
+	statsConfig, err := d.adg.GetStatsConfig()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	var stateStatsConfig statsConfigModel
+	stateStatsConfig.Enabled = types.BoolValue(statsConfig.Enabled)
+	stateStatsConfig.Interval = types.Int64Value(int64(statsConfig.Interval / 3600 / 1000))
+	stateStatsConfig.Ignored, diags = types.SetValueFrom(ctx, types.StringType, statsConfig.Ignored)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// map response body to model
 	state.Filtering, _ = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)
 	state.SafeBrowsing, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateSafeBrowsingStatus)
 	state.ParentalControl, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateParentalStatus)
 	state.SafeSearch, _ = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchConfig)
 	state.QueryLog, _ = types.ObjectValueFrom(ctx, queryLogConfigModel{}.attrTypes(), &stateQueryLogConfig)
+	state.Stats, _ = types.ObjectValueFrom(ctx, statsConfigModel{}.attrTypes(), &stateStatsConfig)
 
 	// set ID placeholder for testing
 	state.ID = types.StringValue("placeholder")
