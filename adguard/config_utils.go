@@ -131,7 +131,7 @@ func (o statsConfigModel) attrTypes() map[string]attr.Type {
 func (o statsConfigModel) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
 		"enabled":  types.BoolValue(true),
-		"interval": types.Int64Value(1 * 24),
+		"interval": types.Int64Value(24),
 		"ignored":  basetypes.NewSetNull(types.StringType),
 	}
 }
