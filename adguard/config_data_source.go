@@ -30,6 +30,7 @@ type configDataModel struct {
 	SafeSearch      types.Object `tfsdk:"safesearch"`
 	QueryLog        types.Object `tfsdk:"querylog"`
 	Stats           types.Object `tfsdk:"stats"`
+	BlockedServices types.Set    `tfsdk:"blocked_services"`
 }
 
 // NewConfigDataSource is a helper function to simplify the provider implementation
@@ -134,6 +135,11 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 						Computed:    true,
 					},
 				},
+			},
+			"blocked_services": schema.SetAttribute{
+				Description: "List of services that are blocked globally",
+				ElementType: types.StringType,
+				Computed:    true,
 			},
 		},
 	}
@@ -249,6 +255,16 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
+	// get refreshed blocked services from AdGuard Home
+	blockedServices, err := d.adg.GetBlockedServices()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+
 	// map response body to model
 	state.Filtering, _ = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)
 	state.SafeBrowsing, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateSafeBrowsingStatus)
@@ -256,6 +272,11 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	state.SafeSearch, _ = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchConfig)
 	state.QueryLog, _ = types.ObjectValueFrom(ctx, queryLogConfigModel{}.attrTypes(), &stateQueryLogConfig)
 	state.Stats, _ = types.ObjectValueFrom(ctx, statsConfigModel{}.attrTypes(), &stateStatsConfig)
+	state.BlockedServices, diags = types.SetValueFrom(ctx, types.StringType, blockedServices)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// set ID placeholder for testing
 	state.ID = types.StringValue("placeholder")
