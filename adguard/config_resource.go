@@ -587,7 +587,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// set blocked services to defaults
-	_, err = r.adg.SetBlockedServices(r.DefaultBlockedServicesList())
+	_, err = r.adg.SetBlockedServices(make([]string, 0))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting Server Statistics Config",
