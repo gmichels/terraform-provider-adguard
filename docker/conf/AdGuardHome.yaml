@@ -83,7 +83,10 @@ dns:
   rewrites:
     - domain: example.org
       answer: 1.2.3.4
-  blocked_services: []
+  blocked_services:
+    - facebook
+    - instagram
+    - snapchat
   upstream_timeout: 10s
   private_networks: []
   use_private_ptr_resolvers: true
