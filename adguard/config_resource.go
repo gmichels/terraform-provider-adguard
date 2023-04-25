@@ -146,9 +146,6 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Computed:    true,
 						Optional:    true,
 						Validators: []validator.Set{
-							setvalidator.AlsoRequires(path.Expressions{
-								path.MatchRelative().AtParent().AtName("enabled"),
-							}...),
 							setvalidator.SizeAtLeast(1),
 							setvalidator.ValueStringsAre(
 								stringvalidator.OneOf(
@@ -203,9 +200,6 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Computed:    true,
 						Optional:    true,
 						Validators: []validator.Set{
-							setvalidator.AlsoRequires(path.Expressions{
-								path.MatchRelative().AtParent().AtName("enabled"),
-							}...),
 							setvalidator.SizeAtLeast(1),
 							setvalidator.ValueStringsAre(
 								stringvalidator.RegexMatches(
@@ -245,9 +239,6 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Computed:    true,
 						Optional:    true,
 						Validators: []validator.Set{
-							setvalidator.AlsoRequires(path.Expressions{
-								path.MatchRelative().AtParent().AtName("enabled"),
-							}...),
 							setvalidator.SizeAtLeast(1),
 							setvalidator.ValueStringsAre(
 								stringvalidator.RegexMatches(
