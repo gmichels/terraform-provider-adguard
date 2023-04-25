@@ -234,6 +234,19 @@ func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan 
 		return plan, err
 	}
 
+	// instantiate empty object for storing plan data
+	var blockedServices []string
+	// populate blocked services from plan
+	if len(plan.BlockedServices.Elements()) > 0 {
+		_ = plan.BlockedServices.ElementsAs(ctx, &blockedServices, false)
+	}
+
+	// set blocked services using plan
+	_, err = r.adg.SetBlockedServices(blockedServices)
+	if err != nil {
+		return plan, err
+	}
+
 	// return the modified plan
 	return plan, nil
 }
@@ -264,4 +277,19 @@ func setSafeSearchConfigServices(v reflect.Value, t reflect.Type, services []str
 			v.Field(i).Set(reflect.ValueOf(true))
 		}
 	}
+}
+
+func (r *configResource) DefaultBlockedServicesList() []string {
+	// retrieve the list of all possible services to be blocked
+	blockedServicesList, err := r.adg.GetBlockedServicesList()
+	if err != nil {
+		return nil
+	}
+
+	// create array with ids of the services
+	var services []string
+	for _, service := range blockedServicesList.BlockedServices {
+		services = append(services, service.Id)
+	}
+	return services
 }

@@ -46,6 +46,7 @@ type configResourceModel struct {
 	SafeSearch      types.Object `tfsdk:"safesearch"`
 	QueryLog        types.Object `tfsdk:"querylog"`
 	Stats           types.Object `tfsdk:"stats"`
+	BlockedServices types.Set    `tfsdk:"blocked_services"`
 }
 
 // NewConfigResource is a helper function to simplify the provider implementation
@@ -149,7 +150,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 							setvalidator.SizeAtLeast(1),
 							setvalidator.ValueStringsAre(
 								stringvalidator.OneOf(
-									"bing", "duckduckgo", "google", "pixabay", "yandex", "youtube",
+									DEFAULT_SAFESEARCH_SERVICES...,
 								),
 							),
 						},
@@ -157,6 +158,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 							types.SetValueMust(
 								types.StringType,
 								[]attr.Value{
+									// TODO
 									types.StringValue("bing"),
 									types.StringValue("duckduckgo"),
 									types.StringValue("google"),
@@ -252,6 +254,23 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						),
 					},
 				},
+			},
+			"blocked_services": schema.SetAttribute{
+				Description: "List of services to be blocked globally",
+				ElementType: types.StringType,
+				Computed:    true,
+				Optional:    true,
+				Validators: []validator.Set{
+					setvalidator.SizeAtLeast(1),
+					setvalidator.ValueStringsAre(
+						stringvalidator.OneOf(
+							r.DefaultBlockedServicesList()...,
+						),
+					),
+				},
+				Default: setdefault.StaticValue(
+					types.SetNull(types.StringType),
+				),
 			},
 		},
 	}
@@ -413,6 +432,16 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
+	// get refreshed blocked services from AdGuard Home
+	blockedServices, err := r.adg.GetBlockedServices()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Reading AdGuard Home Config",
+			"Could not read AdGuard Home config ID "+state.ID.ValueString()+": "+err.Error(),
+		)
+		return
+	}
+
 	// overwrite config with refreshed state
 	state.Filtering, _ = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)
 	state.SafeBrowsing, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateSafeBrowsingStatus)
@@ -420,6 +449,11 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 	state.SafeSearch, _ = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchConfig)
 	state.QueryLog, _ = types.ObjectValueFrom(ctx, queryLogConfigModel{}.attrTypes(), &stateQueryLogConfig)
 	state.Stats, _ = types.ObjectValueFrom(ctx, statsConfigModel{}.attrTypes(), &stateStatsConfig)
+	state.BlockedServices, diags = types.SetValueFrom(ctx, types.StringType, blockedServices)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// set refreshed state
 	diags = resp.State.Set(ctx, &state)
@@ -544,6 +578,16 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	// set server statistics to defaults
 	_, err = r.adg.SetStatsConfig(statsConfig)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Deleting Server Statistics Config",
+			"Could not delete server statistics configuration, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// set blocked services to defaults
+	_, err = r.adg.SetBlockedServices(r.DefaultBlockedServicesList())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting Server Statistics Config",
