@@ -224,7 +224,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Computed: true,
 				Optional: true,
 				Default: objectdefault.StaticValue(types.ObjectValueMust(
-					queryLogConfigModel{}.attrTypes(), queryLogConfigModel{}.defaultObject()),
+					statsConfigModel{}.attrTypes(), statsConfigModel{}.defaultObject()),
 				),
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
