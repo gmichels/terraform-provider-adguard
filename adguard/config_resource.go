@@ -149,9 +149,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Validators: []validator.Set{
 							setvalidator.SizeAtLeast(1),
 							setvalidator.ValueStringsAre(
-								stringvalidator.OneOf(
-									DEFAULT_SAFESEARCH_SERVICES...,
-								),
+								stringvalidator.OneOf(DEFAULT_SAFESEARCH_SERVICES...),
 							),
 						},
 						Default: setdefault.StaticValue(
@@ -263,9 +261,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Validators: []validator.Set{
 					setvalidator.SizeAtLeast(1),
 					setvalidator.ValueStringsAre(
-						stringvalidator.OneOf(
-							r.DefaultBlockedServicesList()...,
-						),
+						stringvalidator.OneOf(BLOCKED_SERVICES_ALL...),
 					),
 				},
 				Default: setdefault.StaticValue(

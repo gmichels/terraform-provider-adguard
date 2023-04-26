@@ -12,6 +12,12 @@ import (
 )
 
 var DEFAULT_SAFESEARCH_SERVICES = []string{"bing", "duckduckgo", "google", "pixabay", "yandex", "youtube"}
+var BLOCKED_SERVICES_ALL = []string{"9gag", "amazon", "bilibili", "cloudflare", "crunchyroll", "dailymotion", "deezer",
+	"discord", "disneyplus", "douban", "ebay", "epic_games", "facebook", "gog", "hbomax", "hulu", "icloud_private_relay", "imgur",
+	"instagram", "iqiyi", "kakaotalk", "lazada", "leagueoflegends", "line", "mail_ru", "mastodon", "minecraft", "netflix", "ok",
+	"onlyfans", "origin", "pinterest", "playstation", "qq", "rakuten_viki", "reddit", "riot_games", "roblox", "shopee", "skype", "snapchat",
+	"soundcloud", "spotify", "steam", "telegram", "tiktok", "tinder", "twitch", "twitter", "valorant", "viber", "vimeo", "vk", "voot", "wechat",
+	"weibo", "whatsapp", "xboxlive", "youtube", "zhihu"}
 
 // nested objects
 
@@ -277,19 +283,4 @@ func setSafeSearchConfigServices(v reflect.Value, t reflect.Type, services []str
 			v.Field(i).Set(reflect.ValueOf(true))
 		}
 	}
-}
-
-func (r *configResource) DefaultBlockedServicesList() []string {
-	// retrieve the list of all possible services to be blocked
-	blockedServicesList, err := r.adg.GetBlockedServicesList()
-	if err != nil {
-		return nil
-	}
-
-	// create array with ids of the services
-	var services []string
-	for _, service := range blockedServicesList.BlockedServices {
-		services = append(services, service.Id)
-	}
-	return services
 }
