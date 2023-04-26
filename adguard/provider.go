@@ -288,6 +288,7 @@ func (p *adguardProvider) DataSources(_ context.Context) []func() datasource.Dat
 		NewRewriteDataSource,
 		NewDnsConfigDataSource,
 		NewDnsAccessDataSource,
+		NewConfigDataSource,
 	}
 }
 
@@ -300,5 +301,6 @@ func (p *adguardProvider) Resources(_ context.Context) []func() resource.Resourc
 		NewRewriteResource,
 		NewDnsConfigResource,
 		NewDnsAccessResource,
+		NewConfigResource,
 	}
 }

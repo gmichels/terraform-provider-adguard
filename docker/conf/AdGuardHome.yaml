@@ -20,6 +20,7 @@ dns:
   blocking_ipv4: ""
   blocking_ipv6: ""
   blocked_response_ttl: 10
+  protection_disabled_until: null
   parental_block_host: family-block.dns.adguard.com
   safebrowsing_block_host: standard-block.dns.adguard.com
   ratelimit: 20
@@ -54,24 +55,38 @@ dns:
   bogus_nxdomain: []
   aaaa_disabled: false
   enable_dnssec: false
-  edns_client_subnet: false
+  edns_client_subnet:
+    custom_ip: ""
+    enabled: false
+    use_custom: false
   max_goroutines: 300
   handle_ddr: true
   ipset: []
   ipset_file: ""
+  bootstrap_prefer_ipv6: false
   filtering_enabled: true
   filters_update_interval: 24
   parental_enabled: false
-  safesearch_enabled: false
   safebrowsing_enabled: false
   safebrowsing_cache_size: 1048576
   safesearch_cache_size: 1048576
   parental_cache_size: 1048576
   cache_time: 30
+  safe_search:
+    enabled: false
+    bing: true
+    duckduckgo: true
+    google: true
+    pixabay: true
+    yandex: true
+    youtube: true
   rewrites:
     - domain: example.org
       answer: 1.2.3.4
-  blocked_services: []
+  blocked_services:
+    - facebook
+    - instagram
+    - snapchat
   upstream_timeout: 10s
   private_networks: []
   use_private_ptr_resolvers: true
@@ -96,15 +111,21 @@ tls:
   private_key_path: ""
   strict_sni_check: false
 querylog:
+  ignored:
+    - abc.com
+    - example.com
+    - test.com
+  interval: 4h
+  size_memory: 1000
   enabled: true
   file_enabled: true
-  interval: 2160h
-  size_memory: 1000
-  ignored: []
 statistics:
+  ignored:
+    - domain1.com
+    - ignored.net
+    - test3.zyx
+  interval: 8h
   enabled: true
-  interval: 1
-  ignored: []
 filters:
   - enabled: true
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt
@@ -152,7 +173,15 @@ clients:
     dhcp: true
     hosts: true
   persistent:
-    - name: Test Client Data Source
+    - safe_search:
+        enabled: false
+        bing: false
+        duckduckgo: false
+        google: false
+        pixabay: false
+        yandex: false
+        youtube: false
+      name: Test Client Data Source
       tags:
         - device_other
       ids:
@@ -162,9 +191,10 @@ clients:
       use_global_settings: true
       filtering_enabled: false
       parental_enabled: false
-      safesearch_enabled: false
       safebrowsing_enabled: false
       use_global_blocked_services: true
+      ignore_querylog: false
+      ignore_statistics: false
 log_file: ""
 log_max_backups: 0
 log_max_size: 100
@@ -176,4 +206,4 @@ os:
   group: ""
   user: ""
   rlimit_nofile: 0
-schema_version: 16
+schema_version: 20
