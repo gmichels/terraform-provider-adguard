@@ -205,7 +205,7 @@ func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan 
 	var queryLogConfig adguard.GetQueryLogConfigResponse
 	// populate query log config from plan
 	queryLogConfig.Enabled = planQueryLogConfig.Enabled.ValueBool()
-	queryLogConfig.Interval = uint(planQueryLogConfig.Interval.ValueInt64() * 3600 * 1000)
+	queryLogConfig.Interval = uint64(planQueryLogConfig.Interval.ValueInt64() * 3600 * 1000)
 	queryLogConfig.AnonymizeClientIp = planQueryLogConfig.AnonymizeClientIp.ValueBool()
 
 	if len(planQueryLogConfig.Ignored.Elements()) > 0 {
@@ -222,7 +222,7 @@ func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan 
 	var statsConfig adguard.GetStatsConfigResponse
 	// populate stats from plan
 	statsConfig.Enabled = planStatsConfig.Enabled.ValueBool()
-	statsConfig.Interval = uint(planStatsConfig.Interval.ValueInt64() * 3600 * 1000)
+	statsConfig.Interval = uint64(planStatsConfig.Interval.ValueInt64() * 3600 * 1000)
 
 	if len(planStatsConfig.Ignored.Elements()) > 0 {
 		_ = planStatsConfig.Ignored.ElementsAs(ctx, &statsConfig.Ignored, false)
