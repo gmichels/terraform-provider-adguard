@@ -156,7 +156,6 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 							types.SetValueMust(
 								types.StringType,
 								[]attr.Value{
-									// TODO
 									types.StringValue("bing"),
 									types.StringValue("duckduckgo"),
 									types.StringValue("google"),
@@ -254,7 +253,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				},
 			},
 			"blocked_services": schema.SetAttribute{
-				Description: "List of services to be blocked globally",
+				Description: "List of services to be blocked globally. Defaults to empty",
 				ElementType: types.StringType,
 				Computed:    true,
 				Optional:    true,

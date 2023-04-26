@@ -188,12 +188,6 @@ func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan 
 	if len(planSafeSearch.Services.Elements()) > 0 {
 		var safeSearchServicesEnabled []string
 		_ = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
-		// TODO
-		// diags = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
-		// resp.Diagnostics.Append(diags...)
-		// if resp.Diagnostics.HasError() {
-		// 	return
-		// }
 
 		// use reflection to set each safeSearchConfig service value dynamically
 		v := reflect.ValueOf(&safeSearchConfig).Elem()
