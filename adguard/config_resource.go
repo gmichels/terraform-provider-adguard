@@ -188,7 +188,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Default:     int64default.StaticInt64(24),
 					},
 					"anonymize_client_ip": schema.BoolAttribute{
-						Description: "Whether anonymizing clients' IP addresses is enabled",
+						Description: "Whether anonymizing clients' IP addresses is enabled. Defaults to `false`",
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
@@ -253,7 +253,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				},
 			},
 			"blocked_services": schema.SetAttribute{
-				Description: "List of services to be blocked globally. Defaults to empty",
+				Description: "List of services to be blocked globally",
 				ElementType: types.StringType,
 				Computed:    true,
 				Optional:    true,

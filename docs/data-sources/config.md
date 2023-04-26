@@ -22,11 +22,14 @@ data "adguard_config" "test" {}
 
 ### Read-Only
 
+- `blocked_services` (Set of String) List of services that are blocked globally
 - `filtering` (Attributes) (see [below for nested schema](#nestedatt--filtering))
 - `id` (String) Identifier attribute
 - `parental` (Attributes) (see [below for nested schema](#nestedatt--parental))
+- `querylog` (Attributes) (see [below for nested schema](#nestedatt--querylog))
 - `safebrowsing` (Attributes) (see [below for nested schema](#nestedatt--safebrowsing))
 - `safesearch` (Attributes) (see [below for nested schema](#nestedatt--safesearch))
+- `stats` (Attributes) (see [below for nested schema](#nestedatt--stats))
 
 <a id="nestedatt--filtering"></a>
 ### Nested Schema for `filtering`
@@ -45,6 +48,17 @@ Read-Only:
 - `enabled` (Boolean) Whether Parental Control is enabled
 
 
+<a id="nestedatt--querylog"></a>
+### Nested Schema for `querylog`
+
+Read-Only:
+
+- `anonymize_client_ip` (Boolean) Whether anonymizing clients' IP addresses is enabled
+- `enabled` (Boolean) Whether the query log is enabled
+- `ignored` (Set of String) List of host names which should not be written to log
+- `interval` (Number) Time period for query log rotation, in hours
+
+
 <a id="nestedatt--safebrowsing"></a>
 ### Nested Schema for `safebrowsing`
 
@@ -60,5 +74,15 @@ Read-Only:
 
 - `enabled` (Boolean) Whether Safe Search is enabled
 - `services` (Set of String) Services which SafeSearch is enabled
+
+
+<a id="nestedatt--stats"></a>
+### Nested Schema for `stats`
+
+Read-Only:
+
+- `enabled` (Boolean) Whether server statistics enabled
+- `ignored` (Set of String) List of host names which should not be counted in the server statistics
+- `interval` (Number) Time period for the server statistics rotation, in hours
 
 

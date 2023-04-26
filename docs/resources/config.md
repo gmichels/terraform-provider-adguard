@@ -32,10 +32,13 @@ resource "adguard_config" "test" {
 
 ### Optional
 
+- `blocked_services` (Set of String) List of services to be blocked globally
 - `filtering` (Attributes) (see [below for nested schema](#nestedatt--filtering))
 - `parental_control` (Attributes) (see [below for nested schema](#nestedatt--parental_control))
+- `querylog` (Attributes) (see [below for nested schema](#nestedatt--querylog))
 - `safebrowsing` (Attributes) (see [below for nested schema](#nestedatt--safebrowsing))
 - `safesearch` (Attributes) (see [below for nested schema](#nestedatt--safesearch))
+- `stats` (Attributes) (see [below for nested schema](#nestedatt--stats))
 
 ### Read-Only
 
@@ -59,6 +62,17 @@ Optional:
 - `enabled` (Boolean) Whether Parental Control is enabled. Defaults to `false`
 
 
+<a id="nestedatt--querylog"></a>
+### Nested Schema for `querylog`
+
+Optional:
+
+- `anonymize_client_ip` (Boolean) Whether anonymizing clients' IP addresses is enabled. Defaults to `false`
+- `enabled` (Boolean) Whether the query log is enabled. Defaults to `true`
+- `ignored` (Set of String) List of host names which should not be written to log
+- `interval` (Number) Time period for query log rotation, in hours. Defaults to `2160` (90 days)
+
+
 <a id="nestedatt--safebrowsing"></a>
 ### Nested Schema for `safebrowsing`
 
@@ -74,6 +88,16 @@ Optional:
 
 - `enabled` (Boolean) Whether Safe Search is enabled. Defaults to `false`
 - `services` (Set of String) Services which SafeSearch is enabled. Defaults to Bing, DuckDuckGo, Google, Pixabay, Yandex and YouTube
+
+
+<a id="nestedatt--stats"></a>
+### Nested Schema for `stats`
+
+Optional:
+
+- `enabled` (Boolean) Whether server statistics are enabled. Defaults to `true`
+- `ignored` (Set of String) List of host names which should not be counted in the server statistics
+- `interval` (Number) Time period for server statistics rotation, in hours. Defaults to `24` (1 day)
 
 ## Import
 
