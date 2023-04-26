@@ -7,6 +7,7 @@ import (
 
 	"github.com/gmichels/adguard-client-go"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -142,7 +143,7 @@ func (o statsConfigModel) defaultObject() map[string]attr.Value {
 	}
 }
 
-func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan configResourceModel) (configResourceModel, error) {
+func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan configResourceModel) (configResourceModel, diag.Diagnostics, error) {
 	// unpack nested attributes from plan
 	var planFiltering filteringModel
 	var planSafeBrowsing enabledModel
@@ -150,12 +151,30 @@ func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan 
 	var planSafeSearch safeSearchModel
 	var planQueryLogConfig queryLogConfigModel
 	var planStatsConfig statsConfigModel
-	_ = plan.Filtering.As(ctx, &planFiltering, basetypes.ObjectAsOptions{})
-	_ = plan.SafeBrowsing.As(ctx, &planSafeBrowsing, basetypes.ObjectAsOptions{})
-	_ = plan.ParentalControl.As(ctx, &planParentalControl, basetypes.ObjectAsOptions{})
-	_ = plan.SafeSearch.As(ctx, &planSafeSearch, basetypes.ObjectAsOptions{})
-	_ = plan.QueryLog.As(ctx, &planQueryLogConfig, basetypes.ObjectAsOptions{})
-	_ = plan.Stats.As(ctx, &planStatsConfig, basetypes.ObjectAsOptions{})
+	diags := plan.Filtering.As(ctx, &planFiltering, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return plan, diags, nil
+	}
+	diags = plan.SafeBrowsing.As(ctx, &planSafeBrowsing, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return plan, diags, nil
+	}
+	diags = plan.ParentalControl.As(ctx, &planParentalControl, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return plan, diags, nil
+	}
+	diags = plan.SafeSearch.As(ctx, &planSafeSearch, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return plan, diags, nil
+	}
+	diags = plan.QueryLog.As(ctx, &planQueryLogConfig, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return plan, diags, nil
+	}
+	diags = plan.Stats.As(ctx, &planStatsConfig, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return plan, diags, nil
+	}
 
 	// instantiate empty object for storing plan data
 	var filteringConfig adguard.FilterConfig
@@ -166,19 +185,19 @@ func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan 
 	// set filtering config using plan
 	_, err := r.adg.ConfigureFiltering(filteringConfig)
 	if err != nil {
-		return plan, err
+		return plan, diags, err
 	}
 
 	// set safe browsing status using plan
 	err = r.adg.SetSafeBrowsingStatus(planSafeBrowsing.Enabled.ValueBool())
 	if err != nil {
-		return plan, err
+		return plan, diags, err
 	}
 
 	// set parental control status using plan
 	err = r.adg.SetParentalStatus(planParentalControl.Enabled.ValueBool())
 	if err != nil {
-		return plan, err
+		return plan, diags, err
 	}
 
 	// instantiate empty object for storing plan data
@@ -187,7 +206,10 @@ func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan 
 	safeSearchConfig.Enabled = planSafeSearch.Enabled.ValueBool()
 	if len(planSafeSearch.Services.Elements()) > 0 {
 		var safeSearchServicesEnabled []string
-		_ = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
+		diags = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
+		if diags.HasError() {
+			return plan, diags, err
+		}
 
 		// use reflection to set each safeSearchConfig service value dynamically
 		v := reflect.ValueOf(&safeSearchConfig).Elem()
@@ -198,7 +220,7 @@ func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan 
 	// set safe search config using plan
 	_, err = r.adg.SetSafeSearchConfig(safeSearchConfig)
 	if err != nil {
-		return plan, err
+		return plan, diags, err
 	}
 
 	// instantiate empty object for storing plan data
@@ -209,13 +231,16 @@ func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan 
 	queryLogConfig.AnonymizeClientIp = planQueryLogConfig.AnonymizeClientIp.ValueBool()
 
 	if len(planQueryLogConfig.Ignored.Elements()) > 0 {
-		_ = planQueryLogConfig.Ignored.ElementsAs(ctx, &queryLogConfig.Ignored, false)
+		diags = planQueryLogConfig.Ignored.ElementsAs(ctx, &queryLogConfig.Ignored, false)
+		if diags.HasError() {
+			return plan, diags, err
+		}
 	}
 
 	// set query log config using plan
 	_, err = r.adg.SetQueryLogConfig(queryLogConfig)
 	if err != nil {
-		return plan, err
+		return plan, diags, err
 	}
 
 	// instantiate empty object for storing plan data
@@ -225,30 +250,36 @@ func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan 
 	statsConfig.Interval = uint64(planStatsConfig.Interval.ValueInt64() * 3600 * 1000)
 
 	if len(planStatsConfig.Ignored.Elements()) > 0 {
-		_ = planStatsConfig.Ignored.ElementsAs(ctx, &statsConfig.Ignored, false)
+		diags = planStatsConfig.Ignored.ElementsAs(ctx, &statsConfig.Ignored, false)
+		if diags.HasError() {
+			return plan, diags, err
+		}
 	}
 
 	// set stats config using plan
 	_, err = r.adg.SetStatsConfig(statsConfig)
 	if err != nil {
-		return plan, err
+		return plan, diags, err
 	}
 
 	// instantiate empty object for storing plan data
 	var blockedServices []string
 	// populate blocked services from plan
 	if len(plan.BlockedServices.Elements()) > 0 {
-		_ = plan.BlockedServices.ElementsAs(ctx, &blockedServices, false)
+		diags = plan.BlockedServices.ElementsAs(ctx, &blockedServices, false)
+		if diags.HasError() {
+			return plan, diags, err
+		}
 	}
 
 	// set blocked services using plan
 	_, err = r.adg.SetBlockedServices(blockedServices)
 	if err != nil {
-		return plan, err
+		return plan, diags, err
 	}
 
 	// return the modified plan
-	return plan, nil
+	return plan, nil, nil
 }
 
 // mapSafeSearchConfigFields - will return the list of safe search services that are enabled
