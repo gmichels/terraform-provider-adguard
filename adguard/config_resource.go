@@ -291,12 +291,15 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	// defer to common function to create or update the resource
-	plan, err := r.CreateOrUpdateConfigResource(ctx, plan)
+	plan, diags, err := r.CreateOrUpdateConfigResource(ctx, plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Creating AdGuard Home Config",
 			"Could not create AdGuard Home config: "+err.Error(),
 		)
+		return
+	} else if diags.HasError() {
+		resp.Diagnostics.Append(diags...)
 		return
 	}
 
@@ -469,12 +472,15 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// defer to common function to create or update the resource
-	plan, err := r.CreateOrUpdateConfigResource(ctx, plan)
+	plan, diags, err := r.CreateOrUpdateConfigResource(ctx, plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Creating AdGuard Home Config",
 			"Could not create AdGuard Home config: "+err.Error(),
 		)
+		return
+	} else if diags.HasError() {
+		resp.Diagnostics.Append(diags...)
 		return
 	}
 
