@@ -31,6 +31,7 @@ type configDataModel struct {
 	QueryLog        types.Object `tfsdk:"querylog"`
 	Stats           types.Object `tfsdk:"stats"`
 	BlockedServices types.Set    `tfsdk:"blocked_services"`
+	Dns             types.Object `tfsdk:"dns"`
 }
 
 // NewConfigDataSource is a helper function to simplify the provider implementation
@@ -140,6 +141,87 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 				Description: "List of services that are blocked globally",
 				ElementType: types.StringType,
 				Computed:    true,
+			},
+			"dns": schema.SingleNestedAttribute{
+				Computed: true,
+				Attributes: map[string]schema.Attribute{
+					"bootstrap_dns": schema.ListAttribute{
+						Description: "Booststrap DNS servers",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+					"upstream_dns": schema.ListAttribute{
+						Description: "Upstream DNS servers",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+					"rate_limit": schema.Int64Attribute{
+						Description: "The number of requests per second allowed per client",
+						Computed:    true,
+					},
+					"blocking_mode": schema.StringAttribute{
+						Description: "DNS response sent when request is blocked",
+						Computed:    true,
+					},
+					"blocking_ipv4": schema.StringAttribute{
+						Description: "When `blocking_mode` is set to `custom_ip`, the IPv4 address to be returned for a blocked A request",
+						Computed:    true,
+					},
+					"blocking_ipv6": schema.StringAttribute{
+						Description: "When `blocking_mode` is set to `custom_ip`, the IPv6 address to be returned for a blocked A request",
+						Computed:    true,
+					},
+					"edns_cs_enabled": schema.BoolAttribute{
+						Description: "Whether EDNS Client Subnet (ECS) is enabled",
+						Computed:    true,
+					},
+					"disable_ipv6": schema.BoolAttribute{
+						Description: "Whether dropping of all IPv6 DNS queries is enabled",
+						Computed:    true,
+					},
+					"dnssec_enabled": schema.BoolAttribute{
+						Description: "Whether outgoing DNSSEC is enabled",
+						Computed:    true,
+					},
+					"cache_size": schema.Int64Attribute{
+						Description: "DNS cache size (in bytes)",
+						Computed:    true,
+					},
+					"cache_ttl_min": schema.Int64Attribute{
+						Description: "Overridden minimum TTL received from upstream DNS servers",
+						Computed:    true,
+					},
+					"cache_ttl_max": schema.Int64Attribute{
+						Description: "Overridden maximum TTL received from upstream DNS servers",
+						Computed:    true,
+					},
+					"cache_optimistic": schema.BoolAttribute{
+						Description: "Whether optimistic DNS caching is enabled",
+						Computed:    true,
+					},
+					"upstream_mode": schema.StringAttribute{
+						Description: "Upstream DNS resolvers usage strategy",
+						Computed:    true,
+					},
+					"use_private_ptr_resolvers": schema.BoolAttribute{
+						Description: "Whether to use private reverse DNS resolvers",
+						Computed:    true,
+					},
+					"resolve_clients": schema.BoolAttribute{
+						Description: "Whether reverse DNS resolution of clients' IP addresses is enabled",
+						Computed:    true,
+					},
+					"local_ptr_upstreams": schema.ListAttribute{
+						Description: "List of private reverse DNS servers",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+					"default_local_ptr_upstreams": schema.ListAttribute{
+						Description: "List of discovered private reverse DNS servers",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+				},
 			},
 		},
 	}
@@ -265,6 +347,51 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
+	// retrieve dns config info
+	dnsConfig, err := d.adg.GetDnsInfo()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	var stateDnsConfig dnsConfigModel
+	stateDnsConfig.BootstrapDns, diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.BootstrapDns)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	stateDnsConfig.UpstreamDns, diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.UpstreamDns)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	stateDnsConfig.RateLimit = types.Int64Value(int64(dnsConfig.RateLimit))
+	stateDnsConfig.BlockingMode = types.StringValue(dnsConfig.BlockingMode)
+	stateDnsConfig.BlockingIpv4 = types.StringValue(dnsConfig.BlockingIpv4)
+	stateDnsConfig.BlockingIpv6 = types.StringValue(dnsConfig.BlockingIpv6)
+	stateDnsConfig.EDnsCsEnabled = types.BoolValue(dnsConfig.EDnsCsEnabled)
+	stateDnsConfig.DisableIpv6 = types.BoolValue(dnsConfig.DisableIpv6)
+	stateDnsConfig.DnsSecEnabled = types.BoolValue(dnsConfig.DnsSecEnabled)
+	stateDnsConfig.CacheSize = types.Int64Value(int64(dnsConfig.CacheSize))
+	stateDnsConfig.CacheTtlMin = types.Int64Value(int64(dnsConfig.CacheTtlMin))
+	stateDnsConfig.CacheTtlMax = types.Int64Value(int64(dnsConfig.CacheTtlMax))
+	stateDnsConfig.CacheOptimistic = types.BoolValue(dnsConfig.CacheOptimistic)
+	stateDnsConfig.UpstreamMode = types.StringValue(dnsConfig.UpstreamMode)
+	stateDnsConfig.UsePrivatePtrResolvers = types.BoolValue(dnsConfig.UsePrivatePtrResolvers)
+	stateDnsConfig.ResolveClients = types.BoolValue(dnsConfig.ResolveClients)
+	stateDnsConfig.LocalPtrUpstreams, diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.LocalPtrUpstreams)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	stateDnsConfig.DefaultLocalPtrUpstreams, diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.DefaultLocalPtrUpstreams)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// map response body to model
 	state.Filtering, _ = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)
 	state.SafeBrowsing, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateSafeBrowsingStatus)
@@ -277,6 +404,7 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	state.Dns, _ = types.ObjectValueFrom(ctx, dnsConfigModel{}.attrTypes(), &stateDnsConfig)
 
 	// set ID placeholder for testing
 	state.ID = types.StringValue("placeholder")

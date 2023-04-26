@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
+var DEFAULT_BOOTSTRAP_DNS = []string{"9.9.9.10", "149.112.112.10", "2620:fe::10", "2620:fe::fe:10"}
+var DEFAULT_UPSTREAM_DNS = []string{"https://dns10.quad9.net/dns-query"}
 var DEFAULT_SAFESEARCH_SERVICES = []string{"bing", "duckduckgo", "google", "pixabay", "yandex", "youtube"}
 var BLOCKED_SERVICES_ALL = []string{"9gag", "amazon", "bilibili", "cloudflare", "crunchyroll", "dailymotion", "deezer",
 	"discord", "disneyplus", "douban", "ebay", "epic_games", "facebook", "gog", "hbomax", "hulu", "icloud_private_relay", "imgur",
@@ -142,6 +144,88 @@ func (o statsConfigModel) defaultObject() map[string]attr.Value {
 		"ignored":  basetypes.NewSetNull(types.StringType),
 	}
 }
+
+// dnsConfigModel maps DNS configuration schema data
+type dnsConfigModel struct {
+	BootstrapDns             types.List   `tfsdk:"bootstrap_dns"`
+	UpstreamDns              types.List   `tfsdk:"upstream_dns"`
+	RateLimit                types.Int64  `tfsdk:"rate_limit"`
+	BlockingMode             types.String `tfsdk:"blocking_mode"`
+	BlockingIpv4             types.String `tfsdk:"blocking_ipv4"`
+	BlockingIpv6             types.String `tfsdk:"blocking_ipv6"`
+	EDnsCsEnabled            types.Bool   `tfsdk:"edns_cs_enabled"`
+	DisableIpv6              types.Bool   `tfsdk:"disable_ipv6"`
+	DnsSecEnabled            types.Bool   `tfsdk:"dnssec_enabled"`
+	CacheSize                types.Int64  `tfsdk:"cache_size"`
+	CacheTtlMin              types.Int64  `tfsdk:"cache_ttl_min"`
+	CacheTtlMax              types.Int64  `tfsdk:"cache_ttl_max"`
+	CacheOptimistic          types.Bool   `tfsdk:"cache_optimistic"`
+	UpstreamMode             types.String `tfsdk:"upstream_mode"`
+	UsePrivatePtrResolvers   types.Bool   `tfsdk:"use_private_ptr_resolvers"`
+	ResolveClients           types.Bool   `tfsdk:"resolve_clients"`
+	LocalPtrUpstreams        types.List   `tfsdk:"local_ptr_upstreams"`
+	DefaultLocalPtrUpstreams types.List   `tfsdk:"default_local_ptr_upstreams"`
+}
+
+// attrTypes - return attribute types for this model
+func (o dnsConfigModel) attrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"bootstrap_dns":               types.ListType{ElemType: types.StringType},
+		"upstream_dns":                types.ListType{ElemType: types.StringType},
+		"rate_limit":                  types.Int64Type,
+		"blocking_mode":               types.StringType,
+		"blocking_ipv4":               types.StringType,
+		"blocking_ipv6":               types.StringType,
+		"edns_cs_enabled":             types.BoolType,
+		"disable_ipv6":                types.BoolType,
+		"dnssec_enabled":              types.BoolType,
+		"cache_size":                  types.Int64Type,
+		"cache_ttl_min":               types.Int64Type,
+		"cache_ttl_max":               types.Int64Type,
+		"cache_optimistic":            types.BoolType,
+		"upstream_mode":               types.StringType,
+		"use_private_ptr_resolvers":   types.BoolType,
+		"resolve_clients":             types.BoolType,
+		"local_ptr_upstreams":         types.ListType{ElemType: types.StringType},
+		"default_local_ptr_upstreams": types.ListType{ElemType: types.StringType},
+	}
+}
+
+// defaultObject - return default object for this model
+func (o dnsConfigModel) defaultObject() map[string]attr.Value {
+	bootstrap_dns := []attr.Value{}
+	for _, entry := range DEFAULT_BOOTSTRAP_DNS {
+		bootstrap_dns = append(bootstrap_dns, types.StringValue(entry))
+	}
+
+	upstream_dns := []attr.Value{}
+	for _, entry := range DEFAULT_UPSTREAM_DNS {
+		upstream_dns = append(upstream_dns, types.StringValue(entry))
+	}
+
+	return map[string]attr.Value{
+		"bootstrap_dns":             basetypes.NewListValueMust(types.StringType, bootstrap_dns),
+		"upstream_dns":              basetypes.NewListValueMust(types.StringType, upstream_dns),
+		"rate_limit":                types.Int64Value(20),
+		"blocking_mode":             types.StringValue("default"),
+		"blocking_ipv4":             types.StringValue(""),
+		"blocking_ipv6":             types.StringValue(""),
+		"edns_cs_enabled":           types.BoolValue(false),
+		"disable_ipv6":              types.BoolValue(false),
+		"dnssec_enabled":            types.BoolValue(false),
+		"cache_size":                types.Int64Value(4194304),
+		"cache_ttl_min":             types.Int64Value(0),
+		"cache_ttl_max":             types.Int64Value(0),
+		"cache_optimistic":          types.BoolValue(false),
+		"upstream_mode":             types.StringValue(""),
+		"use_private_ptr_resolvers": types.BoolValue(true),
+		"resolve_clients":           types.BoolValue(true),
+		"local_ptr_upstreams":       basetypes.NewListNull(types.StringType),
+		// TODO ?
+		"default_local_ptr_upstreams": basetypes.NewListNull(types.StringType),
+	}
+}
+
 
 func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan configResourceModel) (configResourceModel, diag.Diagnostics, error) {
 	// unpack nested attributes from plan
