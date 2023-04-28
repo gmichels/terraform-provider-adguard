@@ -381,16 +381,16 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	stateDnsConfig.UpstreamMode = types.StringValue(dnsConfig.UpstreamMode)
 	stateDnsConfig.UsePrivatePtrResolvers = types.BoolValue(dnsConfig.UsePrivatePtrResolvers)
 	stateDnsConfig.ResolveClients = types.BoolValue(dnsConfig.ResolveClients)
-	stateDnsConfig.LocalPtrUpstreams, diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.LocalPtrUpstreams)
+	stateDnsConfig.LocalPtrUpstreams, diags = types.SetValueFrom(ctx, types.StringType, dnsConfig.LocalPtrUpstreams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	stateDnsConfig.DefaultLocalPtrUpstreams, diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.DefaultLocalPtrUpstreams)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	// stateDnsConfig.DefaultLocalPtrUpstreams, diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.DefaultLocalPtrUpstreams)
+	// resp.Diagnostics.Append(diags...)
+	// if resp.Diagnostics.HasError() {
+	// 	return
+	// }
 
 	// map response body to model
 	state.Filtering, _ = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)

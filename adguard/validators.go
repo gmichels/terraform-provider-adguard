@@ -16,7 +16,7 @@ type checkBlockingModeValidator struct {
 }
 
 func (v checkBlockingModeValidator) Description(_ context.Context) string {
-	return fmt.Sprintf("blocking_mode must be set to %s when specifying blocking_ipv4 and blocking_ipv6", v.mode)
+	return fmt.Sprintf("\"dns.blocking_mode\" must be set to \"%s\" when specifying \"dns.blocking_ipv4\" and \"dns.blocking_ipv6\"", v.mode)
 }
 
 func (v checkBlockingModeValidator) MarkdownDescription(ctx context.Context) string {
