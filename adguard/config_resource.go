@@ -2,7 +2,6 @@ package adguard
 
 import (
 	"context"
-	// "reflect"
 	"regexp"
 	"time"
 
@@ -37,20 +36,6 @@ var (
 // configResource is the resource implementation
 type configResource struct {
 	adg *adguard.ADG
-}
-
-// configResourceModel maps config schema data
-type configResourceModel struct {
-	ID              types.String `tfsdk:"id"`
-	LastUpdated     types.String `tfsdk:"last_updated"`
-	Filtering       types.Object `tfsdk:"filtering"`
-	SafeBrowsing    types.Object `tfsdk:"safebrowsing"`
-	ParentalControl types.Object `tfsdk:"parental_control"`
-	SafeSearch      types.Object `tfsdk:"safesearch"`
-	QueryLog        types.Object `tfsdk:"querylog"`
-	Stats           types.Object `tfsdk:"stats"`
-	BlockedServices types.Set    `tfsdk:"blocked_services"`
-	Dns             types.Object `tfsdk:"dns"`
 }
 
 // NewConfigResource is a helper function to simplify the provider implementation
@@ -455,7 +440,7 @@ func (r *configResource) Configure(_ context.Context, req resource.ConfigureRequ
 // Create creates the resource and sets the initial Terraform state
 func (r *configResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	// retrieve values from plan
-	var plan configResourceModel
+	var plan configCommonModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -491,39 +476,131 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 // Read refreshes the Terraform state with the latest data
 func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	// get current state
-	var state configResourceModel
+	var state configCommonModel
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	config, diags, err := r.ReadConfig(ctx)
+	// initialize object to store downstream API responses
+	var apiResponse configApiResponseModel
+
+	// get refreshed filtering config value from AdGuard Home
+	filteringConfig, err := r.adg.GetAllFilters()
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error Reading AdGuard Home Config",
-			"Could not read AdGuard Home config ID "+state.ID.ValueString()+": "+err.Error(),
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// add to response object
+	apiResponse.Filtering = *filteringConfig
+
+	// get refreshed safe browsing status from AdGuard Home
+	safeBrowsingStatus, err := r.adg.GetSafeBrowsingStatus()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// add to response object
+	apiResponse.SafeBrowsing = *safeBrowsingStatus
+
+	// get refreshed safe parental control status from AdGuard Home
+	parentalStatus, err := r.adg.GetParentalStatus()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// add to response object
+	apiResponse.ParentalControl = *parentalStatus
+
+	// retrieve safe search info
+	safeSearchConfig, err := r.adg.GetSafeSearchConfig()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// add to response object
+	apiResponse.SafeSearch = safeSearchConfig
+
+	// retrieve query log config info
+	queryLogConfig, err := r.adg.GetQueryLogConfig()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// add to response object
+	apiResponse.QueryLog = *queryLogConfig
+
+	// retrieve server statistics config info
+	statsConfig, err := r.adg.GetStatsConfig()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// add to response object
+	apiResponse.Stats = *statsConfig
+
+	// get refreshed blocked services from AdGuard Home
+	blockedServices, err := r.adg.GetBlockedServices()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// add to response object
+	apiResponse.BlockedServices = *blockedServices
+
+	// retrieve dns config info
+	dnsConfig, err := r.adg.GetDnsInfo()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// add to response object
+	apiResponse.Dns = *dnsConfig.DNSConfig
+
+	// process API responses into a state-like object
+	newState, diags, err := ProcessConfigApiReadResponse(ctx, apiResponse)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
 		)
 		return
 	} else if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
 	}
-	state.Filtering, _ = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &config.Filtering)
-	state.SafeBrowsing, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &config.SafeBrowsing)
-	state.ParentalControl, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &config.SafeBrowsing)
-	state.SafeSearch, _ = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &config.SafeSearch)
-	state.QueryLog, _ = types.ObjectValueFrom(ctx, queryLogConfigModel{}.attrTypes(), &config.QueryLog)
-	state.Stats, _ = types.ObjectValueFrom(ctx, statsConfigModel{}.attrTypes(), &config.Stats)
-	state.BlockedServices, diags = types.SetValueFrom(ctx, types.StringType, config.BlockedServices)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	state.Dns, _ = types.ObjectValueFrom(ctx, dnsConfigModel{}.attrTypes(), &config.Dns)
+
+	// populate internal fields into new state
+	newState.ID = state.ID
+	newState.LastUpdated = state.LastUpdated
 
 	// set refreshed state
-	diags = resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, &newState)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -533,7 +610,7 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 // Update updates the resource and sets the updated Terraform state on success
 func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	// retrieve values from plan
-	var plan configResourceModel
+	var plan configCommonModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -544,8 +621,8 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 	diags, err := r.CreateOrUpdateConfigResource(ctx, plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error Creating AdGuard Home Config",
-			"Could not create AdGuard Home config: "+err.Error(),
+			"Error Updating AdGuard Home Config",
+			"Could not update AdGuard Home config: "+err.Error(),
 		)
 		return
 	} else if diags.HasError() {

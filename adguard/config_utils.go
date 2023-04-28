@@ -371,7 +371,7 @@ func ProcessConfigApiReadResponse(ctx context.Context, apiResponse configApiResp
 }
 
 // CreateOrUpdateConfigResource - common function to create or update a config resource
-func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan configResourceModel) (diag.Diagnostics, error) {
+func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan configCommonModel) (diag.Diagnostics, error) {
 	// FILTERING CONFIG
 	// unpack nested attributes from plan
 	var planFiltering filteringModel

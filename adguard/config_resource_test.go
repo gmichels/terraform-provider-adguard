@@ -101,9 +101,9 @@ resource "adguard_config" "test" {
 	querylog = {
 		ignored = ["test2.com", "example2.com", "abc2.com"]
 	}
-	// stats = {
-	// 	ignored  = ["test9.com", "example15.com", "abc5.com"]
-	// }
+	stats = {
+		ignored  = ["test9.com", "example15.com", "abc5.com"]
+	}
 	dns = {
 		upstream_dns              = ["https://1.1.1.1/dns-query"]
 		blocking_mode             = "nxdomain"
@@ -134,10 +134,10 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.ignored.2", "test2.com"),
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.interval", "24"),
-					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.#", "0"),
-					// resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.0", "abc5.com"),
-					// resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.1", "example15.com"),
-					// resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.2", "test9.com"),
+					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.#", "3"),
+					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.0", "abc5.com"),
+					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.1", "example15.com"),
+					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.2", "test9.com"),
 					resource.TestCheckResourceAttr("adguard_config.test", "blocked_services.#", "0"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.upstream_dns.#", "1"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.upstream_dns.0", "https://1.1.1.1/dns-query"),
