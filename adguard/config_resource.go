@@ -580,7 +580,7 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 	// add to response object
-	apiResponse.Dns = *dnsConfig.DNSConfig
+	apiResponse.DnsConfig = *dnsConfig.DNSConfig
 
 	// process API responses into a state-like object
 	newState, diags, err := ProcessConfigApiReadResponse(ctx, apiResponse)

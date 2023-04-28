@@ -31,7 +31,7 @@ type configApiResponseModel struct {
 	QueryLog        adguard.GetQueryLogConfigResponse
 	Stats           adguard.GetStatsConfigResponse
 	BlockedServices []string
-	Dns             adguard.DNSConfig
+	DnsConfig       adguard.DNSConfig
 }
 
 // common config model to be used for working with both resource and data source
@@ -326,40 +326,43 @@ func ProcessConfigApiReadResponse(ctx context.Context, apiResponse configApiResp
 	// DNS CONFIG
 	// retrieve dns config info
 	var stateDnsConfig dnsConfigModel
-	stateDnsConfig.BootstrapDns, diags = types.ListValueFrom(ctx, types.StringType, apiResponse.Dns.BootstrapDns)
+	stateDnsConfig.BootstrapDns, diags = types.ListValueFrom(ctx, types.StringType, apiResponse.DnsConfig.BootstrapDns)
 	if diags.HasError() {
 		return newState, diags, nil
 	}
-	stateDnsConfig.UpstreamDns, diags = types.ListValueFrom(ctx, types.StringType, apiResponse.Dns.UpstreamDns)
+	stateDnsConfig.UpstreamDns, diags = types.ListValueFrom(ctx, types.StringType, apiResponse.DnsConfig.UpstreamDns)
 	if diags.HasError() {
 		return newState, diags, nil
 	}
-	stateDnsConfig.RateLimit = types.Int64Value(int64(apiResponse.Dns.RateLimit))
-	stateDnsConfig.BlockingMode = types.StringValue(apiResponse.Dns.BlockingMode)
+	stateDnsConfig.RateLimit = types.Int64Value(int64(apiResponse.DnsConfig.RateLimit))
+	stateDnsConfig.BlockingMode = types.StringValue(apiResponse.DnsConfig.BlockingMode)
 	// upstream API does not unset blocking_ipv4 and blocking_ipv6 when previously set and blocking mode changes,
 	// so force state to empty values here
-	if apiResponse.Dns.BlockingMode != "custom_ip" {
+	if apiResponse.DnsConfig.BlockingMode != "custom_ip" {
 		stateDnsConfig.BlockingIpv4 = types.StringValue("")
 		stateDnsConfig.BlockingIpv6 = types.StringValue("")
 	} else {
-		stateDnsConfig.BlockingIpv4 = types.StringValue(apiResponse.Dns.BlockingIpv4)
-		stateDnsConfig.BlockingIpv6 = types.StringValue(apiResponse.Dns.BlockingIpv6)
+		stateDnsConfig.BlockingIpv4 = types.StringValue(apiResponse.DnsConfig.BlockingIpv4)
+		stateDnsConfig.BlockingIpv6 = types.StringValue(apiResponse.DnsConfig.BlockingIpv6)
 	}
-	stateDnsConfig.EDnsCsEnabled = types.BoolValue(apiResponse.Dns.EDnsCsEnabled)
-	stateDnsConfig.DisableIpv6 = types.BoolValue(apiResponse.Dns.DisableIpv6)
-	stateDnsConfig.DnsSecEnabled = types.BoolValue(apiResponse.Dns.DnsSecEnabled)
-	stateDnsConfig.CacheSize = types.Int64Value(int64(apiResponse.Dns.CacheSize))
-	stateDnsConfig.CacheTtlMin = types.Int64Value(int64(apiResponse.Dns.CacheTtlMin))
-	stateDnsConfig.CacheTtlMax = types.Int64Value(int64(apiResponse.Dns.CacheTtlMax))
-	stateDnsConfig.CacheOptimistic = types.BoolValue(apiResponse.Dns.CacheOptimistic)
-	if apiResponse.Dns.UpstreamMode != "" {
-		stateDnsConfig.UpstreamMode = types.StringValue(apiResponse.Dns.UpstreamMode)
+	stateDnsConfig.EDnsCsEnabled = types.BoolValue(apiResponse.DnsConfig.EDnsCsEnabled)
+	stateDnsConfig.DisableIpv6 = types.BoolValue(apiResponse.DnsConfig.DisableIpv6)
+	stateDnsConfig.DnsSecEnabled = types.BoolValue(apiResponse.DnsConfig.DnsSecEnabled)
+	stateDnsConfig.CacheSize = types.Int64Value(int64(apiResponse.DnsConfig.CacheSize))
+	stateDnsConfig.CacheTtlMin = types.Int64Value(int64(apiResponse.DnsConfig.CacheTtlMin))
+	stateDnsConfig.CacheTtlMax = types.Int64Value(int64(apiResponse.DnsConfig.CacheTtlMax))
+	stateDnsConfig.CacheOptimistic = types.BoolValue(apiResponse.DnsConfig.CacheOptimistic)
+	if apiResponse.DnsConfig.UpstreamMode != "" {
+		stateDnsConfig.UpstreamMode = types.StringValue(apiResponse.DnsConfig.UpstreamMode)
 	} else {
 		stateDnsConfig.UpstreamMode = types.StringValue("load_balance")
 	}
-	stateDnsConfig.UsePrivatePtrResolvers = types.BoolValue(apiResponse.Dns.UsePrivatePtrResolvers)
-	stateDnsConfig.ResolveClients = types.BoolValue(apiResponse.Dns.ResolveClients)
-	stateDnsConfig.LocalPtrUpstreams, diags = types.SetValueFrom(ctx, types.StringType, apiResponse.Dns.LocalPtrUpstreams)
+	stateDnsConfig.UsePrivatePtrResolvers = types.BoolValue(apiResponse.DnsConfig.UsePrivatePtrResolvers)
+	stateDnsConfig.ResolveClients = types.BoolValue(apiResponse.DnsConfig.ResolveClients)
+	stateDnsConfig.LocalPtrUpstreams, diags = types.SetValueFrom(ctx, types.StringType, apiResponse.DnsConfig.LocalPtrUpstreams)
+	if diags.HasError() {
+		return newState, diags, nil
+	}
 	if diags.HasError() {
 		return newState, diags, nil
 	}
