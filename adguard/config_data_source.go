@@ -2,7 +2,7 @@ package adguard
 
 import (
 	"context"
-	"reflect"
+	"time"
 
 	"github.com/gmichels/adguard-client-go"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -21,19 +21,6 @@ type configDataSource struct {
 	adg *adguard.ADG
 }
 
-// configDataModel maps Config schema data
-type configDataModel struct {
-	ID              types.String `tfsdk:"id"`
-	Filtering       types.Object `tfsdk:"filtering"`
-	SafeBrowsing    types.Object `tfsdk:"safebrowsing"`
-	ParentalControl types.Object `tfsdk:"parental"`
-	SafeSearch      types.Object `tfsdk:"safesearch"`
-	QueryLog        types.Object `tfsdk:"querylog"`
-	Stats           types.Object `tfsdk:"stats"`
-	BlockedServices types.Set    `tfsdk:"blocked_services"`
-	Dns             types.Object `tfsdk:"dns"`
-}
-
 // NewConfigDataSource is a helper function to simplify the provider implementation
 func NewConfigDataSource() datasource.DataSource {
 	return &configDataSource{}
@@ -50,6 +37,10 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Identifier attribute",
+				Computed:    true,
+			},
+			"last_updated": schema.StringAttribute{
+				Description: "Timestamp of the last Terraform refresh",
 				Computed:    true,
 			},
 			"filtering": schema.SingleNestedAttribute{
@@ -74,7 +65,7 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 					},
 				},
 			},
-			"parental": schema.SingleNestedAttribute{
+			"parental_control": schema.SingleNestedAttribute{
 				Computed: true,
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
@@ -211,13 +202,8 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 						Description: "Whether reverse DNS resolution of clients' IP addresses is enabled",
 						Computed:    true,
 					},
-					"local_ptr_upstreams": schema.ListAttribute{
+					"local_ptr_upstreams": schema.SetAttribute{
 						Description: "List of private reverse DNS servers",
-						ElementType: types.StringType,
-						Computed:    true,
-					},
-					"default_local_ptr_upstreams": schema.ListAttribute{
-						Description: "List of discovered private reverse DNS servers",
 						ElementType: types.StringType,
 						Computed:    true,
 					},
@@ -230,9 +216,12 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 // Read refreshes the Terraform state with the latest data
 func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	// read Terraform configuration data into the model
-	var state configDataModel
+	var state configCommonModel
 	diags := req.Config.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
+
+	// initialize object to store downstream API responses
+	var apiResponse configApiResponseModel
 
 	// get refreshed filtering config value from AdGuard Home
 	filteringConfig, err := d.adg.GetAllFilters()
@@ -243,10 +232,8 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		)
 		return
 	}
-	// map filter config to state
-	var stateFilteringConfig filteringModel
-	stateFilteringConfig.Enabled = types.BoolValue(filteringConfig.Enabled)
-	stateFilteringConfig.UpdateInterval = types.Int64Value(int64(filteringConfig.Interval))
+	// add to response object
+	apiResponse.Filtering = *filteringConfig
 
 	// get refreshed safe browsing status from AdGuard Home
 	safeBrowsingStatus, err := d.adg.GetSafeBrowsingStatus()
@@ -257,9 +244,8 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		)
 		return
 	}
-	// map safe browsing config to state
-	var stateSafeBrowsingStatus enabledModel
-	stateSafeBrowsingStatus.Enabled = types.BoolValue(*safeBrowsingStatus)
+	// add to response object
+	apiResponse.SafeBrowsing = *safeBrowsingStatus
 
 	// get refreshed safe parental control status from AdGuard Home
 	parentalStatus, err := d.adg.GetParentalStatus()
@@ -270,9 +256,8 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		)
 		return
 	}
-	// map parental control config to state
-	var stateParentalStatus enabledModel
-	stateParentalStatus.Enabled = types.BoolValue(*parentalStatus)
+	// add to response object
+	apiResponse.ParentalControl = *parentalStatus
 
 	// retrieve safe search info
 	safeSearchConfig, err := d.adg.GetSafeSearchConfig()
@@ -283,22 +268,8 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		)
 		return
 	}
-
-	// perform reflection of safeSearchConfig object
-	v := reflect.ValueOf(safeSearchConfig).Elem()
-	// grab the type of the reflected object
-	t := v.Type()
-	// map the reflected object to a list
-	enabledSafeSearchServices := mapSafeSearchConfigServices(v, t)
-
-	// map safe search to state
-	var stateSafeSearchConfig safeSearchModel
-	stateSafeSearchConfig.Enabled = types.BoolValue(safeSearchConfig.Enabled)
-	stateSafeSearchConfig.Services, diags = types.SetValueFrom(ctx, types.StringType, enabledSafeSearchServices)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	// add to response object
+	apiResponse.SafeSearch = safeSearchConfig
 
 	// retrieve query log config info
 	queryLogConfig, err := d.adg.GetQueryLogConfig()
@@ -309,15 +280,8 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		)
 		return
 	}
-	var stateQueryLogConfig queryLogConfigModel
-	stateQueryLogConfig.Enabled = types.BoolValue(queryLogConfig.Enabled)
-	stateQueryLogConfig.Interval = types.Int64Value(int64(queryLogConfig.Interval / 1000 / 3600))
-	stateQueryLogConfig.AnonymizeClientIp = types.BoolValue(queryLogConfig.AnonymizeClientIp)
-	stateQueryLogConfig.Ignored, diags = types.SetValueFrom(ctx, types.StringType, queryLogConfig.Ignored)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	// add to response object
+	apiResponse.QueryLog = *queryLogConfig
 
 	// retrieve server statistics config info
 	statsConfig, err := d.adg.GetStatsConfig()
@@ -328,14 +292,8 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		)
 		return
 	}
-	var stateStatsConfig statsConfigModel
-	stateStatsConfig.Enabled = types.BoolValue(statsConfig.Enabled)
-	stateStatsConfig.Interval = types.Int64Value(int64(statsConfig.Interval / 3600 / 1000))
-	stateStatsConfig.Ignored, diags = types.SetValueFrom(ctx, types.StringType, statsConfig.Ignored)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	// add to response object
+	apiResponse.Stats = *statsConfig
 
 	// get refreshed blocked services from AdGuard Home
 	blockedServices, err := d.adg.GetBlockedServices()
@@ -346,6 +304,8 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		)
 		return
 	}
+	// add to response object
+	apiResponse.BlockedServices = *blockedServices
 
 	// retrieve dns config info
 	dnsConfig, err := d.adg.GetDnsInfo()
@@ -356,61 +316,29 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		)
 		return
 	}
-	var stateDnsConfig dnsConfigModel
-	stateDnsConfig.BootstrapDns, diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.BootstrapDns)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	stateDnsConfig.UpstreamDns, diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.UpstreamDns)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	stateDnsConfig.RateLimit = types.Int64Value(int64(dnsConfig.RateLimit))
-	stateDnsConfig.BlockingMode = types.StringValue(dnsConfig.BlockingMode)
-	stateDnsConfig.BlockingIpv4 = types.StringValue(dnsConfig.BlockingIpv4)
-	stateDnsConfig.BlockingIpv6 = types.StringValue(dnsConfig.BlockingIpv6)
-	stateDnsConfig.EDnsCsEnabled = types.BoolValue(dnsConfig.EDnsCsEnabled)
-	stateDnsConfig.DisableIpv6 = types.BoolValue(dnsConfig.DisableIpv6)
-	stateDnsConfig.DnsSecEnabled = types.BoolValue(dnsConfig.DnsSecEnabled)
-	stateDnsConfig.CacheSize = types.Int64Value(int64(dnsConfig.CacheSize))
-	stateDnsConfig.CacheTtlMin = types.Int64Value(int64(dnsConfig.CacheTtlMin))
-	stateDnsConfig.CacheTtlMax = types.Int64Value(int64(dnsConfig.CacheTtlMax))
-	stateDnsConfig.CacheOptimistic = types.BoolValue(dnsConfig.CacheOptimistic)
-	stateDnsConfig.UpstreamMode = types.StringValue(dnsConfig.UpstreamMode)
-	stateDnsConfig.UsePrivatePtrResolvers = types.BoolValue(dnsConfig.UsePrivatePtrResolvers)
-	stateDnsConfig.ResolveClients = types.BoolValue(dnsConfig.ResolveClients)
-	stateDnsConfig.LocalPtrUpstreams, diags = types.SetValueFrom(ctx, types.StringType, dnsConfig.LocalPtrUpstreams)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	// stateDnsConfig.DefaultLocalPtrUpstreams, diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.DefaultLocalPtrUpstreams)
-	// resp.Diagnostics.Append(diags...)
-	// if resp.Diagnostics.HasError() {
-	// 	return
-	// }
+	// add to response object
+	apiResponse.Dns = *dnsConfig.DNSConfig
 
-	// map response body to model
-	state.Filtering, _ = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)
-	state.SafeBrowsing, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateSafeBrowsingStatus)
-	state.ParentalControl, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateParentalStatus)
-	state.SafeSearch, _ = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchConfig)
-	state.QueryLog, _ = types.ObjectValueFrom(ctx, queryLogConfigModel{}.attrTypes(), &stateQueryLogConfig)
-	state.Stats, _ = types.ObjectValueFrom(ctx, statsConfigModel{}.attrTypes(), &stateStatsConfig)
-	state.BlockedServices, diags = types.SetValueFrom(ctx, types.StringType, blockedServices)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	// process API responses into a state-like object
+	newState, diags, err := ProcessConfigApiReadResponse(ctx, apiResponse)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	} else if diags.HasError() {
+		resp.Diagnostics.Append(diags...)
 		return
 	}
-	state.Dns, _ = types.ObjectValueFrom(ctx, dnsConfigModel{}.attrTypes(), &stateDnsConfig)
 
 	// set ID placeholder for testing
-	state.ID = types.StringValue("placeholder")
+	newState.ID = types.StringValue("placeholder")
+	// set last updated just because we need it in the resource as well
+	newState.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 
 	// set state
-	diags = resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, &newState)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
