@@ -207,6 +207,21 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 						ElementType: types.StringType,
 						Computed:    true,
 					},
+					"allowed_clients": schema.SetAttribute{
+						Description: "The allowlist of clients: IP addresses, CIDRs, or ClientIDs",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+					"disallowed_clients": schema.SetAttribute{
+						Description: "The blocklist of clients: IP addresses, CIDRs, or ClientIDs",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+					"blocked_hosts": schema.SetAttribute{
+						Description: "Disallowed domains",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
 				},
 			},
 		},
@@ -318,6 +333,18 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	}
 	// add to response object
 	apiResponse.DnsConfig = *dnsConfig.DNSConfig
+
+	// retrieve dns access info
+	dnsAccess, err := d.adg.GetAccess()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// add to response object
+	apiResponse.DnsAccess = *dnsAccess
 
 	// process API responses into a state-like object
 	newState, diags, err := ProcessConfigApiReadResponse(ctx, apiResponse)

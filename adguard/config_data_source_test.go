@@ -56,6 +56,11 @@ func TestAccConfigDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.use_private_ptr_resolvers", "true"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.resolve_clients", "true"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.local_ptr_upstreams.#", "0"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.allowed_clients.#", "0"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.disallowed_clients.#", "2"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.disallowed_clients.1", "test-client-access-blocked"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.blocked_hosts.#", "3"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.blocked_hosts.1", "id.server"),
 					// Verify internal attributes
 					resource.TestCheckResourceAttr("data.adguard_config.test", "id", "placeholder"),
 					resource.TestCheckResourceAttrSet("data.adguard_config.test", "last_updated"),

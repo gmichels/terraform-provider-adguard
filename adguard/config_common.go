@@ -32,6 +32,7 @@ type configApiResponseModel struct {
 	Stats           adguard.GetStatsConfigResponse
 	BlockedServices []string
 	DnsConfig       adguard.DNSConfig
+	DnsAccess       adguard.AccessList
 }
 
 // common config model to be used for working with both resource and data source
@@ -190,6 +191,9 @@ type dnsConfigModel struct {
 	UsePrivatePtrResolvers types.Bool   `tfsdk:"use_private_ptr_resolvers"`
 	ResolveClients         types.Bool   `tfsdk:"resolve_clients"`
 	LocalPtrUpstreams      types.Set    `tfsdk:"local_ptr_upstreams"`
+	AllowedClients         types.Set    `tfsdk:"allowed_clients"`
+	DisallowedClients      types.Set    `tfsdk:"disallowed_clients"`
+	BlockedHosts           types.Set    `tfsdk:"blocked_hosts"`
 }
 
 // attrTypes - return attribute types for this model
@@ -212,6 +216,9 @@ func (o dnsConfigModel) attrTypes() map[string]attr.Type {
 		"use_private_ptr_resolvers": types.BoolType,
 		"resolve_clients":           types.BoolType,
 		"local_ptr_upstreams":       types.SetType{ElemType: types.StringType},
+		"allowed_clients":           types.SetType{ElemType: types.StringType},
+		"disallowed_clients":        types.SetType{ElemType: types.StringType},
+		"blocked_hosts":             types.SetType{ElemType: types.StringType},
 	}
 }
 
@@ -245,8 +252,12 @@ func (o dnsConfigModel) defaultObject() map[string]attr.Value {
 		"use_private_ptr_resolvers": types.BoolValue(true),
 		"resolve_clients":           types.BoolValue(true),
 		"local_ptr_upstreams":       types.SetValueMust(types.StringType, []attr.Value{}),
+		"allowed_clients":           types.SetValueMust(types.StringType, []attr.Value{}),
+		"disallowed_clients":        types.SetValueMust(types.StringType, []attr.Value{}),
+		"blocked_hosts":             types.SetValueMust(types.StringType, []attr.Value{}),
 	}
 }
+
 
 // ProcessConfigApiReadResponse - common function to process API responses for Read operations in both config resource and data source
 func ProcessConfigApiReadResponse(ctx context.Context, apiResponse configApiResponseModel) (configCommonModel, diag.Diagnostics, error) {
@@ -363,6 +374,15 @@ func ProcessConfigApiReadResponse(ctx context.Context, apiResponse configApiResp
 	if diags.HasError() {
 		return newState, diags, nil
 	}
+	stateDnsConfig.AllowedClients, diags = types.SetValueFrom(ctx, types.StringType, apiResponse.DnsAccess.AllowedClients)
+	if diags.HasError() {
+		return newState, diags, nil
+	}
+	stateDnsConfig.DisallowedClients, diags = types.SetValueFrom(ctx, types.StringType, apiResponse.DnsAccess.DisallowedClients)
+	if diags.HasError() {
+		return newState, diags, nil
+	}
+	stateDnsConfig.BlockedHosts, diags = types.SetValueFrom(ctx, types.StringType, apiResponse.DnsAccess.BlockedHosts)
 	if diags.HasError() {
 		return newState, diags, nil
 	}
