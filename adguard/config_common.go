@@ -22,19 +22,6 @@ var BLOCKED_SERVICES_ALL = []string{"9gag", "amazon", "bilibili", "cloudflare", 
 	"soundcloud", "spotify", "steam", "telegram", "tiktok", "tinder", "twitch", "twitter", "valorant", "viber", "vimeo", "vk", "voot", "wechat",
 	"weibo", "whatsapp", "xboxlive", "youtube", "zhihu"}
 
-// model for downstream API response for configuration
-type configApiResponseModel struct {
-	Filtering       adguard.FilterStatus
-	SafeBrowsing    bool
-	ParentalControl bool
-	SafeSearch      *adguard.SafeSearchConfig
-	QueryLog        adguard.GetQueryLogConfigResponse
-	Stats           adguard.GetStatsConfigResponse
-	BlockedServices []string
-	DnsConfig       adguard.DNSConfig
-	DnsAccess       adguard.AccessList
-}
-
 // common config model to be used for working with both resource and data source
 type configCommonModel struct {
 	ID              types.String `tfsdk:"id"`
@@ -258,143 +245,219 @@ func (o dnsConfigModel) defaultObject() map[string]attr.Value {
 	}
 }
 
-
-// ProcessConfigApiReadResponse - common function to process API responses for Read operations in both config resource and data source
-func ProcessConfigApiReadResponse(ctx context.Context, apiResponse configApiResponseModel) (configCommonModel, diag.Diagnostics, error) {
-	// initialize variables
-	var newState configCommonModel
-	var diags diag.Diagnostics
-
+// common `Read` function for both data source and resource
+func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *diag.Diagnostics) {
 	// FILTERING CONFIG
+	// get refreshed filtering config value from AdGuard Home
+	filteringConfig, err := adg.GetAllFilters()
+	if err != nil {
+		diags.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
 	// map filter config to state
 	var stateFilteringConfig filteringModel
-	stateFilteringConfig.Enabled = types.BoolValue(apiResponse.Filtering.Enabled)
-	stateFilteringConfig.UpdateInterval = types.Int64Value(int64(apiResponse.Filtering.Interval))
+	stateFilteringConfig.Enabled = types.BoolValue(filteringConfig.Enabled)
+	stateFilteringConfig.UpdateInterval = types.Int64Value(int64(filteringConfig.Interval))
 	// add to config model
-	newState.Filtering, _ = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)
+	o.Filtering, _ = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)
 
 	// SAFE BROWSING
+	// get refreshed safe browsing status from AdGuard Home
+	safeBrowsingStatus, err := adg.GetSafeBrowsingStatus()
+	if err != nil {
+		diags.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
 	// map safe browsing config to state
 	var stateSafeBrowsingStatus enabledModel
-	stateSafeBrowsingStatus.Enabled = types.BoolValue(apiResponse.SafeBrowsing)
+	stateSafeBrowsingStatus.Enabled = types.BoolValue(*safeBrowsingStatus)
 	// add to config model
-	newState.SafeBrowsing, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateSafeBrowsingStatus)
+	o.SafeBrowsing, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateSafeBrowsingStatus)
 
 	// PARENTAL CONTROL
+	// get refreshed safe parental control status from AdGuard Home
+	parentalStatus, err := adg.GetParentalStatus()
+	if err != nil {
+		diags.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
 	// map parental control config to state
 	var stateParentalStatus enabledModel
-	stateParentalStatus.Enabled = types.BoolValue(apiResponse.ParentalControl)
+	stateParentalStatus.Enabled = types.BoolValue(*parentalStatus)
 	// add to config model
-	newState.ParentalControl, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateParentalStatus)
+	o.ParentalControl, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateParentalStatus)
 
 	// SAFE SEARCH
+	// retrieve safe search info
+	safeSearchConfig, err := adg.GetSafeSearchConfig()
+	if err != nil {
+		diags.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
 	// perform reflection of safe search object
-	v := reflect.ValueOf(apiResponse.SafeSearch).Elem()
+	v := reflect.ValueOf(safeSearchConfig).Elem()
 	// grab the type of the reflected object
 	t := v.Type()
 	// map the reflected object to a list
 	enabledSafeSearchServices := mapSafeSearchConfigServices(v, t)
 	// map safe search to state
 	var stateSafeSearchConfig safeSearchModel
-	stateSafeSearchConfig.Enabled = types.BoolValue(apiResponse.SafeSearch.Enabled)
-	stateSafeSearchConfig.Services, diags = types.SetValueFrom(ctx, types.StringType, enabledSafeSearchServices)
+	stateSafeSearchConfig.Enabled = types.BoolValue(safeSearchConfig.Enabled)
+	stateSafeSearchConfig.Services, *diags = types.SetValueFrom(ctx, types.StringType, enabledSafeSearchServices)
 	if diags.HasError() {
-		return newState, diags, nil
+		return
 	}
 	// add to config model
-	newState.SafeSearch, _ = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchConfig)
+	o.SafeSearch, _ = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchConfig)
 
 	// QUERY LOG
+	// retrieve query log config info
+	queryLogConfig, err := adg.GetQueryLogConfig()
+	if err != nil {
+		diags.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
 	var stateQueryLogConfig queryLogConfigModel
-	stateQueryLogConfig.Enabled = types.BoolValue(apiResponse.QueryLog.Enabled)
-	stateQueryLogConfig.Interval = types.Int64Value(int64(apiResponse.QueryLog.Interval / 1000 / 3600))
-	stateQueryLogConfig.AnonymizeClientIp = types.BoolValue(apiResponse.QueryLog.AnonymizeClientIp)
-	stateQueryLogConfig.Ignored, diags = types.SetValueFrom(ctx, types.StringType, apiResponse.QueryLog.Ignored)
+	stateQueryLogConfig.Enabled = types.BoolValue(queryLogConfig.Enabled)
+	stateQueryLogConfig.Interval = types.Int64Value(int64(queryLogConfig.Interval / 1000 / 3600))
+	stateQueryLogConfig.AnonymizeClientIp = types.BoolValue(queryLogConfig.AnonymizeClientIp)
+	stateQueryLogConfig.Ignored, *diags = types.SetValueFrom(ctx, types.StringType, queryLogConfig.Ignored)
 	if diags.HasError() {
-		return newState, diags, nil
+		return
 	}
 	// add to config model
-	newState.QueryLog, _ = types.ObjectValueFrom(ctx, queryLogConfigModel{}.attrTypes(), &stateQueryLogConfig)
+	o.QueryLog, _ = types.ObjectValueFrom(ctx, queryLogConfigModel{}.attrTypes(), &stateQueryLogConfig)
 
 	// STATS
+	// retrieve server statistics config info
+	statsConfig, err := adg.GetStatsConfig()
+	if err != nil {
+		diags.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
 	var stateStatsConfig statsConfigModel
-	stateStatsConfig.Enabled = types.BoolValue(apiResponse.Stats.Enabled)
-	stateStatsConfig.Interval = types.Int64Value(int64(apiResponse.Stats.Interval / 3600 / 1000))
-	stateStatsConfig.Ignored, diags = types.SetValueFrom(ctx, types.StringType, apiResponse.Stats.Ignored)
+	stateStatsConfig.Enabled = types.BoolValue(statsConfig.Enabled)
+	stateStatsConfig.Interval = types.Int64Value(int64(statsConfig.Interval / 3600 / 1000))
+	stateStatsConfig.Ignored, *diags = types.SetValueFrom(ctx, types.StringType, statsConfig.Ignored)
 	if diags.HasError() {
-		return newState, diags, nil
+		return
 	}
 	// add to config model
-	newState.Stats, _ = types.ObjectValueFrom(ctx, statsConfigModel{}.attrTypes(), &stateStatsConfig)
+	o.Stats, _ = types.ObjectValueFrom(ctx, statsConfigModel{}.attrTypes(), &stateStatsConfig)
 
 	// BLOCKED SERVICES
+	// get refreshed blocked services from AdGuard Home
+	blockedServices, err := adg.GetBlockedServices()
+	if err != nil {
+		diags.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
 	// add to config model
-	newState.BlockedServices, diags = types.SetValueFrom(ctx, types.StringType, apiResponse.BlockedServices)
+	o.BlockedServices, *diags = types.SetValueFrom(ctx, types.StringType, blockedServices)
 	if diags.HasError() {
-		return newState, diags, nil
+		return
 	}
 
 	// DNS CONFIG
+	dnsConfig, err := adg.GetDnsInfo()
+	if err != nil {
+		diags.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
 	// retrieve dns config info
 	var stateDnsConfig dnsConfigModel
-	stateDnsConfig.BootstrapDns, diags = types.ListValueFrom(ctx, types.StringType, apiResponse.DnsConfig.BootstrapDns)
+	stateDnsConfig.BootstrapDns, *diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.BootstrapDns)
 	if diags.HasError() {
-		return newState, diags, nil
+		return
 	}
-	stateDnsConfig.UpstreamDns, diags = types.ListValueFrom(ctx, types.StringType, apiResponse.DnsConfig.UpstreamDns)
+	stateDnsConfig.UpstreamDns, *diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.UpstreamDns)
 	if diags.HasError() {
-		return newState, diags, nil
+		return
 	}
-	stateDnsConfig.RateLimit = types.Int64Value(int64(apiResponse.DnsConfig.RateLimit))
-	stateDnsConfig.BlockingMode = types.StringValue(apiResponse.DnsConfig.BlockingMode)
+	stateDnsConfig.RateLimit = types.Int64Value(int64(dnsConfig.RateLimit))
+	stateDnsConfig.BlockingMode = types.StringValue(dnsConfig.BlockingMode)
 	// upstream API does not unset blocking_ipv4 and blocking_ipv6 when previously set and blocking mode changes,
 	// so force state to empty values here
-	if apiResponse.DnsConfig.BlockingMode != "custom_ip" {
+	if dnsConfig.BlockingMode != "custom_ip" {
 		stateDnsConfig.BlockingIpv4 = types.StringValue("")
 		stateDnsConfig.BlockingIpv6 = types.StringValue("")
 	} else {
-		stateDnsConfig.BlockingIpv4 = types.StringValue(apiResponse.DnsConfig.BlockingIpv4)
-		stateDnsConfig.BlockingIpv6 = types.StringValue(apiResponse.DnsConfig.BlockingIpv6)
+		stateDnsConfig.BlockingIpv4 = types.StringValue(dnsConfig.BlockingIpv4)
+		stateDnsConfig.BlockingIpv6 = types.StringValue(dnsConfig.BlockingIpv6)
 	}
-	stateDnsConfig.EDnsCsEnabled = types.BoolValue(apiResponse.DnsConfig.EDnsCsEnabled)
-	stateDnsConfig.DisableIpv6 = types.BoolValue(apiResponse.DnsConfig.DisableIpv6)
-	stateDnsConfig.DnsSecEnabled = types.BoolValue(apiResponse.DnsConfig.DnsSecEnabled)
-	stateDnsConfig.CacheSize = types.Int64Value(int64(apiResponse.DnsConfig.CacheSize))
-	stateDnsConfig.CacheTtlMin = types.Int64Value(int64(apiResponse.DnsConfig.CacheTtlMin))
-	stateDnsConfig.CacheTtlMax = types.Int64Value(int64(apiResponse.DnsConfig.CacheTtlMax))
-	stateDnsConfig.CacheOptimistic = types.BoolValue(apiResponse.DnsConfig.CacheOptimistic)
-	if apiResponse.DnsConfig.UpstreamMode != "" {
-		stateDnsConfig.UpstreamMode = types.StringValue(apiResponse.DnsConfig.UpstreamMode)
+	stateDnsConfig.EDnsCsEnabled = types.BoolValue(dnsConfig.EDnsCsEnabled)
+	stateDnsConfig.DisableIpv6 = types.BoolValue(dnsConfig.DisableIpv6)
+	stateDnsConfig.DnsSecEnabled = types.BoolValue(dnsConfig.DnsSecEnabled)
+	stateDnsConfig.CacheSize = types.Int64Value(int64(dnsConfig.CacheSize))
+	stateDnsConfig.CacheTtlMin = types.Int64Value(int64(dnsConfig.CacheTtlMin))
+	stateDnsConfig.CacheTtlMax = types.Int64Value(int64(dnsConfig.CacheTtlMax))
+	stateDnsConfig.CacheOptimistic = types.BoolValue(dnsConfig.CacheOptimistic)
+	if dnsConfig.UpstreamMode != "" {
+		stateDnsConfig.UpstreamMode = types.StringValue(dnsConfig.UpstreamMode)
 	} else {
 		stateDnsConfig.UpstreamMode = types.StringValue("load_balance")
 	}
-	stateDnsConfig.UsePrivatePtrResolvers = types.BoolValue(apiResponse.DnsConfig.UsePrivatePtrResolvers)
-	stateDnsConfig.ResolveClients = types.BoolValue(apiResponse.DnsConfig.ResolveClients)
-	stateDnsConfig.LocalPtrUpstreams, diags = types.SetValueFrom(ctx, types.StringType, apiResponse.DnsConfig.LocalPtrUpstreams)
+	stateDnsConfig.UsePrivatePtrResolvers = types.BoolValue(dnsConfig.UsePrivatePtrResolvers)
+	stateDnsConfig.ResolveClients = types.BoolValue(dnsConfig.ResolveClients)
+	stateDnsConfig.LocalPtrUpstreams, *diags = types.SetValueFrom(ctx, types.StringType, dnsConfig.LocalPtrUpstreams)
 	if diags.HasError() {
-		return newState, diags, nil
+		return
 	}
-	stateDnsConfig.AllowedClients, diags = types.SetValueFrom(ctx, types.StringType, apiResponse.DnsAccess.AllowedClients)
-	if diags.HasError() {
-		return newState, diags, nil
+
+	// DNS ACCESS
+	// retrieve dns access info
+	dnsAccess, err := adg.GetAccess()
+	if err != nil {
+		diags.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
 	}
-	stateDnsConfig.DisallowedClients, diags = types.SetValueFrom(ctx, types.StringType, apiResponse.DnsAccess.DisallowedClients)
+	stateDnsConfig.AllowedClients, *diags = types.SetValueFrom(ctx, types.StringType, dnsAccess.AllowedClients)
 	if diags.HasError() {
-		return newState, diags, nil
+		return
 	}
-	stateDnsConfig.BlockedHosts, diags = types.SetValueFrom(ctx, types.StringType, apiResponse.DnsAccess.BlockedHosts)
+	stateDnsConfig.DisallowedClients, *diags = types.SetValueFrom(ctx, types.StringType, dnsAccess.DisallowedClients)
 	if diags.HasError() {
-		return newState, diags, nil
+		return
+	}
+	stateDnsConfig.BlockedHosts, *diags = types.SetValueFrom(ctx, types.StringType, dnsAccess.BlockedHosts)
+	if diags.HasError() {
+		return
 	}
 	// add to config model
-	newState.Dns, _ = types.ObjectValueFrom(ctx, dnsConfigModel{}.attrTypes(), &stateDnsConfig)
+	o.Dns, _ = types.ObjectValueFrom(ctx, dnsConfigModel{}.attrTypes(), &stateDnsConfig)
 
-	// return the new state
-	return newState, nil, nil
+	// if we got here, all went fine
 }
 
-// CreateOrUpdateConfigResource - common function to create or update a config resource
-func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan configCommonModel) (diag.Diagnostics, error) {
+// common `Create` and `Update` function for both data source and resource
+func (r *configResource) CreateOrUpdate(ctx context.Context, plan configCommonModel) (diag.Diagnostics, error) {
 	// FILTERING CONFIG
 	// unpack nested attributes from plan
 	var planFiltering filteringModel
@@ -583,6 +646,33 @@ func (r *configResource) CreateOrUpdateConfigResource(ctx context.Context, plan 
 	}
 	// set DNS config using plan
 	_, err = r.adg.SetDnsConfig(dnsConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// instantiate empty dns access list for storing plan data
+	var dnsAccess adguard.AccessList
+	// populate dns access list from plan
+	if len(planDnsConfig.AllowedClients.Elements()) > 0 {
+		diags = planDnsConfig.AllowedClients.ElementsAs(ctx, &dnsAccess.AllowedClients, false)
+		if diags.HasError() {
+			return diags, nil
+		}
+	}
+	if len(planDnsConfig.DisallowedClients.Elements()) > 0 {
+		diags = planDnsConfig.DisallowedClients.ElementsAs(ctx, &dnsAccess.DisallowedClients, false)
+		if diags.HasError() {
+			return diags, nil
+		}
+	}
+	if len(planDnsConfig.BlockedHosts.Elements()) > 0 {
+		diags = planDnsConfig.BlockedHosts.ElementsAs(ctx, &dnsAccess.BlockedHosts, false)
+		if diags.HasError() {
+			return diags, nil
+		}
+	}
+	// set DNS access list using plan
+	_, err = r.adg.SetAccess(dnsAccess)
 	if err != nil {
 		return nil, err
 	}

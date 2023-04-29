@@ -43,6 +43,7 @@ resource "adguard_config" "test" {
 		blocking_ipv4       = "1.2.3.4"
 		blocking_ipv6       = "fe80::"
 		local_ptr_upstreams = ["192.168.0.1", "192.168.0.2"]
+		allowed_clients     = ["allowed-client", "192.168.200.200"]
 	}
 }
 `,
@@ -77,6 +78,8 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_ttl_max", "86400"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_optimistic", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.local_ptr_upstreams.#", "2"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.#", "2"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.1", "allowed-client"),
 					// Verify dynamic values have any value set in the state.
 					resource.TestCheckResourceAttrSet("adguard_config.test", "id"),
 					resource.TestCheckResourceAttrSet("adguard_config.test", "last_updated"),
@@ -115,6 +118,7 @@ resource "adguard_config" "test" {
 		upstream_mode             = "load_balance"
 		use_private_ptr_resolvers = false
 		resolve_clients           = false
+		disallowed_clients        = ["blocked-client", "172.16.0.0/16"]
 	}
 }
 `,
@@ -153,6 +157,9 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.use_private_ptr_resolvers", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.resolve_clients", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.local_ptr_upstreams.#", "0"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.#", "0"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.disallowed_clients.#", "2"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.disallowed_clients.1", "blocked-client"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

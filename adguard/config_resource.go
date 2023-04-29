@@ -422,6 +422,64 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 							types.SetValueMust(types.StringType, []attr.Value{}),
 						),
 					},
+					"allowed_clients": schema.SetAttribute{
+						Description: "The allowlist of clients: IP addresses, CIDRs, or ClientIDs",
+						ElementType: types.StringType,
+						Optional:    true,
+						Computed:    true,
+						Default: setdefault.StaticValue(
+							types.SetNull(types.StringType),
+						),
+						Validators: []validator.Set{
+							setvalidator.SizeAtLeast(1),
+							setvalidator.ValueStringsAre(
+								stringvalidator.RegexMatches(
+									regexp.MustCompile(`^[a-z0-9/.:-]+$`),
+									"must be an IP address/CIDR or only contain numbers, lowercase letters, and hyphens",
+								),
+							),
+						},
+					},
+					"disallowed_clients": schema.SetAttribute{
+						Description: "The blocklist of clients: IP addresses, CIDRs, or ClientIDs",
+						ElementType: types.StringType,
+						Optional:    true,
+						Computed:    true,
+						Default: setdefault.StaticValue(
+							types.SetNull(types.StringType),
+						),
+						Validators: []validator.Set{
+							setvalidator.All(
+								setvalidator.SizeAtLeast(1),
+								setvalidator.ConflictsWith(path.Expressions{
+									path.MatchRelative().AtParent().AtName("allowed_clients"),
+								}...),
+							),
+							setvalidator.ValueStringsAre(
+								stringvalidator.RegexMatches(
+									regexp.MustCompile(`^[a-z0-9/.:-]+$`),
+									"must be an IP address/CIDR or only contain numbers, lowercase letters, and hyphens",
+								),
+							),
+						},
+					},
+					"blocked_hosts": schema.SetAttribute{
+						Description: "Disallowed domains",
+						ElementType: types.StringType,
+						Optional:    true,
+						Computed:    true,
+						Validators:  []validator.Set{setvalidator.SizeAtLeast(1)},
+						Default: setdefault.StaticValue(
+							types.SetValueMust(
+								types.StringType,
+								[]attr.Value{
+									types.StringValue("version.bind"),
+									types.StringValue("id.server"),
+									types.StringValue("hostname.bind"),
+								},
+							),
+						),
+					},
 				},
 			},
 		},
@@ -448,7 +506,7 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	// defer to common function to create or update the resource
-	diags, err := r.CreateOrUpdateConfigResource(ctx, plan)
+	diags, err := r.CreateOrUpdate(ctx, plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Creating AdGuard Home Config",
@@ -483,114 +541,11 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	// initialize object to store downstream API responses
-	var apiResponse configApiResponseModel
-
-	// get refreshed filtering config value from AdGuard Home
-	filteringConfig, err := r.adg.GetAllFilters()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read AdGuard Home Config",
-			err.Error(),
-		)
-		return
-	}
-	// add to response object
-	apiResponse.Filtering = *filteringConfig
-
-	// get refreshed safe browsing status from AdGuard Home
-	safeBrowsingStatus, err := r.adg.GetSafeBrowsingStatus()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read AdGuard Home Config",
-			err.Error(),
-		)
-		return
-	}
-	// add to response object
-	apiResponse.SafeBrowsing = *safeBrowsingStatus
-
-	// get refreshed safe parental control status from AdGuard Home
-	parentalStatus, err := r.adg.GetParentalStatus()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read AdGuard Home Config",
-			err.Error(),
-		)
-		return
-	}
-	// add to response object
-	apiResponse.ParentalControl = *parentalStatus
-
-	// retrieve safe search info
-	safeSearchConfig, err := r.adg.GetSafeSearchConfig()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read AdGuard Home Config",
-			err.Error(),
-		)
-		return
-	}
-	// add to response object
-	apiResponse.SafeSearch = safeSearchConfig
-
-	// retrieve query log config info
-	queryLogConfig, err := r.adg.GetQueryLogConfig()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read AdGuard Home Config",
-			err.Error(),
-		)
-		return
-	}
-	// add to response object
-	apiResponse.QueryLog = *queryLogConfig
-
-	// retrieve server statistics config info
-	statsConfig, err := r.adg.GetStatsConfig()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read AdGuard Home Config",
-			err.Error(),
-		)
-		return
-	}
-	// add to response object
-	apiResponse.Stats = *statsConfig
-
-	// get refreshed blocked services from AdGuard Home
-	blockedServices, err := r.adg.GetBlockedServices()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read AdGuard Home Config",
-			err.Error(),
-		)
-		return
-	}
-	// add to response object
-	apiResponse.BlockedServices = *blockedServices
-
-	// retrieve dns config info
-	dnsConfig, err := r.adg.GetDnsInfo()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read AdGuard Home Config",
-			err.Error(),
-		)
-		return
-	}
-	// add to response object
-	apiResponse.DnsConfig = *dnsConfig.DNSConfig
-
-	// process API responses into a state-like object
-	newState, diags, err := ProcessConfigApiReadResponse(ctx, apiResponse)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read AdGuard Home Config",
-			err.Error(),
-		)
-		return
-	} else if diags.HasError() {
+	// use common model for state
+	var newState configCommonModel
+	// use common Read function
+	newState.Read(ctx, *r.adg, &resp.Diagnostics)
+	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
 	}
@@ -618,7 +573,7 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// defer to common function to create or update the resource
-	diags, err := r.CreateOrUpdateConfigResource(ctx, plan)
+	diags, err := r.CreateOrUpdate(ctx, plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Updating AdGuard Home Config",
@@ -766,7 +721,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	dnsConfig.ResolveClients = true
 	dnsConfig.LocalPtrUpstreams = []string{}
 
-	// set default values in DNS config
+	// set dns config to defaults
 	_, err = r.adg.SetDnsConfig(dnsConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -776,6 +731,23 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
+	// instantiate empty dns access list for storing default values
+	var dnsAccess adguard.AccessList
+
+	// populate dns access list with default values
+	dnsAccess.AllowedClients = []string{}
+	dnsAccess.DisallowedClients = []string{}
+	dnsAccess.BlockedHosts = []string{"version.bind", "id.server", "hostname.bind"}
+
+	// set dns access list to defaults
+	_, err = r.adg.SetAccess(dnsAccess)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Deleting AdGuard Home Config",
+			"Could not delete config, unexpected error: "+err.Error(),
+		)
+		return
+	}
 }
 
 func (r *configResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
