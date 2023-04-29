@@ -33,7 +33,7 @@ resource "adguard_config" "test" {
 		ignored  = ["test3.net", "example4.com"]
 	}
 	blocked_services = ["youtube", "pinterest"]
-  dns = {
+	dns = {
 		upstream_dns        = ["https://1.1.1.1/dns-query", "https://1.0.0.1/dns-query"]
 		rate_limit          = 30
 		cache_ttl_min       = 600
@@ -105,7 +105,7 @@ resource "adguard_config" "test" {
 		ignored = ["test2.com", "example2.com", "abc2.com"]
 	}
 	stats = {
-		ignored  = ["test9.com", "example15.com", "abc5.com"]
+		ignored = ["test9.com", "example15.com", "abc5.com"]
 	}
 	dns = {
 		upstream_dns              = ["https://1.1.1.1/dns-query"]

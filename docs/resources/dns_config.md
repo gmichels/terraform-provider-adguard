@@ -13,6 +13,8 @@ description: |-
 ## Example Usage
 
 ```terraform
+### this resource has been DEPRECATED and will be removed in a future release
+### Use the `dns` block in the `adguard_config` resource instead
 # manage the DNS configuration
 # NOTE: there can only be 1 (one) `adguard_dns_config` resource
 # specifying multiple resources will result in errors

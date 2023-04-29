@@ -24,6 +24,30 @@ resource "adguard_config" "test" {
     enabled  = true
     services = ["bing", "youtube", "google"]
   }
+  querylog = {
+    enabled             = false
+    interval            = 8
+    anonymize_client_ip = true
+    ignored             = ["test2.com", "example2.com"]
+  }
+  stats = {
+    enabled  = false
+    interval = 2
+    ignored  = ["test3.net", "example4.com"]
+  }
+  blocked_services = ["youtube", "pinterest"]
+  dns = {
+    upstream_dns        = ["https://1.1.1.1/dns-query", "https://1.0.0.1/dns-query"]
+    rate_limit          = 30
+    cache_ttl_min       = 600
+    cache_ttl_max       = 86400
+    cache_optimistic    = true
+    blocking_mode       = "custom_ip"
+    blocking_ipv4       = "1.2.3.4"
+    blocking_ipv6       = "fe80::"
+    local_ptr_upstreams = ["192.168.0.1", "192.168.0.2"]
+    allowed_clients     = ["allowed-client", "192.168.200.200"]
+  }
 }
 ```
 
@@ -33,6 +57,7 @@ resource "adguard_config" "test" {
 ### Optional
 
 - `blocked_services` (Set of String) List of services to be blocked globally
+- `dns` (Attributes) (see [below for nested schema](#nestedatt--dns))
 - `filtering` (Attributes) (see [below for nested schema](#nestedatt--filtering))
 - `parental_control` (Attributes) (see [below for nested schema](#nestedatt--parental_control))
 - `querylog` (Attributes) (see [below for nested schema](#nestedatt--querylog))
@@ -44,6 +69,33 @@ resource "adguard_config" "test" {
 
 - `id` (String) Internal identifier for this config
 - `last_updated` (String) Timestamp of the last Terraform update of the config
+
+<a id="nestedatt--dns"></a>
+### Nested Schema for `dns`
+
+Optional:
+
+- `allowed_clients` (Set of String) The allowlist of clients: IP addresses, CIDRs, or ClientIDs
+- `blocked_hosts` (Set of String) Disallowed domains. Defaults to the ones supplied by the default AdGuard Home configuration
+- `blocking_ipv4` (String) When `blocking_mode` is set to `custom_ip`, the IPv4 address to be returned for a blocked A request
+- `blocking_ipv6` (String) When `blocking_mode` is set to `custom_ip`, the IPv6 address to be returned for a blocked A request
+- `blocking_mode` (String) DNS response sent when request is blocked. Valid values are `default` (the default), `refused`, `nxdomain`, `null_ip` or `custom_ip`
+- `bootstrap_dns` (List of String) Booststrap DNS servers. Defaults to the ones supplied by the default AdGuard Home configuration
+- `cache_optimistic` (Boolean) Whether optimistic DNS caching is enabled. Defaults to `false`
+- `cache_size` (Number) DNS cache size (in bytes). Defaults to `4194304`
+- `cache_ttl_max` (Number) Overridden maximum TTL (in seconds) received from upstream DNS servers. Defaults to `0`
+- `cache_ttl_min` (Number) Overridden minimum TTL (in seconds) received from upstream DNS servers. Defaults to `0`
+- `disable_ipv6` (Boolean) Whether dropping of all IPv6 DNS queries is enabled. Defaults to `false`
+- `disallowed_clients` (Set of String) The blocklist of clients: IP addresses, CIDRs, or ClientIDs
+- `dnssec_enabled` (Boolean) Whether outgoing DNSSEC is enabled. Defaults to `false`
+- `edns_cs_enabled` (Boolean) Whether EDNS Client Subnet (ECS) is enabled. Defaults to `false`
+- `local_ptr_upstreams` (Set of String) List of private reverse DNS servers
+- `rate_limit` (Number) The number of requests per second allowed per client. Defaults to `20`
+- `resolve_clients` (Boolean) Whether reverse DNS resolution of clients' IP addresses is enabled. Defaults to `true`
+- `upstream_dns` (List of String) Upstream DNS servers. Defaults to the ones supplied by the default AdGuard Home configuration
+- `upstream_mode` (String) Upstream DNS resolvers usage strategy. Valid values are `load_balance` (default), `parallel` and `fastest_addr`
+- `use_private_ptr_resolvers` (Boolean) Whether to use private reverse DNS resolvers. Defaults to `true`
+
 
 <a id="nestedatt--filtering"></a>
 ### Nested Schema for `filtering`
