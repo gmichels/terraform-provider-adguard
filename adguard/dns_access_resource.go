@@ -55,6 +55,7 @@ func (r *dnsAccessResource) Metadata(_ context.Context, req resource.MetadataReq
 // Schema defines the schema for the resource
 func (r *dnsAccessResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		DeprecationMessage: "The `adguard_dns_access` resource is deprecated and will be removed in a future release. Use the `dns` block in the `adguard_config` resource instead.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Internal identifier of the DNS access list",

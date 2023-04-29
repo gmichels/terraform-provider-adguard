@@ -23,13 +23,42 @@ data "adguard_config" "test" {}
 ### Read-Only
 
 - `blocked_services` (Set of String) List of services that are blocked globally
+- `dns` (Attributes) (see [below for nested schema](#nestedatt--dns))
 - `filtering` (Attributes) (see [below for nested schema](#nestedatt--filtering))
 - `id` (String) Identifier attribute
-- `parental` (Attributes) (see [below for nested schema](#nestedatt--parental))
+- `last_updated` (String) Timestamp of the last Terraform refresh
+- `parental_control` (Attributes) (see [below for nested schema](#nestedatt--parental_control))
 - `querylog` (Attributes) (see [below for nested schema](#nestedatt--querylog))
 - `safebrowsing` (Attributes) (see [below for nested schema](#nestedatt--safebrowsing))
 - `safesearch` (Attributes) (see [below for nested schema](#nestedatt--safesearch))
 - `stats` (Attributes) (see [below for nested schema](#nestedatt--stats))
+
+<a id="nestedatt--dns"></a>
+### Nested Schema for `dns`
+
+Read-Only:
+
+- `allowed_clients` (Set of String) The allowlist of clients: IP addresses, CIDRs, or ClientIDs
+- `blocked_hosts` (Set of String) Disallowed domains
+- `blocking_ipv4` (String) When `blocking_mode` is set to `custom_ip`, the IPv4 address to be returned for a blocked A request
+- `blocking_ipv6` (String) When `blocking_mode` is set to `custom_ip`, the IPv6 address to be returned for a blocked A request
+- `blocking_mode` (String) DNS response sent when request is blocked
+- `bootstrap_dns` (List of String) Booststrap DNS servers
+- `cache_optimistic` (Boolean) Whether optimistic DNS caching is enabled
+- `cache_size` (Number) DNS cache size (in bytes)
+- `cache_ttl_max` (Number) Overridden maximum TTL received from upstream DNS servers
+- `cache_ttl_min` (Number) Overridden minimum TTL received from upstream DNS servers
+- `disable_ipv6` (Boolean) Whether dropping of all IPv6 DNS queries is enabled
+- `disallowed_clients` (Set of String) The blocklist of clients: IP addresses, CIDRs, or ClientIDs
+- `dnssec_enabled` (Boolean) Whether outgoing DNSSEC is enabled
+- `edns_cs_enabled` (Boolean) Whether EDNS Client Subnet (ECS) is enabled
+- `local_ptr_upstreams` (Set of String) List of private reverse DNS servers
+- `rate_limit` (Number) The number of requests per second allowed per client
+- `resolve_clients` (Boolean) Whether reverse DNS resolution of clients' IP addresses is enabled
+- `upstream_dns` (List of String) Upstream DNS servers
+- `upstream_mode` (String) Upstream DNS resolvers usage strategy
+- `use_private_ptr_resolvers` (Boolean) Whether to use private reverse DNS resolvers
+
 
 <a id="nestedatt--filtering"></a>
 ### Nested Schema for `filtering`
@@ -40,8 +69,8 @@ Read-Only:
 - `update_interval` (Number) Update interval for all list-based filters, in hours
 
 
-<a id="nestedatt--parental"></a>
-### Nested Schema for `parental`
+<a id="nestedatt--parental_control"></a>
+### Nested Schema for `parental_control`
 
 Read-Only:
 

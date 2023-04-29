@@ -2,7 +2,7 @@ package adguard
 
 import (
 	"context"
-	"reflect"
+	"time"
 
 	"github.com/gmichels/adguard-client-go"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -21,18 +21,6 @@ type configDataSource struct {
 	adg *adguard.ADG
 }
 
-// configDataModel maps Config schema data
-type configDataModel struct {
-	ID              types.String `tfsdk:"id"`
-	Filtering       types.Object `tfsdk:"filtering"`
-	SafeBrowsing    types.Object `tfsdk:"safebrowsing"`
-	ParentalControl types.Object `tfsdk:"parental"`
-	SafeSearch      types.Object `tfsdk:"safesearch"`
-	QueryLog        types.Object `tfsdk:"querylog"`
-	Stats           types.Object `tfsdk:"stats"`
-	BlockedServices types.Set    `tfsdk:"blocked_services"`
-}
-
 // NewConfigDataSource is a helper function to simplify the provider implementation
 func NewConfigDataSource() datasource.DataSource {
 	return &configDataSource{}
@@ -49,6 +37,10 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Identifier attribute",
+				Computed:    true,
+			},
+			"last_updated": schema.StringAttribute{
+				Description: "Timestamp of the last Terraform refresh",
 				Computed:    true,
 			},
 			"filtering": schema.SingleNestedAttribute{
@@ -73,7 +65,7 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 					},
 				},
 			},
-			"parental": schema.SingleNestedAttribute{
+			"parental_control": schema.SingleNestedAttribute{
 				Computed: true,
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
@@ -141,6 +133,97 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 				ElementType: types.StringType,
 				Computed:    true,
 			},
+			"dns": schema.SingleNestedAttribute{
+				Computed: true,
+				Attributes: map[string]schema.Attribute{
+					"bootstrap_dns": schema.ListAttribute{
+						Description: "Booststrap DNS servers",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+					"upstream_dns": schema.ListAttribute{
+						Description: "Upstream DNS servers",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+					"rate_limit": schema.Int64Attribute{
+						Description: "The number of requests per second allowed per client",
+						Computed:    true,
+					},
+					"blocking_mode": schema.StringAttribute{
+						Description: "DNS response sent when request is blocked",
+						Computed:    true,
+					},
+					"blocking_ipv4": schema.StringAttribute{
+						Description: "When `blocking_mode` is set to `custom_ip`, the IPv4 address to be returned for a blocked A request",
+						Computed:    true,
+					},
+					"blocking_ipv6": schema.StringAttribute{
+						Description: "When `blocking_mode` is set to `custom_ip`, the IPv6 address to be returned for a blocked A request",
+						Computed:    true,
+					},
+					"edns_cs_enabled": schema.BoolAttribute{
+						Description: "Whether EDNS Client Subnet (ECS) is enabled",
+						Computed:    true,
+					},
+					"disable_ipv6": schema.BoolAttribute{
+						Description: "Whether dropping of all IPv6 DNS queries is enabled",
+						Computed:    true,
+					},
+					"dnssec_enabled": schema.BoolAttribute{
+						Description: "Whether outgoing DNSSEC is enabled",
+						Computed:    true,
+					},
+					"cache_size": schema.Int64Attribute{
+						Description: "DNS cache size (in bytes)",
+						Computed:    true,
+					},
+					"cache_ttl_min": schema.Int64Attribute{
+						Description: "Overridden minimum TTL received from upstream DNS servers",
+						Computed:    true,
+					},
+					"cache_ttl_max": schema.Int64Attribute{
+						Description: "Overridden maximum TTL received from upstream DNS servers",
+						Computed:    true,
+					},
+					"cache_optimistic": schema.BoolAttribute{
+						Description: "Whether optimistic DNS caching is enabled",
+						Computed:    true,
+					},
+					"upstream_mode": schema.StringAttribute{
+						Description: "Upstream DNS resolvers usage strategy",
+						Computed:    true,
+					},
+					"use_private_ptr_resolvers": schema.BoolAttribute{
+						Description: "Whether to use private reverse DNS resolvers",
+						Computed:    true,
+					},
+					"resolve_clients": schema.BoolAttribute{
+						Description: "Whether reverse DNS resolution of clients' IP addresses is enabled",
+						Computed:    true,
+					},
+					"local_ptr_upstreams": schema.SetAttribute{
+						Description: "List of private reverse DNS servers",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+					"allowed_clients": schema.SetAttribute{
+						Description: "The allowlist of clients: IP addresses, CIDRs, or ClientIDs",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+					"disallowed_clients": schema.SetAttribute{
+						Description: "The blocklist of clients: IP addresses, CIDRs, or ClientIDs",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+					"blocked_hosts": schema.SetAttribute{
+						Description: "Disallowed domains",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+				},
+			},
 		},
 	}
 }
@@ -148,141 +231,26 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 // Read refreshes the Terraform state with the latest data
 func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	// read Terraform configuration data into the model
-	var state configDataModel
+	var state configCommonModel
 	diags := req.Config.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 
-	// get refreshed filtering config value from AdGuard Home
-	filteringConfig, err := d.adg.GetAllFilters()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read AdGuard Home Config",
-			err.Error(),
-		)
-		return
-	}
-	// map filter config to state
-	var stateFilteringConfig filteringModel
-	stateFilteringConfig.Enabled = types.BoolValue(filteringConfig.Enabled)
-	stateFilteringConfig.UpdateInterval = types.Int64Value(int64(filteringConfig.Interval))
-
-	// get refreshed safe browsing status from AdGuard Home
-	safeBrowsingStatus, err := d.adg.GetSafeBrowsingStatus()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read AdGuard Home Config",
-			err.Error(),
-		)
-		return
-	}
-	// map safe browsing config to state
-	var stateSafeBrowsingStatus enabledModel
-	stateSafeBrowsingStatus.Enabled = types.BoolValue(*safeBrowsingStatus)
-
-	// get refreshed safe parental control status from AdGuard Home
-	parentalStatus, err := d.adg.GetParentalStatus()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read AdGuard Home Config",
-			err.Error(),
-		)
-		return
-	}
-	// map parental control config to state
-	var stateParentalStatus enabledModel
-	stateParentalStatus.Enabled = types.BoolValue(*parentalStatus)
-
-	// retrieve safe search info
-	safeSearchConfig, err := d.adg.GetSafeSearchConfig()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read AdGuard Home Config",
-			err.Error(),
-		)
-		return
-	}
-
-	// perform reflection of safeSearchConfig object
-	v := reflect.ValueOf(safeSearchConfig).Elem()
-	// grab the type of the reflected object
-	t := v.Type()
-	// map the reflected object to a list
-	enabledSafeSearchServices := mapSafeSearchConfigServices(v, t)
-
-	// map safe search to state
-	var stateSafeSearchConfig safeSearchModel
-	stateSafeSearchConfig.Enabled = types.BoolValue(safeSearchConfig.Enabled)
-	stateSafeSearchConfig.Services, diags = types.SetValueFrom(ctx, types.StringType, enabledSafeSearchServices)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// retrieve query log config info
-	queryLogConfig, err := d.adg.GetQueryLogConfig()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read AdGuard Home Config",
-			err.Error(),
-		)
-		return
-	}
-	var stateQueryLogConfig queryLogConfigModel
-	stateQueryLogConfig.Enabled = types.BoolValue(queryLogConfig.Enabled)
-	stateQueryLogConfig.Interval = types.Int64Value(int64(queryLogConfig.Interval / 1000 / 3600))
-	stateQueryLogConfig.AnonymizeClientIp = types.BoolValue(queryLogConfig.AnonymizeClientIp)
-	stateQueryLogConfig.Ignored, diags = types.SetValueFrom(ctx, types.StringType, queryLogConfig.Ignored)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// retrieve server statistics config info
-	statsConfig, err := d.adg.GetStatsConfig()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read AdGuard Home Config",
-			err.Error(),
-		)
-		return
-	}
-	var stateStatsConfig statsConfigModel
-	stateStatsConfig.Enabled = types.BoolValue(statsConfig.Enabled)
-	stateStatsConfig.Interval = types.Int64Value(int64(statsConfig.Interval / 3600 / 1000))
-	stateStatsConfig.Ignored, diags = types.SetValueFrom(ctx, types.StringType, statsConfig.Ignored)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// get refreshed blocked services from AdGuard Home
-	blockedServices, err := d.adg.GetBlockedServices()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read AdGuard Home Config",
-			err.Error(),
-		)
-		return
-	}
-
-	// map response body to model
-	state.Filtering, _ = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)
-	state.SafeBrowsing, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateSafeBrowsingStatus)
-	state.ParentalControl, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateParentalStatus)
-	state.SafeSearch, _ = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchConfig)
-	state.QueryLog, _ = types.ObjectValueFrom(ctx, queryLogConfigModel{}.attrTypes(), &stateQueryLogConfig)
-	state.Stats, _ = types.ObjectValueFrom(ctx, statsConfigModel{}.attrTypes(), &stateStatsConfig)
-	state.BlockedServices, diags = types.SetValueFrom(ctx, types.StringType, blockedServices)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	// use common model for state
+	var newState configCommonModel
+	// use common Read function
+	newState.Read(ctx, *d.adg, &resp.Diagnostics)
+	if diags.HasError() {
+		resp.Diagnostics.Append(diags...)
 		return
 	}
 
 	// set ID placeholder for testing
-	state.ID = types.StringValue("placeholder")
+	newState.ID = types.StringValue("placeholder")
+	// set last updated just because we need it in the resource as well
+	newState.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 
 	// set state
-	diags = resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, &newState)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

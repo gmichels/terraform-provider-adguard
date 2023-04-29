@@ -2,12 +2,12 @@ package adguard
 
 import (
 	"context"
-	"reflect"
 	"regexp"
 	"time"
 
 	"github.com/gmichels/adguard-client-go"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -16,9 +16,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,19 +36,6 @@ var (
 // configResource is the resource implementation
 type configResource struct {
 	adg *adguard.ADG
-}
-
-// configResourceModel maps config schema data
-type configResourceModel struct {
-	ID              types.String `tfsdk:"id"`
-	LastUpdated     types.String `tfsdk:"last_updated"`
-	Filtering       types.Object `tfsdk:"filtering"`
-	SafeBrowsing    types.Object `tfsdk:"safebrowsing"`
-	ParentalControl types.Object `tfsdk:"parental_control"`
-	SafeSearch      types.Object `tfsdk:"safesearch"`
-	QueryLog        types.Object `tfsdk:"querylog"`
-	Stats           types.Object `tfsdk:"stats"`
-	BlockedServices types.Set    `tfsdk:"blocked_services"`
 }
 
 // NewConfigResource is a helper function to simplify the provider implementation
@@ -267,6 +256,232 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					types.SetNull(types.StringType),
 				),
 			},
+			"dns": schema.SingleNestedAttribute{
+				Computed: true,
+				Optional: true,
+				Default: objectdefault.StaticValue(types.ObjectValueMust(
+					dnsConfigModel{}.attrTypes(), dnsConfigModel{}.defaultObject()),
+				),
+				Attributes: map[string]schema.Attribute{
+					"bootstrap_dns": schema.ListAttribute{
+						Description: "Booststrap DNS servers. Defaults to the ones supplied by the default AdGuard Home configuration",
+						ElementType: types.StringType,
+						Computed:    true,
+						Optional:    true,
+						Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
+						Default: listdefault.StaticValue(
+							types.ListValueMust(
+								types.StringType,
+								[]attr.Value{
+									types.StringValue("9.9.9.10"),
+									types.StringValue("149.112.112.10"),
+									types.StringValue("2620:fe::10"),
+									types.StringValue("2620:fe::fe:10"),
+								},
+							),
+						),
+					},
+					"upstream_dns": schema.ListAttribute{
+						Description: "Upstream DNS servers. Defaults to the ones supplied by the default AdGuard Home configuration",
+						ElementType: types.StringType,
+						Computed:    true,
+						Optional:    true,
+						Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
+						Default: listdefault.StaticValue(
+							types.ListValueMust(
+								types.StringType,
+								[]attr.Value{
+									types.StringValue("https://dns10.quad9.net/dns-query"),
+								},
+							),
+						),
+					},
+					"rate_limit": schema.Int64Attribute{
+						Description: "The number of requests per second allowed per client. Defaults to `20`",
+						Computed:    true,
+						Optional:    true,
+						Default:     int64default.StaticInt64(20),
+					},
+					"blocking_mode": schema.StringAttribute{
+						Description: "DNS response sent when request is blocked. Valid values are `default` (the default), `refused`, `nxdomain`, `null_ip` or `custom_ip`",
+						Computed:    true,
+						Optional:    true,
+						Default:     stringdefault.StaticString("default"),
+						Validators: []validator.String{
+							stringvalidator.OneOf("default", "refused", "nxdomain", "null_ip", "custom_ip"),
+						},
+					},
+					"blocking_ipv4": schema.StringAttribute{
+						Description: "When `blocking_mode` is set to `custom_ip`, the IPv4 address to be returned for a blocked A request",
+						Computed:    true,
+						Optional:    true,
+						Default:     stringdefault.StaticString(""),
+						Validators: []validator.String{
+							stringvalidator.All(
+								stringvalidator.RegexMatches(
+									regexp.MustCompile(`\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b`),
+									"must be a valid IPv4 address",
+								),
+								checkBlockingMode("custom_ip"),
+								stringvalidator.AlsoRequires(path.Expressions{
+									path.MatchRelative().AtParent().AtName("blocking_mode"),
+									path.MatchRelative().AtParent().AtName("blocking_ipv6"),
+								}...),
+							),
+						},
+					},
+					"blocking_ipv6": schema.StringAttribute{
+						Description: "When `blocking_mode` is set to `custom_ip`, the IPv6 address to be returned for a blocked A request",
+						Computed:    true,
+						Optional:    true,
+						Default:     stringdefault.StaticString(""),
+						Validators: []validator.String{
+							stringvalidator.All(
+								stringvalidator.RegexMatches(
+									regexp.MustCompile(`(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))`),
+									"must be a valid IPv6 address",
+								),
+								checkBlockingMode("custom_ip"),
+								stringvalidator.AlsoRequires(path.Expressions{
+									path.MatchRelative().AtParent().AtName("blocking_mode"),
+									path.MatchRelative().AtParent().AtName("blocking_ipv4"),
+								}...),
+							),
+						},
+					},
+					"edns_cs_enabled": schema.BoolAttribute{
+						Description: "Whether EDNS Client Subnet (ECS) is enabled. Defaults to `false`",
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(false),
+					},
+					"disable_ipv6": schema.BoolAttribute{
+						Description: "Whether dropping of all IPv6 DNS queries is enabled. Defaults to `false`",
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(false),
+					},
+					"dnssec_enabled": schema.BoolAttribute{
+						Description: "Whether outgoing DNSSEC is enabled. Defaults to `false`",
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(false),
+					},
+					"cache_size": schema.Int64Attribute{
+						Description: "DNS cache size (in bytes). Defaults to `4194304`",
+						Computed:    true,
+						Optional:    true,
+						Default:     int64default.StaticInt64(4194304),
+					},
+					"cache_ttl_min": schema.Int64Attribute{
+						Description: "Overridden minimum TTL (in seconds) received from upstream DNS servers. Defaults to `0`",
+						Computed:    true,
+						Optional:    true,
+						Default:     int64default.StaticInt64(0),
+					},
+					"cache_ttl_max": schema.Int64Attribute{
+						Description: "Overridden maximum TTL (in seconds) received from upstream DNS servers. Defaults to `0`",
+						Computed:    true,
+						Optional:    true,
+						Default:     int64default.StaticInt64(0),
+					},
+					"cache_optimistic": schema.BoolAttribute{
+						Description: "Whether optimistic DNS caching is enabled. Defaults to `false`",
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(false),
+					},
+					"upstream_mode": schema.StringAttribute{
+						Description: "Upstream DNS resolvers usage strategy. Valid values are `load_balance` (default), `parallel` and `fastest_addr`",
+						Computed:    true,
+						Optional:    true,
+						Default:     stringdefault.StaticString("load_balance"),
+						Validators: []validator.String{
+							stringvalidator.OneOf("load_balance", "parallel", "fastest_addr"),
+						},
+					},
+					"use_private_ptr_resolvers": schema.BoolAttribute{
+						Description: "Whether to use private reverse DNS resolvers. Defaults to `true`",
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(true),
+					},
+					"resolve_clients": schema.BoolAttribute{
+						Description: "Whether reverse DNS resolution of clients' IP addresses is enabled. Defaults to `true`",
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(true),
+					},
+					"local_ptr_upstreams": schema.SetAttribute{
+						Description: "List of private reverse DNS servers",
+						ElementType: types.StringType,
+						Computed:    true,
+						Optional:    true,
+						Validators:  []validator.Set{setvalidator.SizeAtLeast(1)},
+						Default: setdefault.StaticValue(
+							types.SetValueMust(types.StringType, []attr.Value{}),
+						),
+					},
+					"allowed_clients": schema.SetAttribute{
+						Description: "The allowlist of clients: IP addresses, CIDRs, or ClientIDs",
+						ElementType: types.StringType,
+						Optional:    true,
+						Computed:    true,
+						Default: setdefault.StaticValue(
+							types.SetNull(types.StringType),
+						),
+						Validators: []validator.Set{
+							setvalidator.SizeAtLeast(1),
+							setvalidator.ValueStringsAre(
+								stringvalidator.RegexMatches(
+									regexp.MustCompile(`^[a-z0-9/.:-]+$`),
+									"must be an IP address/CIDR or only contain numbers, lowercase letters, and hyphens",
+								),
+							),
+						},
+					},
+					"disallowed_clients": schema.SetAttribute{
+						Description: "The blocklist of clients: IP addresses, CIDRs, or ClientIDs",
+						ElementType: types.StringType,
+						Optional:    true,
+						Computed:    true,
+						Default: setdefault.StaticValue(
+							types.SetNull(types.StringType),
+						),
+						Validators: []validator.Set{
+							setvalidator.All(
+								setvalidator.SizeAtLeast(1),
+								setvalidator.ConflictsWith(path.Expressions{
+									path.MatchRelative().AtParent().AtName("allowed_clients"),
+								}...),
+							),
+							setvalidator.ValueStringsAre(
+								stringvalidator.RegexMatches(
+									regexp.MustCompile(`^[a-z0-9/.:-]+$`),
+									"must be an IP address/CIDR or only contain numbers, lowercase letters, and hyphens",
+								),
+							),
+						},
+					},
+					"blocked_hosts": schema.SetAttribute{
+						Description: "Disallowed domains. Defaults to the ones supplied by the default AdGuard Home configuration",
+						ElementType: types.StringType,
+						Optional:    true,
+						Computed:    true,
+						Validators:  []validator.Set{setvalidator.SizeAtLeast(1)},
+						Default: setdefault.StaticValue(
+							types.SetValueMust(
+								types.StringType,
+								[]attr.Value{
+									types.StringValue("version.bind"),
+									types.StringValue("id.server"),
+									types.StringValue("hostname.bind"),
+								},
+							),
+						),
+					},
+				},
+			},
 		},
 	}
 }
@@ -283,7 +498,7 @@ func (r *configResource) Configure(_ context.Context, req resource.ConfigureRequ
 // Create creates the resource and sets the initial Terraform state
 func (r *configResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	// retrieve values from plan
-	var plan configResourceModel
+	var plan configCommonModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -291,14 +506,8 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	// defer to common function to create or update the resource
-	plan, diags, err := r.CreateOrUpdateConfigResource(ctx, plan)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Creating AdGuard Home Config",
-			"Could not create AdGuard Home config: "+err.Error(),
-		)
-		return
-	} else if diags.HasError() {
+	r.CreateOrUpdate(ctx, plan, &resp.Diagnostics)
+	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
 	}
@@ -319,142 +528,28 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 // Read refreshes the Terraform state with the latest data
 func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	// get current state
-	var state configResourceModel
+	var state configCommonModel
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// get refreshed filtering config value from AdGuard Home
-	filteringConfig, err := r.adg.GetAllFilters()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Reading AdGuard Home Config",
-			"Could not read AdGuard Home config ID "+state.ID.ValueString()+": "+err.Error(),
-		)
-		return
-	}
-	// map filtering config to state
-	var stateFilteringConfig filteringModel
-	stateFilteringConfig.Enabled = types.BoolValue(filteringConfig.Enabled)
-	stateFilteringConfig.UpdateInterval = types.Int64Value(int64(filteringConfig.Interval))
-
-	// get refreshed safe browsing status from AdGuard Home
-	safeBrowsingStatus, err := r.adg.GetSafeBrowsingStatus()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Reading AdGuard Home Config",
-			"Could not read AdGuard Home config ID "+state.ID.ValueString()+": "+err.Error(),
-		)
-		return
-	}
-	// map safe browsing config to state
-	var stateSafeBrowsingStatus enabledModel
-	stateSafeBrowsingStatus.Enabled = types.BoolValue(*safeBrowsingStatus)
-
-	// get refreshed parental control status from AdGuard Home
-	parentalStatus, err := r.adg.GetParentalStatus()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Reading AdGuard Home Config",
-			"Could not read AdGuard Home config ID "+state.ID.ValueString()+": "+err.Error(),
-		)
-		return
-	}
-	// map parental control config to state
-	var stateParentalStatus enabledModel
-	stateParentalStatus.Enabled = types.BoolValue(*parentalStatus)
-
-	// retrieve safe search info
-	safeSearchConfig, err := r.adg.GetSafeSearchConfig()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Reading AdGuard Home Config",
-			"Could not read AdGuard Home config ID "+state.ID.ValueString()+": "+err.Error(),
-		)
-		return
-	}
-	// perform reflection of safeSearchConfig object
-	v := reflect.ValueOf(safeSearchConfig).Elem()
-	// grab the type of the reflected object
-	t := v.Type()
-	// map the reflected object to a list of enabled services
-	enabledSafeSearchServices := mapSafeSearchConfigServices(v, t)
-
-	// map safe search to state
-	var stateSafeSearchConfig safeSearchModel
-	stateSafeSearchConfig.Enabled = types.BoolValue(safeSearchConfig.Enabled)
-	stateSafeSearchConfig.Services, diags = types.SetValueFrom(ctx, types.StringType, enabledSafeSearchServices)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	// use common model for state
+	var newState configCommonModel
+	// use common Read function
+	newState.Read(ctx, *r.adg, &resp.Diagnostics)
+	if diags.HasError() {
+		resp.Diagnostics.Append(diags...)
 		return
 	}
 
-	// retrieve query log config info
-	queryLogConfig, err := r.adg.GetQueryLogConfig()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Reading AdGuard Home Config",
-			"Could not read AdGuard Home config ID "+state.ID.ValueString()+": "+err.Error(),
-		)
-		return
-	}
-	var stateQueryLogConfig queryLogConfigModel
-	stateQueryLogConfig.Enabled = types.BoolValue(queryLogConfig.Enabled)
-	stateQueryLogConfig.Interval = types.Int64Value(int64(queryLogConfig.Interval / 1000 / 3600))
-	stateQueryLogConfig.AnonymizeClientIp = types.BoolValue(queryLogConfig.AnonymizeClientIp)
-	stateQueryLogConfig.Ignored, diags = types.SetValueFrom(ctx, types.StringType, queryLogConfig.Ignored)
-	resp.Diagnostics.Append(diags...)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// retrieve stats config info
-	statsConfig, err := r.adg.GetStatsConfig()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Reading AdGuard Home Config",
-			"Could not read AdGuard Home config ID "+state.ID.ValueString()+": "+err.Error(),
-		)
-		return
-	}
-	var stateStatsConfig statsConfigModel
-	stateStatsConfig.Enabled = types.BoolValue(statsConfig.Enabled)
-	stateStatsConfig.Interval = types.Int64Value(int64(statsConfig.Interval / 1000 / 3600))
-	stateStatsConfig.Ignored, diags = types.SetValueFrom(ctx, types.StringType, statsConfig.Ignored)
-	resp.Diagnostics.Append(diags...)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// get refreshed blocked services from AdGuard Home
-	blockedServices, err := r.adg.GetBlockedServices()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Reading AdGuard Home Config",
-			"Could not read AdGuard Home config ID "+state.ID.ValueString()+": "+err.Error(),
-		)
-		return
-	}
-
-	// overwrite config with refreshed state
-	state.Filtering, _ = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)
-	state.SafeBrowsing, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateSafeBrowsingStatus)
-	state.ParentalControl, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateParentalStatus)
-	state.SafeSearch, _ = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchConfig)
-	state.QueryLog, _ = types.ObjectValueFrom(ctx, queryLogConfigModel{}.attrTypes(), &stateQueryLogConfig)
-	state.Stats, _ = types.ObjectValueFrom(ctx, statsConfigModel{}.attrTypes(), &stateStatsConfig)
-	state.BlockedServices, diags = types.SetValueFrom(ctx, types.StringType, blockedServices)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	// populate internal fields into new state
+	newState.ID = state.ID
+	newState.LastUpdated = state.LastUpdated
 
 	// set refreshed state
-	diags = resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, &newState)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -464,7 +559,7 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 // Update updates the resource and sets the updated Terraform state on success
 func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	// retrieve values from plan
-	var plan configResourceModel
+	var plan configCommonModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -472,14 +567,8 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// defer to common function to create or update the resource
-	plan, diags, err := r.CreateOrUpdateConfigResource(ctx, plan)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Creating AdGuard Home Config",
-			"Could not create AdGuard Home config: "+err.Error(),
-		)
-		return
-	} else if diags.HasError() {
+	r.CreateOrUpdate(ctx, plan, &resp.Diagnostics)
+	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
 	}
@@ -519,7 +608,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
-			"Could not update config, unexpected error: "+err.Error(),
+			"Could not delete config, unexpected error: "+err.Error(),
 		)
 		return
 	}
@@ -529,7 +618,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
-			"Could not update config, unexpected error: "+err.Error(),
+			"Could not delete config, unexpected error: "+err.Error(),
 		)
 		return
 	}
@@ -549,7 +638,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
-			"Could not update config, unexpected error: "+err.Error(),
+			"Could not delete config, unexpected error: "+err.Error(),
 		)
 		return
 	}
@@ -566,7 +655,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
-			"Could not update config, unexpected error: "+err.Error(),
+			"Could not delete config, unexpected error: "+err.Error(),
 		)
 		return
 	}
@@ -581,8 +670,8 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	_, err = r.adg.SetStatsConfig(statsConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error Deleting Server Statistics Config",
-			"Could not delete server statistics configuration, unexpected error: "+err.Error(),
+			"Error Deleting AdGuard Home Config",
+			"Could not delete config, unexpected error: "+err.Error(),
 		)
 		return
 	}
@@ -591,8 +680,59 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	_, err = r.adg.SetBlockedServices(make([]string, 0))
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error Deleting Server Statistics Config",
-			"Could not delete server statistics configuration, unexpected error: "+err.Error(),
+			"Error Deleting AdGuard Home Config",
+			"Could not delete config, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// instantiate empty DNS config for storing default values
+	var dnsConfig adguard.DNSConfig
+
+	// populate DNS config with default values
+	dnsConfig.BootstrapDns = []string{"9.9.9.10", "149.112.112.10", "2620:fe::10", "2620:fe::fe:10"}
+	dnsConfig.UpstreamDns = []string{"https://dns10.quad9.net/dns-query"}
+	dnsConfig.UpstreamDnsFile = ""
+	dnsConfig.RateLimit = 20
+	dnsConfig.BlockingMode = "default"
+	dnsConfig.BlockingIpv4 = ""
+	dnsConfig.BlockingIpv6 = ""
+	dnsConfig.EDnsCsEnabled = false
+	dnsConfig.DisableIpv6 = false
+	dnsConfig.DnsSecEnabled = false
+	dnsConfig.CacheSize = 4194304
+	dnsConfig.CacheTtlMin = 0
+	dnsConfig.CacheTtlMax = 0
+	dnsConfig.CacheOptimistic = false
+	dnsConfig.UpstreamMode = ""
+	dnsConfig.UsePrivatePtrResolvers = true
+	dnsConfig.ResolveClients = true
+	dnsConfig.LocalPtrUpstreams = []string{}
+
+	// set dns config to defaults
+	_, err = r.adg.SetDnsConfig(dnsConfig)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Deleting AdGuard Home Config",
+			"Could not delete config, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// instantiate empty dns access list for storing default values
+	var dnsAccess adguard.AccessList
+
+	// populate dns access list with default values
+	dnsAccess.AllowedClients = []string{}
+	dnsAccess.DisallowedClients = []string{}
+	dnsAccess.BlockedHosts = []string{"version.bind", "id.server", "hostname.bind"}
+
+	// set dns access list to defaults
+	_, err = r.adg.SetAccess(dnsAccess)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Deleting AdGuard Home Config",
+			"Could not delete config, unexpected error: "+err.Error(),
 		)
 		return
 	}

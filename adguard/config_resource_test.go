@@ -33,6 +33,18 @@ resource "adguard_config" "test" {
 		ignored  = ["test3.net", "example4.com"]
 	}
 	blocked_services = ["youtube", "pinterest"]
+	dns = {
+		upstream_dns        = ["https://1.1.1.1/dns-query", "https://1.0.0.1/dns-query"]
+		rate_limit          = 30
+		cache_ttl_min       = 600
+		cache_ttl_max       = 86400
+		cache_optimistic    = true
+		blocking_mode       = "custom_ip"
+		blocking_ipv4       = "1.2.3.4"
+		blocking_ipv6       = "fe80::"
+		local_ptr_upstreams = ["192.168.0.1", "192.168.0.2"]
+		allowed_clients     = ["allowed-client", "192.168.200.200"]
+	}
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -56,6 +68,18 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.1", "test3.net"),
 					resource.TestCheckResourceAttr("adguard_config.test", "blocked_services.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "blocked_services.0", "pinterest"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.upstream_dns.#", "2"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.upstream_dns.1", "https://1.0.0.1/dns-query"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.rate_limit", "30"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_mode", "custom_ip"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_ipv4", "1.2.3.4"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_ipv6", "fe80::"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_ttl_min", "600"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_ttl_max", "86400"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_optimistic", "true"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.local_ptr_upstreams.#", "2"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.#", "2"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.1", "allowed-client"),
 					// Verify dynamic values have any value set in the state.
 					resource.TestCheckResourceAttrSet("adguard_config.test", "id"),
 					resource.TestCheckResourceAttrSet("adguard_config.test", "last_updated"),
@@ -81,7 +105,20 @@ resource "adguard_config" "test" {
 		ignored = ["test2.com", "example2.com", "abc2.com"]
 	}
 	stats = {
-		ignored  = ["test9.com", "example15.com", "abc5.com"]
+		ignored = ["test9.com", "example15.com", "abc5.com"]
+	}
+	dns = {
+		upstream_dns              = ["https://1.1.1.1/dns-query"]
+		blocking_mode             = "nxdomain"
+		rate_limit                = 25
+		edns_cs_enabled           = true
+		disable_ipv6              = true
+		dnssec_enabled            = true
+		cache_size                = 8000000
+		upstream_mode             = "load_balance"
+		use_private_ptr_resolvers = false
+		resolve_clients           = false
+		disallowed_clients        = ["blocked-client", "172.16.0.0/16"]
 	}
 }
 `,
@@ -106,6 +143,23 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.1", "example15.com"),
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.2", "test9.com"),
 					resource.TestCheckResourceAttr("adguard_config.test", "blocked_services.#", "0"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.upstream_dns.#", "1"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.upstream_dns.0", "https://1.1.1.1/dns-query"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.rate_limit", "25"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_mode", "nxdomain"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_ipv4", ""),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_ipv6", ""),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.edns_cs_enabled", "true"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.disable_ipv6", "true"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.dnssec_enabled", "true"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_size", "8000000"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.upstream_mode", "load_balance"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.use_private_ptr_resolvers", "false"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.resolve_clients", "false"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.local_ptr_upstreams.#", "0"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.#", "0"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.disallowed_clients.#", "2"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.disallowed_clients.1", "blocked-client"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
