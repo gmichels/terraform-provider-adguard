@@ -456,14 +456,14 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 	// if we got here, all went fine
 }
 
-// common `Create` and `Update` function for both data source and resource
-func (r *configResource) CreateOrUpdate(ctx context.Context, plan configCommonModel) (diag.Diagnostics, error) {
+// common `Create` and `Update` function for the resource
+func (r *configResource) CreateOrUpdate(ctx context.Context, plan configCommonModel, diags *diag.Diagnostics) {
 	// FILTERING CONFIG
 	// unpack nested attributes from plan
 	var planFiltering filteringModel
-	diags := plan.Filtering.As(ctx, &planFiltering, basetypes.ObjectAsOptions{})
+	*diags = plan.Filtering.As(ctx, &planFiltering, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
-		return diags, nil
+		return
 	}
 	// instantiate empty object for storing plan data
 	var filteringConfig adguard.FilterConfig
@@ -474,41 +474,52 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan configCommonMo
 	// set filtering config using plan
 	_, err := r.adg.ConfigureFiltering(filteringConfig)
 	if err != nil {
-		return nil, err
+		diags.AddError(
+			"Unable to Update AdGuard Home Config",
+			err.Error(),
+		)
+		return
 	}
 
 	// SAFE BROWSING
 	// unpack nested attributes from plan
 	var planSafeBrowsing enabledModel
-	diags = plan.SafeBrowsing.As(ctx, &planSafeBrowsing, basetypes.ObjectAsOptions{})
+	*diags = plan.SafeBrowsing.As(ctx, &planSafeBrowsing, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
-		return diags, nil
+		return
 	}
 	// set safe browsing status using plan
 	err = r.adg.SetSafeBrowsingStatus(planSafeBrowsing.Enabled.ValueBool())
 	if err != nil {
-		return nil, err
+		diags.AddError(
+			"Unable to Update AdGuard Home Config",
+			err.Error(),
+		)
+		return
 	}
 
 	// PARENTAL CONTROL
 	// unpack nested attributes from plan
 	var planParentalControl enabledModel
-	diags = plan.ParentalControl.As(ctx, &planParentalControl, basetypes.ObjectAsOptions{})
+	*diags = plan.ParentalControl.As(ctx, &planParentalControl, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
-		return diags, nil
+		return
 	}
 	// set parental control status using plan
-	err = r.adg.SetParentalStatus(planParentalControl.Enabled.ValueBool())
 	if err != nil {
-		return nil, err
+		diags.AddError(
+			"Unable to Update AdGuard Home Config",
+			err.Error(),
+		)
+		return
 	}
 
 	// SAFE SEARCH
 	// unpack nested attributes from plan
 	var planSafeSearch safeSearchModel
-	diags = plan.SafeSearch.As(ctx, &planSafeSearch, basetypes.ObjectAsOptions{})
+	*diags = plan.SafeSearch.As(ctx, &planSafeSearch, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
-		return diags, nil
+		return
 	}
 	// instantiate empty object for storing plan data
 	var safeSearchConfig adguard.SafeSearchConfig
@@ -516,9 +527,9 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan configCommonMo
 	safeSearchConfig.Enabled = planSafeSearch.Enabled.ValueBool()
 	if len(planSafeSearch.Services.Elements()) > 0 {
 		var safeSearchServicesEnabled []string
-		diags = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
+		*diags = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
 		if diags.HasError() {
-			return diags, nil
+			return
 		}
 		// use reflection to set each safeSearchConfig service value dynamically
 		v := reflect.ValueOf(&safeSearchConfig).Elem()
@@ -528,15 +539,19 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan configCommonMo
 	// set safe search config using plan
 	_, err = r.adg.SetSafeSearchConfig(safeSearchConfig)
 	if err != nil {
-		return nil, err
+		diags.AddError(
+			"Unable to Update AdGuard Home Config",
+			err.Error(),
+		)
+		return
 	}
 
 	// QUERY LOG
 	// unpack nested attributes from plan
 	var planQueryLogConfig queryLogConfigModel
-	diags = plan.QueryLog.As(ctx, &planQueryLogConfig, basetypes.ObjectAsOptions{})
+	*diags = plan.QueryLog.As(ctx, &planQueryLogConfig, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
-		return diags, nil
+		return
 	}
 	// instantiate empty object for storing plan data
 	var queryLogConfig adguard.GetQueryLogConfigResponse
@@ -545,23 +560,27 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan configCommonMo
 	queryLogConfig.Interval = uint64(planQueryLogConfig.Interval.ValueInt64() * 3600 * 1000)
 	queryLogConfig.AnonymizeClientIp = planQueryLogConfig.AnonymizeClientIp.ValueBool()
 	if len(planQueryLogConfig.Ignored.Elements()) > 0 {
-		diags = planQueryLogConfig.Ignored.ElementsAs(ctx, &queryLogConfig.Ignored, false)
+		*diags = planQueryLogConfig.Ignored.ElementsAs(ctx, &queryLogConfig.Ignored, false)
 		if diags.HasError() {
-			return diags, nil
+			return
 		}
 	}
 	// set query log config using plan
 	_, err = r.adg.SetQueryLogConfig(queryLogConfig)
 	if err != nil {
-		return nil, err
+		diags.AddError(
+			"Unable to Update AdGuard Home Config",
+			err.Error(),
+		)
+		return
 	}
 
 	// STATS
 	// unpack nested attributes from plan
 	var planStatsConfig statsConfigModel
-	diags = plan.Stats.As(ctx, &planStatsConfig, basetypes.ObjectAsOptions{})
+	*diags = plan.Stats.As(ctx, &planStatsConfig, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
-		return diags, nil
+		return
 	}
 	// instantiate empty object for storing plan data
 	var statsConfig adguard.GetStatsConfigResponse
@@ -569,15 +588,19 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan configCommonMo
 	statsConfig.Enabled = planStatsConfig.Enabled.ValueBool()
 	statsConfig.Interval = uint64(planStatsConfig.Interval.ValueInt64() * 3600 * 1000)
 	if len(planStatsConfig.Ignored.Elements()) > 0 {
-		diags = planStatsConfig.Ignored.ElementsAs(ctx, &statsConfig.Ignored, false)
+		*diags = planStatsConfig.Ignored.ElementsAs(ctx, &statsConfig.Ignored, false)
 		if diags.HasError() {
-			return diags, nil
+			return
 		}
 	}
 	// set stats config using plan
 	_, err = r.adg.SetStatsConfig(statsConfig)
 	if err != nil {
-		return nil, err
+		diags.AddError(
+			"Unable to Update AdGuard Home Config",
+			err.Error(),
+		)
+		return
 	}
 
 	// BLOCKED SERVICES
@@ -585,37 +608,41 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan configCommonMo
 	var blockedServices []string
 	// populate blocked services from plan
 	if len(plan.BlockedServices.Elements()) > 0 {
-		diags = plan.BlockedServices.ElementsAs(ctx, &blockedServices, false)
+		*diags = plan.BlockedServices.ElementsAs(ctx, &blockedServices, false)
 		if diags.HasError() {
-			return diags, nil
+			return
 		}
 	}
 	// set blocked services using plan
 	_, err = r.adg.SetBlockedServices(blockedServices)
 	if err != nil {
-		return nil, err
+		diags.AddError(
+			"Unable to Update AdGuard Home Config",
+			err.Error(),
+		)
+		return
 	}
 
 	// DNS CONFIG
 	// unpack nested attributes from plan
 	var planDnsConfig dnsConfigModel
-	diags = plan.Dns.As(ctx, &planDnsConfig, basetypes.ObjectAsOptions{})
+	*diags = plan.Dns.As(ctx, &planDnsConfig, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
-		return diags, nil
+		return
 	}
 	// instantiate empty object for storing plan data
 	var dnsConfig adguard.DNSConfig
 	// populate DNS config from plan
 	if len(planDnsConfig.BootstrapDns.Elements()) > 0 {
-		diags = planDnsConfig.BootstrapDns.ElementsAs(ctx, &dnsConfig.BootstrapDns, false)
+		*diags = planDnsConfig.BootstrapDns.ElementsAs(ctx, &dnsConfig.BootstrapDns, false)
 		if diags.HasError() {
-			return diags, nil
+			return
 		}
 	}
 	if len(planDnsConfig.UpstreamDns.Elements()) > 0 {
-		diags = planDnsConfig.UpstreamDns.ElementsAs(ctx, &dnsConfig.UpstreamDns, false)
+		*diags = planDnsConfig.UpstreamDns.ElementsAs(ctx, &dnsConfig.UpstreamDns, false)
 		if diags.HasError() {
-			return diags, nil
+			return
 		}
 	}
 	dnsConfig.RateLimit = uint(planDnsConfig.RateLimit.ValueInt64())
@@ -637,9 +664,9 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan configCommonMo
 	dnsConfig.UsePrivatePtrResolvers = planDnsConfig.UsePrivatePtrResolvers.ValueBool()
 	dnsConfig.ResolveClients = planDnsConfig.ResolveClients.ValueBool()
 	if len(planDnsConfig.LocalPtrUpstreams.Elements()) > 0 {
-		diags = planDnsConfig.LocalPtrUpstreams.ElementsAs(ctx, &dnsConfig.LocalPtrUpstreams, false)
+		*diags = planDnsConfig.LocalPtrUpstreams.ElementsAs(ctx, &dnsConfig.LocalPtrUpstreams, false)
 		if diags.HasError() {
-			return diags, nil
+			return
 		}
 	} else {
 		dnsConfig.LocalPtrUpstreams = []string{}
@@ -647,38 +674,45 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan configCommonMo
 	// set DNS config using plan
 	_, err = r.adg.SetDnsConfig(dnsConfig)
 	if err != nil {
-		return nil, err
+		diags.AddError(
+			"Unable to Update AdGuard Home Config",
+			err.Error(),
+		)
+		return
 	}
 
 	// instantiate empty dns access list for storing plan data
 	var dnsAccess adguard.AccessList
 	// populate dns access list from plan
 	if len(planDnsConfig.AllowedClients.Elements()) > 0 {
-		diags = planDnsConfig.AllowedClients.ElementsAs(ctx, &dnsAccess.AllowedClients, false)
+		*diags = planDnsConfig.AllowedClients.ElementsAs(ctx, &dnsAccess.AllowedClients, false)
 		if diags.HasError() {
-			return diags, nil
+			return
 		}
 	}
 	if len(planDnsConfig.DisallowedClients.Elements()) > 0 {
-		diags = planDnsConfig.DisallowedClients.ElementsAs(ctx, &dnsAccess.DisallowedClients, false)
+		*diags = planDnsConfig.DisallowedClients.ElementsAs(ctx, &dnsAccess.DisallowedClients, false)
 		if diags.HasError() {
-			return diags, nil
+			return
 		}
 	}
 	if len(planDnsConfig.BlockedHosts.Elements()) > 0 {
-		diags = planDnsConfig.BlockedHosts.ElementsAs(ctx, &dnsAccess.BlockedHosts, false)
+		*diags = planDnsConfig.BlockedHosts.ElementsAs(ctx, &dnsAccess.BlockedHosts, false)
 		if diags.HasError() {
-			return diags, nil
+			return
 		}
 	}
 	// set DNS access list using plan
 	_, err = r.adg.SetAccess(dnsAccess)
 	if err != nil {
-		return nil, err
+		diags.AddError(
+			"Unable to Update AdGuard Home Config",
+			err.Error(),
+		)
+		return
 	}
 
-	// no errors to return
-	return nil, nil
+	// if we got here, all went fine
 }
 
 // mapSafeSearchConfigFields - will return the list of safe search services that are enabled
