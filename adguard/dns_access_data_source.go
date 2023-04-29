@@ -41,6 +41,7 @@ func (d *dnsAccessDataSource) Metadata(_ context.Context, req datasource.Metadat
 // Schema defines the schema for the data source
 func (d *dnsAccessDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		DeprecationMessage: "The `adguard_dns_access` data source is deprecated and will be removed in a future release. Use the `dns` block in the `adguard_config` data source instead.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Identifier attribute",
