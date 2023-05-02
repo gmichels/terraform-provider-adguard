@@ -2,6 +2,7 @@ package adguard
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"time"
 
@@ -93,40 +94,40 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				},
 			},
 			"use_global_settings": schema.BoolAttribute{
-				Description: "Whether to use global settings on this client",
+				Description: fmt.Sprintf("Whether to use global settings on this client. Defaults to `%t`", CLIENT_USE_GLOBAL_SETTINGS),
 				Computed:    true,
 				Optional:    true,
-				Default:     booldefault.StaticBool(true),
+				Default:     booldefault.StaticBool(CLIENT_USE_GLOBAL_SETTINGS),
 			},
 			"filtering_enabled": schema.BoolAttribute{
-				Description: "Whether to have filtering enabled on this client",
+				Description: fmt.Sprintf("Whether to have filtering enabled on this client. Defaults to `%t`", CLIENT_FILTERING_ENABLED),
 				Computed:    true,
 				Optional:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(CLIENT_FILTERING_ENABLED),
 			},
 			"parental_enabled": schema.BoolAttribute{
-				Description: "Whether to have AdGuard parental controls enabled on this client",
+				Description: fmt.Sprintf("Whether to have AdGuard parental controls enabled on this client. Defaults to `%t`", CLIENT_PARENTAL_CONTROL_ENABLED),
 				Computed:    true,
 				Optional:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(CLIENT_PARENTAL_CONTROL_ENABLED),
 			},
 			"safebrowsing_enabled": schema.BoolAttribute{
-				Description: "Whether to have AdGuard browsing security enabled on this client",
+				Description: fmt.Sprintf("Whether to have AdGuard browsing security enabled on this client.  Defaults to `%t`", CLIENT_SAFEBROWSING_ENABLED),
 				Computed:    true,
 				Optional:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(CLIENT_SAFEBROWSING_ENABLED),
 			},
 			"safesearch_enabled": schema.BoolAttribute{
-				Description: "Whether to enforce safe search on this client",
+				Description: fmt.Sprintf("Whether to enforce safe search on this client.  Defaults to `%t`", CLIENT_SAFE_SEARCH_ENABLED),
 				Computed:    true,
 				Optional:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(CLIENT_SAFE_SEARCH_ENABLED),
 			},
 			"use_global_blocked_services": schema.BoolAttribute{
-				Description: "Whether to use global settings for blocked services",
+				Description: fmt.Sprintf("Whether to use global settings for blocked services.  Defaults to `%t`", CLIENT_USE_GLOBAL_BLOCKED_SERVICES),
 				Computed:    true,
 				Optional:    true,
-				Default:     booldefault.StaticBool(true),
+				Default:     booldefault.StaticBool(CLIENT_USE_GLOBAL_BLOCKED_SERVICES),
 			},
 			"blocked_services": schema.ListAttribute{
 				Description: "List of blocked services for this client",
