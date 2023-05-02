@@ -112,19 +112,19 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Default:     booldefault.StaticBool(CLIENT_PARENTAL_CONTROL_ENABLED),
 			},
 			"safebrowsing_enabled": schema.BoolAttribute{
-				Description: fmt.Sprintf("Whether to have AdGuard browsing security enabled on this client.  Defaults to `%t`", CLIENT_SAFEBROWSING_ENABLED),
+				Description: fmt.Sprintf("Whether to have AdGuard browsing security enabled on this client. Defaults to `%t`", CLIENT_SAFEBROWSING_ENABLED),
 				Computed:    true,
 				Optional:    true,
 				Default:     booldefault.StaticBool(CLIENT_SAFEBROWSING_ENABLED),
 			},
 			"safesearch_enabled": schema.BoolAttribute{
-				Description: fmt.Sprintf("Whether to enforce safe search on this client.  Defaults to `%t`", CLIENT_SAFE_SEARCH_ENABLED),
+				Description: fmt.Sprintf("Whether to enforce safe search on this client. Defaults to `%t`", CLIENT_SAFE_SEARCH_ENABLED),
 				Computed:    true,
 				Optional:    true,
 				Default:     booldefault.StaticBool(CLIENT_SAFE_SEARCH_ENABLED),
 			},
 			"use_global_blocked_services": schema.BoolAttribute{
-				Description: fmt.Sprintf("Whether to use global settings for blocked services.  Defaults to `%t`", CLIENT_USE_GLOBAL_BLOCKED_SERVICES),
+				Description: fmt.Sprintf("Whether to use global settings for blocked services. Defaults to `%t`", CLIENT_USE_GLOBAL_BLOCKED_SERVICES),
 				Computed:    true,
 				Optional:    true,
 				Default:     booldefault.StaticBool(CLIENT_USE_GLOBAL_BLOCKED_SERVICES),

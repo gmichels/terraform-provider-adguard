@@ -78,7 +78,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Default:     booldefault.StaticBool(CONFIG_FILTERING_ENABLED),
 					},
 					"update_interval": schema.Int64Attribute{
-						Description: fmt.Sprintf("Update interval for all list-based filters, in hours. Defaults to `%t`", CONFIG_FILTERING_ENABLED),
+						Description: fmt.Sprintf("Update interval for all list-based filters, in hours. Defaults to `%d`", CONFIG_FILTERING_UPDATE_INTERVAL),
 						Computed:    true,
 						Optional:    true,
 						Default:     int64default.StaticInt64(int64(CONFIG_FILTERING_UPDATE_INTERVAL)),
