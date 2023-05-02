@@ -1,0 +1,9 @@
+package adguard
+
+// adguard_client defaults
+const CLIENT_USE_GLOBAL_SETTINGS = true
+const CLIENT_FILTERING_ENABLED = false
+const CLIENT_PARENTAL_CONTROL_ENABLED = false
+const CLIENT_SAFEBROWSING_ENABLED = false
+const CLIENT_SAFE_SEARCH_ENABLED = false
+const CLIENT_USE_GLOBAL_BLOCKED_SERVICES = true

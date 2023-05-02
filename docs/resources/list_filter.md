@@ -38,8 +38,8 @@ resource "adguard_list_filter" "test_whitelist" {
 
 ### Optional
 
-- `enabled` (Boolean) Whether this list filter is enabled
-- `whitelist` (Boolean) When `true`, will consider this list filter of type whitelist
+- `enabled` (Boolean) Whether this list filter is enabled. Defaults to `true`
+- `whitelist` (Boolean) When `true`, will consider this list filter of type whitelist. Defaults to `false`
 
 ### Read-Only
 

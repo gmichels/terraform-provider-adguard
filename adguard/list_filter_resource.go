@@ -2,6 +2,7 @@ package adguard
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/gmichels/adguard-client-go"
@@ -75,16 +76,16 @@ func (r *listFilterResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Computed:    true,
 			},
 			"enabled": schema.BoolAttribute{
-				Description: "Whether this list filter is enabled",
+				Description: fmt.Sprintf("Whether this list filter is enabled. Defaults to `%t`", LIST_FILTER_ENABLED),
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(true),
+				Default:     booldefault.StaticBool(LIST_FILTER_ENABLED),
 			},
 			"whitelist": schema.BoolAttribute{
-				Description: "When `true`, will consider this list filter of type whitelist",
+				Description: fmt.Sprintf("When `true`, will consider this list filter of type whitelist. Defaults to `%t`", LIST_FILTER_WHITELIST),
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(LIST_FILTER_WHITELIST),
 			},
 		},
 	}

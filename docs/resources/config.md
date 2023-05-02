@@ -139,7 +139,7 @@ Optional:
 Optional:
 
 - `enabled` (Boolean) Whether Safe Search is enabled. Defaults to `false`
-- `services` (Set of String) Services which SafeSearch is enabled. Defaults to Bing, DuckDuckGo, Google, Pixabay, Yandex and YouTube
+- `services` (Set of String) Services which SafeSearch is enabled.
 
 
 <a id="nestedatt--stats"></a>

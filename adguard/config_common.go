@@ -12,16 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-var DEFAULT_BOOTSTRAP_DNS = []string{"9.9.9.10", "149.112.112.10", "2620:fe::10", "2620:fe::fe:10"}
-var DEFAULT_UPSTREAM_DNS = []string{"https://dns10.quad9.net/dns-query"}
-var DEFAULT_SAFESEARCH_SERVICES = []string{"bing", "duckduckgo", "google", "pixabay", "yandex", "youtube"}
-var BLOCKED_SERVICES_ALL = []string{"9gag", "amazon", "bilibili", "cloudflare", "crunchyroll", "dailymotion", "deezer",
-	"discord", "disneyplus", "douban", "ebay", "epic_games", "facebook", "gog", "hbomax", "hulu", "icloud_private_relay", "imgur",
-	"instagram", "iqiyi", "kakaotalk", "lazada", "leagueoflegends", "line", "mail_ru", "mastodon", "minecraft", "netflix", "ok",
-	"onlyfans", "origin", "pinterest", "playstation", "qq", "rakuten_viki", "reddit", "riot_games", "roblox", "shopee", "skype", "snapchat",
-	"soundcloud", "spotify", "steam", "telegram", "tiktok", "tinder", "twitch", "twitter", "valorant", "viber", "vimeo", "vk", "voot", "wechat",
-	"weibo", "whatsapp", "xboxlive", "youtube", "zhihu"}
-
 // common config model to be used for working with both resource and data source
 type configCommonModel struct {
 	ID              types.String `tfsdk:"id"`
@@ -55,8 +45,8 @@ func (o filteringModel) attrTypes() map[string]attr.Type {
 // defaultObject - return default object for this model
 func (o filteringModel) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
-		"enabled":         types.BoolValue(true),
-		"update_interval": types.Int64Value(24),
+		"enabled":         types.BoolValue(CONFIG_FILTERING_ENABLED),
+		"update_interval": types.Int64Value(int64(CONFIG_FILTERING_UPDATE_INTERVAL)),
 	}
 }
 
@@ -96,12 +86,12 @@ func (o safeSearchModel) attrTypes() map[string]attr.Type {
 // defaultObject - return default object for this model
 func (o safeSearchModel) defaultObject() map[string]attr.Value {
 	services := []attr.Value{}
-	for _, service := range DEFAULT_SAFESEARCH_SERVICES {
+	for _, service := range CONFIG_SAFE_SEARCH_SERVICES_OPTIONS {
 		services = append(services, types.StringValue(service))
 	}
 
 	return map[string]attr.Value{
-		"enabled":  types.BoolValue(false),
+		"enabled":  types.BoolValue(CONFIG_SAFE_SEARCH_ENABLED),
 		"services": types.SetValueMust(types.StringType, services),
 	}
 }
@@ -127,9 +117,9 @@ func (o queryLogConfigModel) attrTypes() map[string]attr.Type {
 // defaultObject - return default object for this model
 func (o queryLogConfigModel) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
-		"enabled":             types.BoolValue(true),
-		"interval":            types.Int64Value(90 * 24),
-		"anonymize_client_ip": types.BoolValue(false),
+		"enabled":             types.BoolValue(CONFIG_QUERYLOG_ENABLED),
+		"interval":            types.Int64Value(int64(CONFIG_QUERYLOG_INTERVAL)),
+		"anonymize_client_ip": types.BoolValue(CONFIG_QUERYLOG_ANONYMIZE_CLIENT_IP),
 		"ignored":             types.SetValueMust(types.StringType, []attr.Value{}),
 	}
 }
@@ -153,8 +143,8 @@ func (o statsConfigModel) attrTypes() map[string]attr.Type {
 // defaultObject - return default object for this model
 func (o statsConfigModel) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
-		"enabled":  types.BoolValue(true),
-		"interval": types.Int64Value(24),
+		"enabled":  types.BoolValue(CONFIG_STATS_ENABLED),
+		"interval": types.Int64Value(CONFIG_STATS_INTERVAL),
 		"ignored":  types.SetValueMust(types.StringType, []attr.Value{}),
 	}
 }
@@ -211,33 +201,26 @@ func (o dnsConfigModel) attrTypes() map[string]attr.Type {
 
 // defaultObject - return default object for this model
 func (o dnsConfigModel) defaultObject() map[string]attr.Value {
-	bootstrap_dns := []attr.Value{}
-	for _, entry := range DEFAULT_BOOTSTRAP_DNS {
-		bootstrap_dns = append(bootstrap_dns, types.StringValue(entry))
-	}
-
-	upstream_dns := []attr.Value{}
-	for _, entry := range DEFAULT_UPSTREAM_DNS {
-		upstream_dns = append(upstream_dns, types.StringValue(entry))
-	}
+	bootstrap_dns := convertToAttr(CONFIG_DNS_BOOTSTRAP)
+	upstream_dns := convertToAttr(CONFIG_DNS_UPSTREAM)
 
 	return map[string]attr.Value{
 		"bootstrap_dns":             types.ListValueMust(types.StringType, bootstrap_dns),
 		"upstream_dns":              types.ListValueMust(types.StringType, upstream_dns),
-		"rate_limit":                types.Int64Value(20),
-		"blocking_mode":             types.StringValue("default"),
+		"rate_limit":                types.Int64Value(CONFIG_DNS_RATE_LIMIT),
+		"blocking_mode":             types.StringValue(CONFIG_DNS_BLOCKING_MODE),
 		"blocking_ipv4":             types.StringValue(""),
 		"blocking_ipv6":             types.StringValue(""),
-		"edns_cs_enabled":           types.BoolValue(false),
-		"disable_ipv6":              types.BoolValue(false),
-		"dnssec_enabled":            types.BoolValue(false),
-		"cache_size":                types.Int64Value(4194304),
-		"cache_ttl_min":             types.Int64Value(0),
-		"cache_ttl_max":             types.Int64Value(0),
-		"cache_optimistic":          types.BoolValue(false),
-		"upstream_mode":             types.StringValue(""),
-		"use_private_ptr_resolvers": types.BoolValue(true),
-		"resolve_clients":           types.BoolValue(true),
+		"edns_cs_enabled":           types.BoolValue(CONFIG_DNS_EDNS_CS_ENABLED),
+		"disable_ipv6":              types.BoolValue(CONFIG_DNS_DISABLE_IPV6),
+		"dnssec_enabled":            types.BoolValue(CONFIG_DNS_DNSSEC_ENABLED),
+		"cache_size":                types.Int64Value(CONFIG_DNS_CACHE_SIZE),
+		"cache_ttl_min":             types.Int64Value(CONFIG_DNS_CACHE_TTL_MIN),
+		"cache_ttl_max":             types.Int64Value(CONFIG_DNS_CACHE_TTL_MAX),
+		"cache_optimistic":          types.BoolValue(CONFIG_DNS_CACHE_OPTIMISTIC),
+		"upstream_mode":             types.StringValue(CONFIG_DNS_UPSTREAM_MODE),
+		"use_private_ptr_resolvers": types.BoolValue(CONFIG_DNS_USE_PRIVATE_PTR_RESOLVERS),
+		"resolve_clients":           types.BoolValue(CONFIG_DNS_RESOLVE_CLIENTS),
 		"local_ptr_upstreams":       types.SetValueMust(types.StringType, []attr.Value{}),
 		"allowed_clients":           types.SetValueMust(types.StringType, []attr.Value{}),
 		"disallowed_clients":        types.SetValueMust(types.StringType, []attr.Value{}),

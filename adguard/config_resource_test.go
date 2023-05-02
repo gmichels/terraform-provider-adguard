@@ -130,7 +130,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "safesearch.enabled", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "safesearch.services.#", "6"),
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.enabled", "true"),
-					resource.TestCheckResourceAttr("adguard_config.test", "querylog.interval", "24"),
+					resource.TestCheckResourceAttr("adguard_config.test", "querylog.interval", "2160"),
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.anonymize_client_ip", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.ignored.#", "3"),
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.ignored.0", "abc2.com"),
