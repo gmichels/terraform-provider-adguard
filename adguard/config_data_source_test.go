@@ -61,6 +61,8 @@ func TestAccConfigDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.disallowed_clients.1", "test-client-access-blocked"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.blocked_hosts.#", "3"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.blocked_hosts.1", "id.server"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "dhcp.enabled", "false"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "dhcp.ipv6_settings.lease_duration", "86400"),
 					// Verify internal attributes
 					resource.TestCheckResourceAttr("data.adguard_config.test", "id", "placeholder"),
 					resource.TestCheckResourceAttrSet("data.adguard_config.test", "last_updated"),
