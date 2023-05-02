@@ -326,61 +326,61 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Default:     booldefault.StaticBool(DNS_EDNS_CS_ENABLED),
 					},
 					"disable_ipv6": schema.BoolAttribute{
-						Description: "Whether dropping of all IPv6 DNS queries is enabled. Defaults to `false`",
+						Description: fmt.Sprintf("Whether dropping of all IPv6 DNS queries is enabled. Defaults to `%t`", DNS_DISABLE_IPV6),
 						Computed:    true,
 						Optional:    true,
-						Default:     booldefault.StaticBool(false),
+						Default:     booldefault.StaticBool(DNS_DISABLE_IPV6),
 					},
 					"dnssec_enabled": schema.BoolAttribute{
-						Description: "Whether outgoing DNSSEC is enabled. Defaults to `false`",
+						Description: fmt.Sprintf("Whether outgoing DNSSEC is enabled. Defaults to `%t`", DNS_DNSSEC_ENABLED),
 						Computed:    true,
 						Optional:    true,
-						Default:     booldefault.StaticBool(false),
+						Default:     booldefault.StaticBool(DNS_DNSSEC_ENABLED),
 					},
 					"cache_size": schema.Int64Attribute{
-						Description: "DNS cache size (in bytes). Defaults to `4194304`",
+						Description: fmt.Sprintf("DNS cache size (in bytes). Defaults to `%d`", DNS_CACHE_SIZE),
 						Computed:    true,
 						Optional:    true,
-						Default:     int64default.StaticInt64(4194304),
+						Default:     int64default.StaticInt64(DNS_CACHE_SIZE),
 					},
 					"cache_ttl_min": schema.Int64Attribute{
-						Description: "Overridden minimum TTL (in seconds) received from upstream DNS servers. Defaults to `0`",
+						Description: fmt.Sprintf("Overridden minimum TTL (in seconds) received from upstream DNS servers. Defaults to `%d`", DNS_CACHE_TTL_MIN),
 						Computed:    true,
 						Optional:    true,
-						Default:     int64default.StaticInt64(0),
+						Default:     int64default.StaticInt64(DNS_CACHE_TTL_MIN),
 					},
 					"cache_ttl_max": schema.Int64Attribute{
-						Description: "Overridden maximum TTL (in seconds) received from upstream DNS servers. Defaults to `0`",
+						Description: fmt.Sprintf("Overridden maximum TTL (in seconds) received from upstream DNS servers. Defaults to `%d`", DNS_CACHE_TTL_MAX),
 						Computed:    true,
 						Optional:    true,
-						Default:     int64default.StaticInt64(0),
+						Default:     int64default.StaticInt64(DNS_CACHE_TTL_MAX),
 					},
 					"cache_optimistic": schema.BoolAttribute{
-						Description: "Whether optimistic DNS caching is enabled. Defaults to `false`",
+						Description: fmt.Sprintf("Whether optimistic DNS caching is enabled. Defaults to `%t`", DNS_CACHE_OPTIMISTIC),
 						Computed:    true,
 						Optional:    true,
-						Default:     booldefault.StaticBool(false),
+						Default:     booldefault.StaticBool(DNS_CACHE_OPTIMISTIC),
 					},
 					"upstream_mode": schema.StringAttribute{
-						Description: "Upstream DNS resolvers usage strategy. Valid values are `load_balance` (default), `parallel` and `fastest_addr`",
+						Description: fmt.Sprintf("Upstream DNS resolvers usage strategy. Valid values are `%s` (default), `parallel` and `fastest_addr`", DNS_UPSTREAM_MODE),
 						Computed:    true,
 						Optional:    true,
-						Default:     stringdefault.StaticString("load_balance"),
+						Default:     stringdefault.StaticString(DNS_UPSTREAM_MODE),
 						Validators: []validator.String{
 							stringvalidator.OneOf("load_balance", "parallel", "fastest_addr"),
 						},
 					},
 					"use_private_ptr_resolvers": schema.BoolAttribute{
-						Description: "Whether to use private reverse DNS resolvers. Defaults to `true`",
+						Description: fmt.Sprintf("Whether to use private reverse DNS resolvers. Defaults to `%t`", DNS_USE_PRIVATE_PTR_RESOLVERS),
 						Computed:    true,
 						Optional:    true,
-						Default:     booldefault.StaticBool(true),
+						Default:     booldefault.StaticBool(DNS_USE_PRIVATE_PTR_RESOLVERS),
 					},
 					"resolve_clients": schema.BoolAttribute{
-						Description: "Whether reverse DNS resolution of clients' IP addresses is enabled. Defaults to `true`",
+						Description: fmt.Sprintf("Whether reverse DNS resolution of clients' IP addresses is enabled. Defaults to `%t`", DNS_RESOLVE_CLIENTS),
 						Computed:    true,
 						Optional:    true,
-						Default:     booldefault.StaticBool(true),
+						Default:     booldefault.StaticBool(DNS_RESOLVE_CLIENTS),
 					},
 					"local_ptr_upstreams": schema.SetAttribute{
 						Description: "List of private reverse DNS servers",
@@ -668,15 +668,15 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	dnsConfig.BlockingIpv4 = ""
 	dnsConfig.BlockingIpv6 = ""
 	dnsConfig.EDnsCsEnabled = DNS_EDNS_CS_ENABLED
-	dnsConfig.DisableIpv6 = false
-	dnsConfig.DnsSecEnabled = false
-	dnsConfig.CacheSize = 4194304
-	dnsConfig.CacheTtlMin = 0
-	dnsConfig.CacheTtlMax = 0
-	dnsConfig.CacheOptimistic = false
+	dnsConfig.DisableIpv6 = DNS_DISABLE_IPV6
+	dnsConfig.DnsSecEnabled = DNS_DNSSEC_ENABLED
+	dnsConfig.CacheSize = DNS_CACHE_SIZE
+	dnsConfig.CacheTtlMin = DNS_CACHE_TTL_MIN
+	dnsConfig.CacheTtlMax = DNS_CACHE_TTL_MAX
+	dnsConfig.CacheOptimistic = DNS_CACHE_OPTIMISTIC
 	dnsConfig.UpstreamMode = ""
-	dnsConfig.UsePrivatePtrResolvers = true
-	dnsConfig.ResolveClients = true
+	dnsConfig.UsePrivatePtrResolvers = DNS_USE_PRIVATE_PTR_RESOLVERS
+	dnsConfig.ResolveClients = DNS_RESOLVE_CLIENTS
 	dnsConfig.LocalPtrUpstreams = []string{}
 
 	// set dns config to defaults
