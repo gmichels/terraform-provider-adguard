@@ -8,6 +8,7 @@ import (
 
 	"github.com/gmichels/adguard-client-go"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -43,9 +44,9 @@ type clientResourceModel struct {
 	SafebrowsingEnabled      types.Bool   `tfsdk:"safebrowsing_enabled"`
 	SafesearchEnabled        types.Bool   `tfsdk:"safesearch_enabled"`
 	UseGlobalBlockedServices types.Bool   `tfsdk:"use_global_blocked_services"`
-	BlockedServices          types.List   `tfsdk:"blocked_services"`
+	BlockedServices          types.Set    `tfsdk:"blocked_services"`
 	Upstreams                types.List   `tfsdk:"upstreams"`
-	Tags                     types.List   `tfsdk:"tags"`
+	Tags                     types.Set    `tfsdk:"tags"`
 }
 
 // NewClientResource is a helper function to simplify the provider implementation
@@ -129,11 +130,11 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Optional:    true,
 				Default:     booldefault.StaticBool(CLIENT_USE_GLOBAL_BLOCKED_SERVICES),
 			},
-			"blocked_services": schema.ListAttribute{
-				Description: "List of blocked services for this client",
+			"blocked_services": schema.SetAttribute{
+				Description: "Set of blocked services for this client",
 				ElementType: types.StringType,
 				Optional:    true,
-				Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
+				Validators:  []validator.Set{setvalidator.SizeAtLeast(1)},
 			},
 			"upstreams": schema.ListAttribute{
 				Description: "List of upstream DNS server for this client",
@@ -141,11 +142,11 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Optional:    true,
 				Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 			},
-			"tags": schema.ListAttribute{
-				Description: "List of tags for this client",
+			"tags": schema.SetAttribute{
+				Description: "Set of tags for this client",
 				ElementType: types.StringType,
 				Optional:    true,
-				Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
+				Validators:  []validator.Set{setvalidator.SizeAtLeast(1)},
 			},
 		},
 	}
@@ -271,7 +272,7 @@ func (r *clientResource) Read(ctx context.Context, req resource.ReadRequest, res
 	state.SafebrowsingEnabled = types.BoolValue(client.SafebrowsingEnabled)
 	state.SafesearchEnabled = types.BoolValue(client.SafesearchEnabled)
 	state.UseGlobalBlockedServices = types.BoolValue(client.UseGlobalBlockedServices)
-	state.BlockedServices, diags = types.ListValueFrom(ctx, types.StringType, client.BlockedServices)
+	state.BlockedServices, diags = types.SetValueFrom(ctx, types.StringType, client.BlockedServices)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -285,7 +286,7 @@ func (r *clientResource) Read(ctx context.Context, req resource.ReadRequest, res
 			return
 		}
 	}
-	state.Tags, diags = types.ListValueFrom(ctx, types.StringType, client.Tags)
+	state.Tags, diags = types.SetValueFrom(ctx, types.StringType, client.Tags)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

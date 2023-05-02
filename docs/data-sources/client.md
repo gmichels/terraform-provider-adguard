@@ -28,13 +28,13 @@ data "adguard_client" "test" {
 
 ### Optional
 
-- `blocked_services` (List of String) List of blocked services for this client
+- `blocked_services` (Set of String) Set of blocked services for this client
 - `filtering_enabled` (Boolean) Whether to have filtering enabled on this client
 - `ids` (List of String) List of identifiers for this client (IP, CIDR, MAC, or ClientID)
 - `parental_enabled` (Boolean) Whether to have AdGuard parental controls enabled on this client
 - `safebrowsing_enabled` (Boolean) Whether to have AdGuard browsing security enabled on this client
 - `safesearch_enabled` (Boolean) Whether to enforce safe search on this client
-- `tags` (List of String) List of tags for this client
+- `tags` (Set of String) Set of tags for this client
 - `upstreams` (List of String) List of upstream DNS server for this client
 - `use_global_blocked_services` (Boolean) Whether to use global settings for blocked services
 - `use_global_settings` (Boolean) Whether to use global settings on this client
