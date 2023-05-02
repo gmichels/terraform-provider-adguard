@@ -22,7 +22,7 @@ data "adguard_config" "test" {}
 
 ### Read-Only
 
-- `blocked_services` (Set of String) List of services that are blocked globally
+- `blocked_services` (Set of String) Set of services that are blocked globally
 - `dns` (Attributes) (see [below for nested schema](#nestedatt--dns))
 - `filtering` (Attributes) (see [below for nested schema](#nestedatt--filtering))
 - `id` (String) Identifier attribute
@@ -52,7 +52,7 @@ Read-Only:
 - `disallowed_clients` (Set of String) The blocklist of clients: IP addresses, CIDRs, or ClientIDs
 - `dnssec_enabled` (Boolean) Whether outgoing DNSSEC is enabled
 - `edns_cs_enabled` (Boolean) Whether EDNS Client Subnet (ECS) is enabled
-- `local_ptr_upstreams` (Set of String) List of private reverse DNS servers
+- `local_ptr_upstreams` (Set of String) Set of private reverse DNS servers
 - `rate_limit` (Number) The number of requests per second allowed per client
 - `resolve_clients` (Boolean) Whether reverse DNS resolution of clients' IP addresses is enabled
 - `upstream_dns` (List of String) Upstream DNS servers
@@ -84,7 +84,7 @@ Read-Only:
 
 - `anonymize_client_ip` (Boolean) Whether anonymizing clients' IP addresses is enabled
 - `enabled` (Boolean) Whether the query log is enabled
-- `ignored` (Set of String) List of host names which should not be written to log
+- `ignored` (Set of String) Set of host names which should not be written to log
 - `interval` (Number) Time period for query log rotation, in hours
 
 
@@ -111,7 +111,7 @@ Read-Only:
 Read-Only:
 
 - `enabled` (Boolean) Whether server statistics enabled
-- `ignored` (Set of String) List of host names which should not be counted in the server statistics
+- `ignored` (Set of String) Set of host names which should not be counted in the server statistics
 - `interval` (Number) Time period for the server statistics rotation, in hours
 
 

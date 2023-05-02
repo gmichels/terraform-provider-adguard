@@ -30,12 +30,12 @@ resource "adguard_client" "test" {
 
 ### Optional
 
-- `blocked_services` (List of String) List of blocked services for this client
+- `blocked_services` (Set of String) Set of blocked services for this client
 - `filtering_enabled` (Boolean) Whether to have filtering enabled on this client. Defaults to `false`
 - `parental_enabled` (Boolean) Whether to have AdGuard parental controls enabled on this client. Defaults to `false`
 - `safebrowsing_enabled` (Boolean) Whether to have AdGuard browsing security enabled on this client. Defaults to `false`
 - `safesearch_enabled` (Boolean) Whether to enforce safe search on this client. Defaults to `false`
-- `tags` (List of String) List of tags for this client
+- `tags` (Set of String) Set of tags for this client
 - `upstreams` (List of String) List of upstream DNS server for this client
 - `use_global_blocked_services` (Boolean) Whether to use global settings for blocked services. Defaults to `true`
 - `use_global_settings` (Boolean) Whether to use global settings on this client. Defaults to `true`
