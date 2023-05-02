@@ -24,6 +24,7 @@ type configCommonModel struct {
 	Stats           types.Object `tfsdk:"stats"`
 	BlockedServices types.Set    `tfsdk:"blocked_services"`
 	Dns             types.Object `tfsdk:"dns"`
+	Dhcp            types.Object `tfsdk:"dhcp"`
 }
 
 // nested attributes objects
@@ -225,6 +226,146 @@ func (o dnsConfigModel) defaultObject() map[string]attr.Value {
 		"allowed_clients":           types.SetValueMust(types.StringType, []attr.Value{}),
 		"disallowed_clients":        types.SetValueMust(types.StringType, []attr.Value{}),
 		"blocked_hosts":             types.SetValueMust(types.StringType, []attr.Value{}),
+	}
+}
+
+// dhcpConfigModel maps DHCP schema data
+type dhcpConfigModel struct {
+	Enabled      types.Bool   `tfsdk:"enabled"`
+	Interface    types.String `tfsdk:"interface"`
+	Ipv4Settings types.Object `tfsdk:"ipv4_settings"`
+	Ipv6Settings types.Object `tfsdk:"ipv6_settings"`
+	Leases       types.Set    `tfsdk:"leases"`
+	StaticLeases types.Set    `tfsdk:"static_leases"`
+}
+
+// attrTypes - return attribute types for this model
+func (o dhcpConfigModel) attrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"enabled":       types.BoolType,
+		"interface":     types.StringType,
+		"ipv4_settings": types.ObjectType{AttrTypes: dhcpIpv4Model{}.attrTypes()},
+		"ipv6_settings": types.ObjectType{AttrTypes: dhcpIpv6Model{}.attrTypes()},
+		"leases":        types.SetType{ElemType: types.ObjectType{AttrTypes: dhcpLeasesModel{}.attrTypes()}},
+		"static_leases": types.SetType{ElemType: types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()}},
+	}
+}
+
+// defaultObject - return default object for this model
+func (o dhcpConfigModel) defaultObject() map[string]attr.Value {
+	return map[string]attr.Value{
+		"enabled":       types.BoolValue(CONFIG_DHCP_ENABLED),
+		"interface":     types.StringValue(""),
+		"ipv4_settings": types.MapValueMust(types.StringType, map[string]attr.Value{}),
+		"ipv6_settings": types.MapValueMust(types.StringType, map[string]attr.Value{}),
+		"leases":        types.SetValueMust(types.StringType, []attr.Value{}),
+		"static_leases": types.SetValueMust(types.StringType, []attr.Value{}),
+	}
+}
+
+// dhcpIpv4Model maps DHCP IPv4 settings schema data
+type dhcpIpv4Model struct {
+	GatewayIp     types.String `tfsdk:"gateway_ip"`
+	SubnetMask    types.String `tfsdk:"subnet_mask"`
+	RangeStart    types.String `tfsdk:"range_start"`
+	RangeEnd      types.String `tfsdk:"range_end"`
+	LeaseDuration types.Int64  `tfsdk:"lease_duration"`
+}
+
+// attrTypes - return attribute types for this model
+func (o dhcpIpv4Model) attrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"gateway_ip":     types.StringType,
+		"subnet_mask":    types.StringType,
+		"range_start":    types.StringType,
+		"range_end":      types.StringType,
+		"lease_duration": types.Int64Type,
+	}
+}
+
+// defaultObject - return default object for this model
+func (o dhcpIpv4Model) defaultObject() map[string]attr.Value {
+	return map[string]attr.Value{
+		"gateway_ip":     types.StringValue(""),
+		"subnet_mask":    types.StringValue(""),
+		"range_start":    types.StringValue(""),
+		"range_end":      types.StringValue(""),
+		"lease_duration": types.Int64Value(CONFIG_DHCP_V4_LEASE_DURATION),
+	}
+}
+
+// dhcpIpv6Model maps DHCP IPv6 settings schema data
+type dhcpIpv6Model struct {
+	RangeStart    types.String `tfsdk:"range_start"`
+	LeaseDuration types.Int64  `tfsdk:"lease_duration"`
+}
+
+// attrTypes - return attribute types for this model
+func (o dhcpIpv6Model) attrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"range_start":    types.StringType,
+		"lease_duration": types.Int64Type,
+	}
+}
+
+// defaultObject - return default object for this model
+func (o dhcpIpv6Model) defaultObject() map[string]attr.Value {
+	return map[string]attr.Value{
+		"range_start":    types.StringValue(""),
+		"lease_duration": types.Int64Value(CONFIG_DHCP_V6_LEASE_DURATION),
+	}
+}
+
+// dhcpLeasesModel maps DHCP leases schema data
+type dhcpLeasesModel struct {
+	Mac        types.String `tfsdk:"mac"`
+	Ip         types.String `tfsdk:"ip"`
+	Hostname   types.String `tfsdk:"hostname"`
+	Expiration types.String `tfsdk:"expiration"`
+}
+
+// attrTypes - return attribute types for this model
+func (o dhcpLeasesModel) attrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"mac":        types.StringType,
+		"ip":         types.StringType,
+		"hostname":   types.StringType,
+		"expiration": types.StringType,
+	}
+}
+
+// defaultObject - return default object for this model
+func (o dhcpLeasesModel) defaultObject() map[string]attr.Value {
+	return map[string]attr.Value{
+		"mac":        types.StringValue(""),
+		"ip":         types.StringValue(""),
+		"hostname":   types.StringValue(""),
+		"expiration": types.StringValue(""),
+	}
+}
+
+// dhcpStaticLeasesModel maps DHCP leases schema data
+type dhcpStaticLeasesModel struct {
+	Mac      types.String `tfsdk:"mac"`
+	Ip       types.String `tfsdk:"ip"`
+	Hostname types.String `tfsdk:"hostname"`
+}
+
+// attrTypes - return attribute types for this model
+func (o dhcpStaticLeasesModel) attrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"mac":      types.StringType,
+		"ip":       types.StringType,
+		"hostname": types.StringType,
+	}
+}
+
+// defaultObject - return default object for this model
+func (o dhcpStaticLeasesModel) defaultObject() map[string]attr.Value {
+	return map[string]attr.Value{
+		"mac":      types.StringValue(""),
+		"ip":       types.StringValue(""),
+		"hostname": types.StringValue(""),
 	}
 }
 
@@ -435,6 +576,57 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 	}
 	// add to config model
 	o.Dns, _ = types.ObjectValueFrom(ctx, dnsConfigModel{}.attrTypes(), &stateDnsConfig)
+
+	// DHCP
+	// retrieve dhcp info
+	dhcpStatus, err := adg.GetDhcpStatus()
+	if err != nil {
+		diags.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// parse double-nested attributes first
+	var stateDhcpIpv4Config dhcpIpv4Model
+	stateDhcpIpv4Config.GatewayIp = types.StringValue(dhcpStatus.V4.GatewayIp)
+	stateDhcpIpv4Config.SubnetMask = types.StringValue(dhcpStatus.V4.SubnetMask)
+	stateDhcpIpv4Config.RangeStart = types.StringValue(dhcpStatus.V4.RangeStart)
+	stateDhcpIpv4Config.RangeEnd = types.StringValue(dhcpStatus.V4.RangeEnd)
+	stateDhcpIpv4Config.LeaseDuration = types.Int64Value(int64(dhcpStatus.V4.LeaseDuration))
+
+	var stateDhcpIpv6Config dhcpIpv6Model
+	stateDhcpIpv6Config.RangeStart = types.StringValue(dhcpStatus.V6.RangeStart)
+	stateDhcpIpv6Config.LeaseDuration = types.Int64Value(int64(dhcpStatus.V6.LeaseDuration))
+
+	// now parse the top nested attribute
+	var stateDhcpConfig dhcpConfigModel
+	stateDhcpConfig.Enabled = types.BoolValue(dhcpStatus.Enabled)
+	stateDhcpConfig.Interface = types.StringValue(dhcpStatus.InterfaceName)
+
+	// add double-nested to top nested
+	stateDhcpConfig.Ipv4Settings, *diags = types.ObjectValueFrom(ctx, dhcpIpv4Model{}.attrTypes(), &stateDhcpIpv4Config)
+	if diags.HasError() {
+		return
+	}
+	stateDhcpConfig.Ipv6Settings, *diags = types.ObjectValueFrom(ctx, dhcpIpv6Model{}.attrTypes(), &stateDhcpIpv6Config)
+	if diags.HasError() {
+		return
+	}
+	stateDhcpConfig.Leases, *diags = types.SetValueFrom(ctx, types.ObjectType{AttrTypes: dhcpLeasesModel{}.attrTypes()}, dhcpStatus.Leases)
+	if diags.HasError() {
+		return
+	}
+	stateDhcpConfig.StaticLeases, *diags = types.SetValueFrom(ctx, types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()}, dhcpStatus.StaticLeases)
+	if diags.HasError() {
+		return
+	}
+
+	// add to config model
+	o.Dhcp, *diags = types.ObjectValueFrom(ctx, dhcpConfigModel{}.attrTypes(), &stateDhcpConfig)
+	if diags.HasError() {
+		return
+	}
 
 	// if we got here, all went fine
 }
