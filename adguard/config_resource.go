@@ -72,16 +72,16 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				),
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
-						Description: "Whether DNS filtering is enabled. Defaults to `true`",
+						Description: fmt.Sprintf("Whether DNS filtering is enabled. Defaults to `%t`", CONFIG_FILTERING_ENABLED),
 						Computed:    true,
 						Optional:    true,
-						Default:     booldefault.StaticBool(FILTERING_ENABLED),
+						Default:     booldefault.StaticBool(CONFIG_FILTERING_ENABLED),
 					},
 					"update_interval": schema.Int64Attribute{
-						Description: fmt.Sprintf("Update interval for all list-based filters, in hours. Defaults to `%t`", FILTERING_ENABLED),
+						Description: fmt.Sprintf("Update interval for all list-based filters, in hours. Defaults to `%t`", CONFIG_FILTERING_ENABLED),
 						Computed:    true,
 						Optional:    true,
-						Default:     int64default.StaticInt64(int64(FILTERING_UPDATE_INTERVAL)),
+						Default:     int64default.StaticInt64(int64(CONFIG_FILTERING_UPDATE_INTERVAL)),
 						Validators: []validator.Int64{
 							int64validator.OneOf([]int64{1, 12, 24, 72, 168}...),
 						},
@@ -96,10 +96,10 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				),
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether Safe Browsing is enabled. Defaults to `%t`", SAFEBROWSING_ENABLED),
+						Description: fmt.Sprintf("Whether Safe Browsing is enabled. Defaults to `%t`", CONFIG_SAFEBROWSING_ENABLED),
 						Computed:    true,
 						Optional:    true,
-						Default:     booldefault.StaticBool(SAFEBROWSING_ENABLED),
+						Default:     booldefault.StaticBool(CONFIG_SAFEBROWSING_ENABLED),
 					},
 				},
 			},
@@ -111,10 +111,10 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				),
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether Parental Control is enabled. Defaults to `%t`", PARENTAL_CONTROL_ENABLED),
+						Description: fmt.Sprintf("Whether Parental Control is enabled. Defaults to `%t`", CONFIG_PARENTAL_CONTROL_ENABLED),
 						Computed:    true,
 						Optional:    true,
-						Default:     booldefault.StaticBool(PARENTAL_CONTROL_ENABLED),
+						Default:     booldefault.StaticBool(CONFIG_PARENTAL_CONTROL_ENABLED),
 					},
 				},
 			},
@@ -126,10 +126,10 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				),
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether Safe Search is enabled. Defaults to `%t`", SAFE_SEARCH_ENABLED),
+						Description: fmt.Sprintf("Whether Safe Search is enabled. Defaults to `%t`", CONFIG_SAFE_SEARCH_ENABLED),
 						Computed:    true,
 						Optional:    true,
-						Default:     booldefault.StaticBool(SAFE_SEARCH_ENABLED),
+						Default:     booldefault.StaticBool(CONFIG_SAFE_SEARCH_ENABLED),
 					},
 					"services": schema.SetAttribute{
 						Description: "Services which SafeSearch is enabled.",
@@ -139,11 +139,11 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Validators: []validator.Set{
 							setvalidator.SizeAtLeast(1),
 							setvalidator.ValueStringsAre(
-								stringvalidator.OneOf(SAFE_SEARCH_SERVICES...),
+								stringvalidator.OneOf(CONFIG_SAFE_SEARCH_SERVICES_OPTIONS...),
 							),
 						},
 						Default: setdefault.StaticValue(
-							types.SetValueMust(types.StringType, convertToAttr(SAFE_SEARCH_SERVICES)),
+							types.SetValueMust(types.StringType, convertToAttr(CONFIG_SAFE_SEARCH_SERVICES_OPTIONS)),
 						),
 					},
 				},
@@ -156,22 +156,22 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				),
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether the query log is enabled. Defaults to `%t`", QUERYLOG_ENABLED),
+						Description: fmt.Sprintf("Whether the query log is enabled. Defaults to `%t`", CONFIG_QUERYLOG_ENABLED),
 						Computed:    true,
 						Optional:    true,
-						Default:     booldefault.StaticBool(QUERYLOG_ENABLED),
+						Default:     booldefault.StaticBool(CONFIG_QUERYLOG_ENABLED),
 					},
 					"interval": schema.Int64Attribute{
-						Description: fmt.Sprintf("Time period for query log rotation, in hours. Defaults to `%d` (%d days)", QUERYLOG_INTERVAL, QUERYLOG_INTERVAL/24),
+						Description: fmt.Sprintf("Time period for query log rotation, in hours. Defaults to `%d` (%d days)", CONFIG_QUERYLOG_INTERVAL, CONFIG_QUERYLOG_INTERVAL/24),
 						Computed:    true,
 						Optional:    true,
-						Default:     int64default.StaticInt64(int64(QUERYLOG_INTERVAL)),
+						Default:     int64default.StaticInt64(int64(CONFIG_QUERYLOG_INTERVAL)),
 					},
 					"anonymize_client_ip": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether anonymizing clients' IP addresses is enabled. Defaults to `%t`", QUERYLOG_ANONYMIZE_CLIENT_IP),
+						Description: fmt.Sprintf("Whether anonymizing clients' IP addresses is enabled. Defaults to `%t`", CONFIG_QUERYLOG_ANONYMIZE_CLIENT_IP),
 						Computed:    true,
 						Optional:    true,
-						Default:     booldefault.StaticBool(QUERYLOG_ANONYMIZE_CLIENT_IP),
+						Default:     booldefault.StaticBool(CONFIG_QUERYLOG_ANONYMIZE_CLIENT_IP),
 					},
 					"ignored": schema.SetAttribute{
 						Description: "List of host names which should not be written to log",
@@ -199,16 +199,16 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				),
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether server statistics are enabled. Defaults to `%t`", STATS_ENABLED),
+						Description: fmt.Sprintf("Whether server statistics are enabled. Defaults to `%t`", CONFIG_STATS_ENABLED),
 						Computed:    true,
 						Optional:    true,
-						Default:     booldefault.StaticBool(STATS_ENABLED),
+						Default:     booldefault.StaticBool(CONFIG_STATS_ENABLED),
 					},
 					"interval": schema.Int64Attribute{
-						Description: fmt.Sprintf("Time period for server statistics rotation, in hours. Defaults to `%d` (%d day)", STATS_INTERVAL, STATS_INTERVAL/24),
+						Description: fmt.Sprintf("Time period for server statistics rotation, in hours. Defaults to `%d` (%d day)", CONFIG_STATS_INTERVAL, CONFIG_STATS_INTERVAL/24),
 						Computed:    true,
 						Optional:    true,
-						Default:     int64default.StaticInt64(STATS_INTERVAL),
+						Default:     int64default.StaticInt64(CONFIG_STATS_INTERVAL),
 					},
 					"ignored": schema.SetAttribute{
 						Description: "List of host names which should not be counted in the server statistics",
@@ -235,7 +235,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Optional:    true,
 				Validators: []validator.Set{
 					setvalidator.SizeAtLeast(1),
-					setvalidator.ValueStringsAre(stringvalidator.OneOf(BLOCKED_SERVICES_ALL...)),
+					setvalidator.ValueStringsAre(stringvalidator.OneOf(CONFIG_GLOBAL_BLOCKED_SERVICES_OPTIONS...)),
 				},
 				Default: setdefault.StaticValue(types.SetNull(types.StringType)),
 			},
@@ -253,7 +253,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Optional:    true,
 						Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 						Default: listdefault.StaticValue(
-							types.ListValueMust(types.StringType, convertToAttr(DNS_BOOTSTRAP)),
+							types.ListValueMust(types.StringType, convertToAttr(CONFIG_DNS_BOOTSTRAP)),
 						),
 					},
 					"upstream_dns": schema.ListAttribute{
@@ -263,20 +263,20 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Optional:    true,
 						Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 						Default: listdefault.StaticValue(
-							types.ListValueMust(types.StringType, convertToAttr(DNS_UPSTREAM)),
+							types.ListValueMust(types.StringType, convertToAttr(CONFIG_DNS_UPSTREAM)),
 						),
 					},
 					"rate_limit": schema.Int64Attribute{
-						Description: fmt.Sprintf("The number of requests per second allowed per client. Defaults to `%d`", DNS_RATE_LIMIT),
+						Description: fmt.Sprintf("The number of requests per second allowed per client. Defaults to `%d`", CONFIG_DNS_RATE_LIMIT),
 						Computed:    true,
 						Optional:    true,
-						Default:     int64default.StaticInt64(DNS_RATE_LIMIT),
+						Default:     int64default.StaticInt64(CONFIG_DNS_RATE_LIMIT),
 					},
 					"blocking_mode": schema.StringAttribute{
 						Description: "DNS response sent when request is blocked. Valid values are `default` (the default), `refused`, `nxdomain`, `null_ip` or `custom_ip`",
 						Computed:    true,
 						Optional:    true,
-						Default:     stringdefault.StaticString(DNS_BLOCKING_MODE),
+						Default:     stringdefault.StaticString(CONFIG_DNS_BLOCKING_MODE),
 						Validators: []validator.String{
 							stringvalidator.OneOf("default", "refused", "nxdomain", "null_ip", "custom_ip"),
 						},
@@ -320,67 +320,67 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						},
 					},
 					"edns_cs_enabled": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether EDNS Client Subnet (ECS) is enabled. Defaults to `%t`", DNS_EDNS_CS_ENABLED),
+						Description: fmt.Sprintf("Whether EDNS Client Subnet (ECS) is enabled. Defaults to `%t`", CONFIG_DNS_EDNS_CS_ENABLED),
 						Computed:    true,
 						Optional:    true,
-						Default:     booldefault.StaticBool(DNS_EDNS_CS_ENABLED),
+						Default:     booldefault.StaticBool(CONFIG_DNS_EDNS_CS_ENABLED),
 					},
 					"disable_ipv6": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether dropping of all IPv6 DNS queries is enabled. Defaults to `%t`", DNS_DISABLE_IPV6),
+						Description: fmt.Sprintf("Whether dropping of all IPv6 DNS queries is enabled. Defaults to `%t`", CONFIG_DNS_DISABLE_IPV6),
 						Computed:    true,
 						Optional:    true,
-						Default:     booldefault.StaticBool(DNS_DISABLE_IPV6),
+						Default:     booldefault.StaticBool(CONFIG_DNS_DISABLE_IPV6),
 					},
 					"dnssec_enabled": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether outgoing DNSSEC is enabled. Defaults to `%t`", DNS_DNSSEC_ENABLED),
+						Description: fmt.Sprintf("Whether outgoing DNSSEC is enabled. Defaults to `%t`", CONFIG_DNS_DNSSEC_ENABLED),
 						Computed:    true,
 						Optional:    true,
-						Default:     booldefault.StaticBool(DNS_DNSSEC_ENABLED),
+						Default:     booldefault.StaticBool(CONFIG_DNS_DNSSEC_ENABLED),
 					},
 					"cache_size": schema.Int64Attribute{
-						Description: fmt.Sprintf("DNS cache size (in bytes). Defaults to `%d`", DNS_CACHE_SIZE),
+						Description: fmt.Sprintf("DNS cache size (in bytes). Defaults to `%d`", CONFIG_DNS_CACHE_SIZE),
 						Computed:    true,
 						Optional:    true,
-						Default:     int64default.StaticInt64(DNS_CACHE_SIZE),
+						Default:     int64default.StaticInt64(CONFIG_DNS_CACHE_SIZE),
 					},
 					"cache_ttl_min": schema.Int64Attribute{
-						Description: fmt.Sprintf("Overridden minimum TTL (in seconds) received from upstream DNS servers. Defaults to `%d`", DNS_CACHE_TTL_MIN),
+						Description: fmt.Sprintf("Overridden minimum TTL (in seconds) received from upstream DNS servers. Defaults to `%d`", CONFIG_DNS_CACHE_TTL_MIN),
 						Computed:    true,
 						Optional:    true,
-						Default:     int64default.StaticInt64(DNS_CACHE_TTL_MIN),
+						Default:     int64default.StaticInt64(CONFIG_DNS_CACHE_TTL_MIN),
 					},
 					"cache_ttl_max": schema.Int64Attribute{
-						Description: fmt.Sprintf("Overridden maximum TTL (in seconds) received from upstream DNS servers. Defaults to `%d`", DNS_CACHE_TTL_MAX),
+						Description: fmt.Sprintf("Overridden maximum TTL (in seconds) received from upstream DNS servers. Defaults to `%d`", CONFIG_DNS_CACHE_TTL_MAX),
 						Computed:    true,
 						Optional:    true,
-						Default:     int64default.StaticInt64(DNS_CACHE_TTL_MAX),
+						Default:     int64default.StaticInt64(CONFIG_DNS_CACHE_TTL_MAX),
 					},
 					"cache_optimistic": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether optimistic DNS caching is enabled. Defaults to `%t`", DNS_CACHE_OPTIMISTIC),
+						Description: fmt.Sprintf("Whether optimistic DNS caching is enabled. Defaults to `%t`", CONFIG_DNS_CACHE_OPTIMISTIC),
 						Computed:    true,
 						Optional:    true,
-						Default:     booldefault.StaticBool(DNS_CACHE_OPTIMISTIC),
+						Default:     booldefault.StaticBool(CONFIG_DNS_CACHE_OPTIMISTIC),
 					},
 					"upstream_mode": schema.StringAttribute{
-						Description: fmt.Sprintf("Upstream DNS resolvers usage strategy. Valid values are `%s` (default), `parallel` and `fastest_addr`", DNS_UPSTREAM_MODE),
+						Description: fmt.Sprintf("Upstream DNS resolvers usage strategy. Valid values are `%s` (default), `parallel` and `fastest_addr`", CONFIG_DNS_UPSTREAM_MODE),
 						Computed:    true,
 						Optional:    true,
-						Default:     stringdefault.StaticString(DNS_UPSTREAM_MODE),
+						Default:     stringdefault.StaticString(CONFIG_DNS_UPSTREAM_MODE),
 						Validators: []validator.String{
 							stringvalidator.OneOf("load_balance", "parallel", "fastest_addr"),
 						},
 					},
 					"use_private_ptr_resolvers": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether to use private reverse DNS resolvers. Defaults to `%t`", DNS_USE_PRIVATE_PTR_RESOLVERS),
+						Description: fmt.Sprintf("Whether to use private reverse DNS resolvers. Defaults to `%t`", CONFIG_DNS_USE_PRIVATE_PTR_RESOLVERS),
 						Computed:    true,
 						Optional:    true,
-						Default:     booldefault.StaticBool(DNS_USE_PRIVATE_PTR_RESOLVERS),
+						Default:     booldefault.StaticBool(CONFIG_DNS_USE_PRIVATE_PTR_RESOLVERS),
 					},
 					"resolve_clients": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether reverse DNS resolution of clients' IP addresses is enabled. Defaults to `%t`", DNS_RESOLVE_CLIENTS),
+						Description: fmt.Sprintf("Whether reverse DNS resolution of clients' IP addresses is enabled. Defaults to `%t`", CONFIG_DNS_RESOLVE_CLIENTS),
 						Computed:    true,
 						Optional:    true,
-						Default:     booldefault.StaticBool(DNS_RESOLVE_CLIENTS),
+						Default:     booldefault.StaticBool(CONFIG_DNS_RESOLVE_CLIENTS),
 					},
 					"local_ptr_upstreams": schema.SetAttribute{
 						Description: "List of private reverse DNS servers",
@@ -560,8 +560,8 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	// populate filtering config with default values
 	var filterConfig adguard.FilterConfig
-	filterConfig.Enabled = FILTERING_ENABLED
-	filterConfig.Interval = FILTERING_UPDATE_INTERVAL
+	filterConfig.Enabled = CONFIG_FILTERING_ENABLED
+	filterConfig.Interval = CONFIG_FILTERING_UPDATE_INTERVAL
 
 	// set filtering config to default
 	_, err := r.adg.ConfigureFiltering(filterConfig)
@@ -574,7 +574,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// set safebrowsing to default
-	err = r.adg.SetSafeBrowsingStatus(SAFEBROWSING_ENABLED)
+	err = r.adg.SetSafeBrowsingStatus(CONFIG_SAFEBROWSING_ENABLED)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
@@ -584,7 +584,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// set parental to default
-	err = r.adg.SetParentalStatus(PARENTAL_CONTROL_ENABLED)
+	err = r.adg.SetParentalStatus(CONFIG_PARENTAL_CONTROL_ENABLED)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
@@ -595,7 +595,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	// populate safe search with default values
 	var safeSearchConfig adguard.SafeSearchConfig
-	safeSearchConfig.Enabled = SAFE_SEARCH_ENABLED
+	safeSearchConfig.Enabled = CONFIG_SAFE_SEARCH_ENABLED
 	safeSearchConfig.Bing = true
 	safeSearchConfig.Duckduckgo = true
 	safeSearchConfig.Google = true
@@ -615,9 +615,9 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	// populate query log config with default values
 	var queryLogConfig adguard.GetQueryLogConfigResponse
-	queryLogConfig.Enabled = QUERYLOG_ENABLED
-	queryLogConfig.Interval = QUERYLOG_INTERVAL * 3600 * 1000
-	queryLogConfig.AnonymizeClientIp = QUERYLOG_ANONYMIZE_CLIENT_IP
+	queryLogConfig.Enabled = CONFIG_QUERYLOG_ENABLED
+	queryLogConfig.Interval = CONFIG_QUERYLOG_INTERVAL * 3600 * 1000
+	queryLogConfig.AnonymizeClientIp = CONFIG_QUERYLOG_ANONYMIZE_CLIENT_IP
 	queryLogConfig.Ignored = []string{}
 
 	// set query log config to defaults
@@ -632,8 +632,8 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	// populate server statistics config with default values
 	var statsConfig adguard.GetStatsConfigResponse
-	statsConfig.Enabled = STATS_ENABLED
-	statsConfig.Interval = STATS_INTERVAL * 3600 * 1000
+	statsConfig.Enabled = CONFIG_STATS_ENABLED
+	statsConfig.Interval = CONFIG_STATS_INTERVAL * 3600 * 1000
 	statsConfig.Ignored = []string{}
 
 	// set server statistics to defaults
@@ -660,23 +660,23 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	var dnsConfig adguard.DNSConfig
 
 	// populate DNS config with default values
-	dnsConfig.BootstrapDns = DNS_BOOTSTRAP
-	dnsConfig.UpstreamDns = DNS_UPSTREAM
+	dnsConfig.BootstrapDns = CONFIG_DNS_BOOTSTRAP
+	dnsConfig.UpstreamDns = CONFIG_DNS_UPSTREAM
 	dnsConfig.UpstreamDnsFile = ""
-	dnsConfig.RateLimit = DNS_RATE_LIMIT
-	dnsConfig.BlockingMode = DNS_BLOCKING_MODE
+	dnsConfig.RateLimit = CONFIG_DNS_RATE_LIMIT
+	dnsConfig.BlockingMode = CONFIG_DNS_BLOCKING_MODE
 	dnsConfig.BlockingIpv4 = ""
 	dnsConfig.BlockingIpv6 = ""
-	dnsConfig.EDnsCsEnabled = DNS_EDNS_CS_ENABLED
-	dnsConfig.DisableIpv6 = DNS_DISABLE_IPV6
-	dnsConfig.DnsSecEnabled = DNS_DNSSEC_ENABLED
-	dnsConfig.CacheSize = DNS_CACHE_SIZE
-	dnsConfig.CacheTtlMin = DNS_CACHE_TTL_MIN
-	dnsConfig.CacheTtlMax = DNS_CACHE_TTL_MAX
-	dnsConfig.CacheOptimistic = DNS_CACHE_OPTIMISTIC
+	dnsConfig.EDnsCsEnabled = CONFIG_DNS_EDNS_CS_ENABLED
+	dnsConfig.DisableIpv6 = CONFIG_DNS_DISABLE_IPV6
+	dnsConfig.DnsSecEnabled = CONFIG_DNS_DNSSEC_ENABLED
+	dnsConfig.CacheSize = CONFIG_DNS_CACHE_SIZE
+	dnsConfig.CacheTtlMin = CONFIG_DNS_CACHE_TTL_MIN
+	dnsConfig.CacheTtlMax = CONFIG_DNS_CACHE_TTL_MAX
+	dnsConfig.CacheOptimistic = CONFIG_DNS_CACHE_OPTIMISTIC
 	dnsConfig.UpstreamMode = ""
-	dnsConfig.UsePrivatePtrResolvers = DNS_USE_PRIVATE_PTR_RESOLVERS
-	dnsConfig.ResolveClients = DNS_RESOLVE_CLIENTS
+	dnsConfig.UsePrivatePtrResolvers = CONFIG_DNS_USE_PRIVATE_PTR_RESOLVERS
+	dnsConfig.ResolveClients = CONFIG_DNS_RESOLVE_CLIENTS
 	dnsConfig.LocalPtrUpstreams = []string{}
 
 	// set dns config to defaults

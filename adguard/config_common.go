@@ -45,8 +45,8 @@ func (o filteringModel) attrTypes() map[string]attr.Type {
 // defaultObject - return default object for this model
 func (o filteringModel) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
-		"enabled":         types.BoolValue(FILTERING_ENABLED),
-		"update_interval": types.Int64Value(int64(FILTERING_UPDATE_INTERVAL)),
+		"enabled":         types.BoolValue(CONFIG_FILTERING_ENABLED),
+		"update_interval": types.Int64Value(int64(CONFIG_FILTERING_UPDATE_INTERVAL)),
 	}
 }
 
@@ -86,12 +86,12 @@ func (o safeSearchModel) attrTypes() map[string]attr.Type {
 // defaultObject - return default object for this model
 func (o safeSearchModel) defaultObject() map[string]attr.Value {
 	services := []attr.Value{}
-	for _, service := range SAFE_SEARCH_SERVICES {
+	for _, service := range CONFIG_SAFE_SEARCH_SERVICES_OPTIONS {
 		services = append(services, types.StringValue(service))
 	}
 
 	return map[string]attr.Value{
-		"enabled":  types.BoolValue(SAFE_SEARCH_ENABLED),
+		"enabled":  types.BoolValue(CONFIG_SAFE_SEARCH_ENABLED),
 		"services": types.SetValueMust(types.StringType, services),
 	}
 }
@@ -117,9 +117,9 @@ func (o queryLogConfigModel) attrTypes() map[string]attr.Type {
 // defaultObject - return default object for this model
 func (o queryLogConfigModel) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
-		"enabled":             types.BoolValue(QUERYLOG_ENABLED),
-		"interval":            types.Int64Value(int64(QUERYLOG_INTERVAL)),
-		"anonymize_client_ip": types.BoolValue(QUERYLOG_ANONYMIZE_CLIENT_IP),
+		"enabled":             types.BoolValue(CONFIG_QUERYLOG_ENABLED),
+		"interval":            types.Int64Value(int64(CONFIG_QUERYLOG_INTERVAL)),
+		"anonymize_client_ip": types.BoolValue(CONFIG_QUERYLOG_ANONYMIZE_CLIENT_IP),
 		"ignored":             types.SetValueMust(types.StringType, []attr.Value{}),
 	}
 }
@@ -143,8 +143,8 @@ func (o statsConfigModel) attrTypes() map[string]attr.Type {
 // defaultObject - return default object for this model
 func (o statsConfigModel) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
-		"enabled":  types.BoolValue(STATS_ENABLED),
-		"interval": types.Int64Value(STATS_INTERVAL),
+		"enabled":  types.BoolValue(CONFIG_STATS_ENABLED),
+		"interval": types.Int64Value(CONFIG_STATS_INTERVAL),
 		"ignored":  types.SetValueMust(types.StringType, []attr.Value{}),
 	}
 }
@@ -201,26 +201,26 @@ func (o dnsConfigModel) attrTypes() map[string]attr.Type {
 
 // defaultObject - return default object for this model
 func (o dnsConfigModel) defaultObject() map[string]attr.Value {
-	bootstrap_dns := convertToAttr(DNS_BOOTSTRAP)
-	upstream_dns := convertToAttr(DNS_UPSTREAM)
+	bootstrap_dns := convertToAttr(CONFIG_DNS_BOOTSTRAP)
+	upstream_dns := convertToAttr(CONFIG_DNS_UPSTREAM)
 
 	return map[string]attr.Value{
 		"bootstrap_dns":             types.ListValueMust(types.StringType, bootstrap_dns),
 		"upstream_dns":              types.ListValueMust(types.StringType, upstream_dns),
-		"rate_limit":                types.Int64Value(DNS_RATE_LIMIT),
-		"blocking_mode":             types.StringValue(DNS_BLOCKING_MODE),
+		"rate_limit":                types.Int64Value(CONFIG_DNS_RATE_LIMIT),
+		"blocking_mode":             types.StringValue(CONFIG_DNS_BLOCKING_MODE),
 		"blocking_ipv4":             types.StringValue(""),
 		"blocking_ipv6":             types.StringValue(""),
-		"edns_cs_enabled":           types.BoolValue(DNS_EDNS_CS_ENABLED),
-		"disable_ipv6":              types.BoolValue(DNS_DISABLE_IPV6),
-		"dnssec_enabled":            types.BoolValue(DNS_DNSSEC_ENABLED),
-		"cache_size":                types.Int64Value(DNS_CACHE_SIZE),
-		"cache_ttl_min":             types.Int64Value(DNS_CACHE_TTL_MIN),
-		"cache_ttl_max":             types.Int64Value(DNS_CACHE_TTL_MAX),
-		"cache_optimistic":          types.BoolValue(DNS_CACHE_OPTIMISTIC),
-		"upstream_mode":             types.StringValue(DNS_UPSTREAM_MODE),
-		"use_private_ptr_resolvers": types.BoolValue(DNS_USE_PRIVATE_PTR_RESOLVERS),
-		"resolve_clients":           types.BoolValue(DNS_RESOLVE_CLIENTS),
+		"edns_cs_enabled":           types.BoolValue(CONFIG_DNS_EDNS_CS_ENABLED),
+		"disable_ipv6":              types.BoolValue(CONFIG_DNS_DISABLE_IPV6),
+		"dnssec_enabled":            types.BoolValue(CONFIG_DNS_DNSSEC_ENABLED),
+		"cache_size":                types.Int64Value(CONFIG_DNS_CACHE_SIZE),
+		"cache_ttl_min":             types.Int64Value(CONFIG_DNS_CACHE_TTL_MIN),
+		"cache_ttl_max":             types.Int64Value(CONFIG_DNS_CACHE_TTL_MAX),
+		"cache_optimistic":          types.BoolValue(CONFIG_DNS_CACHE_OPTIMISTIC),
+		"upstream_mode":             types.StringValue(CONFIG_DNS_UPSTREAM_MODE),
+		"use_private_ptr_resolvers": types.BoolValue(CONFIG_DNS_USE_PRIVATE_PTR_RESOLVERS),
+		"resolve_clients":           types.BoolValue(CONFIG_DNS_RESOLVE_CLIENTS),
 		"local_ptr_upstreams":       types.SetValueMust(types.StringType, []attr.Value{}),
 		"allowed_clients":           types.SetValueMust(types.StringType, []attr.Value{}),
 		"disallowed_clients":        types.SetValueMust(types.StringType, []attr.Value{}),
