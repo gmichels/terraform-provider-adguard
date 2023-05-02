@@ -31,9 +31,9 @@ type clientDataModel struct {
 	SafebrowsingEnabled      types.Bool   `tfsdk:"safebrowsing_enabled"`
 	SafesearchEnabled        types.Bool   `tfsdk:"safesearch_enabled"`
 	UseGlobalBlockedServices types.Bool   `tfsdk:"use_global_blocked_services"`
-	BlockedServices          types.List   `tfsdk:"blocked_services"`
+	BlockedServices          types.Set    `tfsdk:"blocked_services"`
 	Upstreams                types.List   `tfsdk:"upstreams"`
-	Tags                     types.List   `tfsdk:"tags"`
+	Tags                     types.Set    `tfsdk:"tags"`
 }
 
 // NewClientDataSource is a helper function to simplify the provider implementation
@@ -87,8 +87,8 @@ func (d *clientDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 				Description: "Whether to use global settings for blocked services",
 				Optional:    true,
 			},
-			"blocked_services": schema.ListAttribute{
-				Description: "List of blocked services for this client",
+			"blocked_services": schema.SetAttribute{
+				Description: "Set of blocked services for this client",
 				ElementType: types.StringType,
 				Optional:    true,
 			},
@@ -97,8 +97,8 @@ func (d *clientDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 				ElementType: types.StringType,
 				Optional:    true,
 			},
-			"tags": schema.ListAttribute{
-				Description: "List of tags for this client",
+			"tags": schema.SetAttribute{
+				Description: "Set of tags for this client",
 				ElementType: types.StringType,
 				Optional:    true,
 			},
@@ -143,7 +143,7 @@ func (d *clientDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	state.SafebrowsingEnabled = types.BoolValue(client.SafebrowsingEnabled)
 	state.SafesearchEnabled = types.BoolValue(client.SafesearchEnabled)
 	state.UseGlobalBlockedServices = types.BoolValue(client.UseGlobalBlockedServices)
-	state.BlockedServices, diags = types.ListValueFrom(ctx, types.StringType, client.BlockedServices)
+	state.BlockedServices, diags = types.SetValueFrom(ctx, types.StringType, client.BlockedServices)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -153,7 +153,7 @@ func (d *clientDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	state.Tags, diags = types.ListValueFrom(ctx, types.StringType, client.Tags)
+	state.Tags, diags = types.SetValueFrom(ctx, types.StringType, client.Tags)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
