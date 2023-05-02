@@ -174,7 +174,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Default:     booldefault.StaticBool(CONFIG_QUERYLOG_ANONYMIZE_CLIENT_IP),
 					},
 					"ignored": schema.SetAttribute{
-						Description: "List of host names which should not be written to log",
+						Description: "Set of host names which should not be written to log",
 						ElementType: types.StringType,
 						Computed:    true,
 						Optional:    true,
@@ -211,7 +211,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Default:     int64default.StaticInt64(CONFIG_STATS_INTERVAL),
 					},
 					"ignored": schema.SetAttribute{
-						Description: "List of host names which should not be counted in the server statistics",
+						Description: "Set of host names which should not be counted in the server statistics",
 						ElementType: types.StringType,
 						Computed:    true,
 						Optional:    true,
@@ -229,7 +229,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				},
 			},
 			"blocked_services": schema.SetAttribute{
-				Description: "List of services to be blocked globally",
+				Description: "Set of services to be blocked globally",
 				ElementType: types.StringType,
 				Computed:    true,
 				Optional:    true,
@@ -383,7 +383,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Default:     booldefault.StaticBool(CONFIG_DNS_RESOLVE_CLIENTS),
 					},
 					"local_ptr_upstreams": schema.SetAttribute{
-						Description: "List of private reverse DNS servers",
+						Description: "Set of private reverse DNS servers",
 						ElementType: types.StringType,
 						Computed:    true,
 						Optional:    true,
