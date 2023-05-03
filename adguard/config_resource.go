@@ -875,6 +875,16 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		)
 		return
 	}
+
+	// set dhcp config to defaults
+	err = r.adg.ResetDhcpConfig()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Deleting AdGuard Home Config",
+			"Could not delete config, unexpected error: "+err.Error(),
+		)
+		return
+	}
 }
 
 func (r *configResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
