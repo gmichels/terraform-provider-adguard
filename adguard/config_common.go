@@ -286,8 +286,8 @@ func (o dhcpConfigModel) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
 		"enabled":       types.BoolValue(CONFIG_DHCP_ENABLED),
 		"interface":     types.StringValue(""),
-		"ipv4_settings": types.MapValueMust(types.StringType, map[string]attr.Value{}),
-		"ipv6_settings": types.MapValueMust(types.StringType, map[string]attr.Value{}),
+		"ipv4_settings": types.ObjectValueMust(dhcpIpv4Model{}.attrTypes(), dhcpIpv4Model{}.defaultObject()),
+		"ipv6_settings": types.ObjectValueMust(dhcpIpv6Model{}.attrTypes(), dhcpIpv6Model{}.defaultObject()),
 	}
 }
 
@@ -398,7 +398,7 @@ func (o dhcpStaticLeasesModel) defaultObject() map[string]attr.Value {
 }
 
 // common `Read` function for both data source and resource
-func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *diag.Diagnostics) {
+func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *diag.Diagnostics, rtype string) {
 	// FILTERING CONFIG
 	// get refreshed filtering config value from AdGuard Home
 	filteringConfig, err := adg.GetAllFilters()
@@ -628,32 +628,47 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 	stateDhcpIpv6Config.LeaseDuration = types.Int64Value(int64(dhcpStatus.V6.LeaseDuration))
 
 	// now parse the top nested attribute
-	var stateDhcpStatus dhcpStatusModel
-	stateDhcpStatus.Enabled = types.BoolValue(dhcpStatus.Enabled)
-	stateDhcpStatus.Interface = types.StringValue(dhcpStatus.InterfaceName)
+	var stateDhcpConfig dhcpConfigModel
+	stateDhcpConfig.Enabled = types.BoolValue(dhcpStatus.Enabled)
+	stateDhcpConfig.Interface = types.StringValue(dhcpStatus.InterfaceName)
 
 	// add double-nested to top nested
-	stateDhcpStatus.Ipv4Settings, *diags = types.ObjectValueFrom(ctx, dhcpIpv4Model{}.attrTypes(), &stateDhcpIpv4Config)
+	stateDhcpConfig.Ipv4Settings, *diags = types.ObjectValueFrom(ctx, dhcpIpv4Model{}.attrTypes(), &stateDhcpIpv4Config)
 	if diags.HasError() {
 		return
 	}
-	stateDhcpStatus.Ipv6Settings, *diags = types.ObjectValueFrom(ctx, dhcpIpv6Model{}.attrTypes(), &stateDhcpIpv6Config)
-	if diags.HasError() {
-		return
-	}
-	stateDhcpStatus.Leases, *diags = types.SetValueFrom(ctx, types.ObjectType{AttrTypes: dhcpLeasesModel{}.attrTypes()}, dhcpStatus.Leases)
-	if diags.HasError() {
-		return
-	}
-	stateDhcpStatus.StaticLeases, *diags = types.SetValueFrom(ctx, types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()}, dhcpStatus.StaticLeases)
+	stateDhcpConfig.Ipv6Settings, *diags = types.ObjectValueFrom(ctx, dhcpIpv6Model{}.attrTypes(), &stateDhcpIpv6Config)
 	if diags.HasError() {
 		return
 	}
 
-	// add to config model
-	o.Dhcp, *diags = types.ObjectValueFrom(ctx, dhcpStatusModel{}.attrTypes(), &stateDhcpStatus)
-	if diags.HasError() {
-		return
+	if rtype == "resource" {
+		// no need to do anything else, just add to config model
+		o.Dhcp, *diags = types.ObjectValueFrom(ctx, dhcpConfigModel{}.attrTypes(), &stateDhcpConfig)
+		if diags.HasError() {
+			return
+		}
+	} else {
+		// data source has a slightly different model, need to transfer over the attributes
+		var stateDhcpStatus dhcpStatusModel
+		stateDhcpStatus.Enabled = stateDhcpConfig.Enabled
+		stateDhcpStatus.Interface = stateDhcpConfig.Interface
+		stateDhcpStatus.Ipv4Settings = stateDhcpConfig.Ipv4Settings
+		stateDhcpStatus.Ipv6Settings = stateDhcpConfig.Ipv6Settings
+		// add the extra attributes for the data source
+		stateDhcpStatus.Leases, *diags = types.SetValueFrom(ctx, types.ObjectType{AttrTypes: dhcpLeasesModel{}.attrTypes()}, dhcpStatus.Leases)
+		if diags.HasError() {
+			return
+		}
+		stateDhcpStatus.StaticLeases, *diags = types.SetValueFrom(ctx, types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()}, dhcpStatus.StaticLeases)
+		if diags.HasError() {
+			return
+		}
+		// add to config model
+		o.Dhcp, *diags = types.ObjectValueFrom(ctx, dhcpStatusModel{}.attrTypes(), &stateDhcpStatus)
+		if diags.HasError() {
+			return
+		}
 	}
 
 	// if we got here, all went fine

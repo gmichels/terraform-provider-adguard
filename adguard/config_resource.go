@@ -455,10 +455,9 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 			"dhcp": schema.SingleNestedAttribute{
 				Computed: true,
 				Optional: true,
-				// TODO
-				// Default: objectdefault.StaticValue(types.ObjectValueMust(
-				// 	dhcpConfigModel{}.attrTypes(), dhcpConfigModel{}.defaultObject()),
-				// ),
+				Default: objectdefault.StaticValue(types.ObjectValueMust(
+					dhcpConfigModel{}.attrTypes(), dhcpConfigModel{}.defaultObject()),
+				),
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
 						Description: fmt.Sprintf("Whether the DHCP server is enabled. Defaults to `%t`", CONFIG_DHCP_ENABLED),
@@ -678,7 +677,7 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 	// use common model for state
 	var newState configCommonModel
 	// use common Read function
-	newState.Read(ctx, *r.adg, &resp.Diagnostics)
+	newState.Read(ctx, *r.adg, &resp.Diagnostics, "resource")
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return

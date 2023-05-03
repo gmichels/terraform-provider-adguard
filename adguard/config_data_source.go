@@ -333,7 +333,7 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	// use common model for state
 	var newState configCommonModel
 	// use common Read function
-	newState.Read(ctx, *d.adg, &resp.Diagnostics)
+	newState.Read(ctx, *d.adg, &resp.Diagnostics, "datasource")
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
