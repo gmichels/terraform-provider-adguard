@@ -306,7 +306,7 @@ func (o dhcpIpv4Model) defaultObject() map[string]attr.Value {
 		"subnet_mask":    types.StringValue(""),
 		"range_start":    types.StringValue(""),
 		"range_end":      types.StringValue(""),
-		"lease_duration": types.Int64Value(CONFIG_DHCP_V4_LEASE_DURATION),
+		"lease_duration": types.Int64Value(CONFIG_DHCP_LEASE_DURATION),
 	}
 }
 
@@ -328,7 +328,7 @@ func (o dhcpIpv6Model) attrTypes() map[string]attr.Type {
 func (o dhcpIpv6Model) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
 		"range_start":    types.StringValue(""),
-		"lease_duration": types.Int64Value(CONFIG_DHCP_V6_LEASE_DURATION),
+		"lease_duration": types.Int64Value(CONFIG_DHCP_LEASE_DURATION),
 	}
 }
 

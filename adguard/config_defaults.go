@@ -24,8 +24,7 @@ const CONFIG_DNS_UPSTREAM_MODE = "load_balance"
 const CONFIG_DNS_USE_PRIVATE_PTR_RESOLVERS = true
 const CONFIG_DNS_RESOLVE_CLIENTS = true
 const CONFIG_DHCP_ENABLED = false
-const CONFIG_DHCP_V4_LEASE_DURATION = 0     // seconds
-const CONFIG_DHCP_V6_LEASE_DURATION = 86400 // seconds
+const CONFIG_DHCP_LEASE_DURATION = 86400 // seconds
 
 var CONFIG_DNS_BOOTSTRAP = []string{"9.9.9.10", "149.112.112.10", "2620:fe::10", "2620:fe::fe:10"}
 var CONFIG_DNS_UPSTREAM = []string{"https://dns10.quad9.net/dns-query"}

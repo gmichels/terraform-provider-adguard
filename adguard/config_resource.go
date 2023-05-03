@@ -468,9 +468,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					},
 					"interface": schema.StringAttribute{
 						Description: "The interface to use for the DHCP server",
-						Computed:    true,
-						Optional:    true,
-						Default:     stringdefault.StaticString(""),
+						Required:    true,
 						// TODO add validators
 					},
 					"ipv4_settings": schema.SingleNestedAttribute{
@@ -482,99 +480,51 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Attributes: map[string]schema.Attribute{
 							"gateway_ip": schema.StringAttribute{
 								Description: "The gateway IP for the DHCP server scope",
-								Computed:    true,
-								Optional:    true,
-								Default:     stringdefault.StaticString(""),
+								Required:    true,
 								Validators: []validator.String{
-									stringvalidator.All(
-										stringvalidator.RegexMatches(
-											regexp.MustCompile(`\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b`),
-											"must be a valid IPv4 address",
-										),
-										stringvalidator.AlsoRequires(path.Expressions{
-											path.MatchRelative().AtParent().AtName("subnet_mask"),
-											path.MatchRelative().AtParent().AtName("range_start"),
-											path.MatchRelative().AtParent().AtName("range_end"),
-											path.MatchRelative().AtParent().AtName("lease_duration"),
-										}...),
+									stringvalidator.RegexMatches(
+										regexp.MustCompile(`\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b`),
+										"must be a valid IPv4 address",
 									),
 								},
 							},
 							"subnet_mask": schema.StringAttribute{
 								Description: "The subnet mask for the DHCP server scope",
-								Computed:    true,
-								Optional:    true,
-								Default:     stringdefault.StaticString(""),
+								Required:    true,
 								Validators: []validator.String{
-									stringvalidator.All(
-										stringvalidator.RegexMatches(
-											regexp.MustCompile(`\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b`),
-											"must be a valid IPv4 address",
-										),
-										stringvalidator.AlsoRequires(path.Expressions{
-											path.MatchRelative().AtParent().AtName("gateway_ip"),
-											path.MatchRelative().AtParent().AtName("range_start"),
-											path.MatchRelative().AtParent().AtName("range_end"),
-											path.MatchRelative().AtParent().AtName("lease_duration"),
-										}...),
+									stringvalidator.RegexMatches(
+										regexp.MustCompile(`\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b`),
+										"must be a valid IPv4 address",
 									),
 								},
 							},
 							"range_start": schema.StringAttribute{
 								Description: "The start range for the DHCP server scope",
-								Computed:    true,
-								Optional:    true,
-								Default:     stringdefault.StaticString(""),
+								Required:    true,
 								Validators: []validator.String{
-									stringvalidator.All(
-										stringvalidator.RegexMatches(
-											regexp.MustCompile(`\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b`),
-											"must be a valid IPv4 address",
-										),
-										stringvalidator.AlsoRequires(path.Expressions{
-											path.MatchRelative().AtParent().AtName("subnet_mask"),
-											path.MatchRelative().AtParent().AtName("gateway_ip"),
-											path.MatchRelative().AtParent().AtName("range_end"),
-											path.MatchRelative().AtParent().AtName("lease_duration"),
-										}...),
+									stringvalidator.RegexMatches(
+										regexp.MustCompile(`\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b`),
+										"must be a valid IPv4 address",
 									),
 								},
 							},
 							"range_end": schema.StringAttribute{
 								Description: "The start range for the DHCP server scope",
-								Computed:    true,
-								Optional:    true,
-								Default:     stringdefault.StaticString(""),
+								Required:    true,
 								Validators: []validator.String{
-									stringvalidator.All(
-										stringvalidator.RegexMatches(
-											regexp.MustCompile(`\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b`),
-											"must be a valid IPv4 address",
-										),
-										stringvalidator.AlsoRequires(path.Expressions{
-											path.MatchRelative().AtParent().AtName("subnet_mask"),
-											path.MatchRelative().AtParent().AtName("range_start"),
-											path.MatchRelative().AtParent().AtName("gateway_ip"),
-											path.MatchRelative().AtParent().AtName("lease_duration"),
-										}...),
+									stringvalidator.RegexMatches(
+										regexp.MustCompile(`\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b`),
+										"must be a valid IPv4 address",
 									),
 								},
 							},
 							"lease_duration": schema.Int64Attribute{
-								Description: fmt.Sprintf("The lease duration for the DHCP server scope, in seconds. Defaults to `%d`", CONFIG_DHCP_V4_LEASE_DURATION),
+								Description: fmt.Sprintf("The lease duration for the DHCP server scope, in seconds. Defaults to `%d`", CONFIG_DHCP_LEASE_DURATION),
 								Computed:    true,
 								Optional:    true,
-								Default:     int64default.StaticInt64(CONFIG_DHCP_V4_LEASE_DURATION),
+								Default:     int64default.StaticInt64(CONFIG_DHCP_LEASE_DURATION),
 								Validators: []validator.Int64{
-									int64validator.All(
-										int64validator.AtLeast(1),
-										int64validator.AlsoRequires(path.Expressions{
-											path.MatchRelative().AtParent().AtName("subnet_mask"),
-											path.MatchRelative().AtParent().AtName("range_start"),
-											path.MatchRelative().AtParent().AtName("range_end"),
-											path.MatchRelative().AtParent().AtName("gateway_ip"),
-										}...),
-									),
+									int64validator.AtLeast(1),
 								},
 							},
 						},
@@ -588,33 +538,22 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Attributes: map[string]schema.Attribute{
 							"range_start": schema.StringAttribute{
 								Description: "The start range for the DHCP server scope",
-								Computed:    true,
-								Optional:    true,
+								Required:    true,
 								Default:     stringdefault.StaticString(""),
 								Validators: []validator.String{
-									stringvalidator.All(
-										stringvalidator.RegexMatches(
-											regexp.MustCompile(`(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))`),
-											"must be a valid IPv6 address",
-										),
-										stringvalidator.AlsoRequires(path.Expressions{
-											path.MatchRelative().AtParent().AtName("lease_duration"),
-										}...),
+									stringvalidator.RegexMatches(
+										regexp.MustCompile(`(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))`),
+										"must be a valid IPv6 address",
 									),
 								},
 							},
 							"lease_duration": schema.Int64Attribute{
-								Description: fmt.Sprintf("The lease duration for the DHCP server scope, in seconds. Defaults to `%d`", CONFIG_DHCP_V6_LEASE_DURATION),
+								Description: fmt.Sprintf("The lease duration for the DHCP server scope, in seconds. Defaults to `%d`", CONFIG_DHCP_LEASE_DURATION),
 								Computed:    true,
 								Optional:    true,
-								Default:     int64default.StaticInt64(CONFIG_DHCP_V6_LEASE_DURATION),
+								Default:     int64default.StaticInt64(CONFIG_DHCP_LEASE_DURATION),
 								Validators: []validator.Int64{
-									int64validator.All(
-										int64validator.AtLeast(1),
-										int64validator.AlsoRequires(path.Expressions{
-											path.MatchRelative().AtParent().AtName("range_start"),
-										}...),
-									),
+									int64validator.AtLeast(1),
 								},
 							},
 						},
