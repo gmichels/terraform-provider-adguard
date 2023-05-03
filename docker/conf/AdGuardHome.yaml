@@ -150,14 +150,14 @@ user_rules:
   - '! bang comment'
 dhcp:
   enabled: false
-  interface_name: ""
+  interface_name: lo0
   local_domain_name: lan
   dhcpv4:
-    gateway_ip: ""
-    subnet_mask: ""
-    range_start: ""
-    range_end: ""
-    lease_duration: 86400
+    gateway_ip: 192.168.200.1
+    subnet_mask: 255.255.255.0
+    range_start: 192.168.200.2
+    range_end: 192.168.200.50
+    lease_duration: 3600
     icmp_timeout_msec: 1000
     options: []
   dhcpv6:
