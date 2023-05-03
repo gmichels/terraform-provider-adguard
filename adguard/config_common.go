@@ -251,18 +251,6 @@ func (o dhcpStatusModel) attrTypes() map[string]attr.Type {
 	}
 }
 
-// defaultObject - return default object for this model
-func (o dhcpStatusModel) defaultObject() map[string]attr.Value {
-	return map[string]attr.Value{
-		"enabled":       types.BoolValue(CONFIG_DHCP_ENABLED),
-		"interface":     types.StringValue(""),
-		"ipv4_settings": types.MapValueMust(types.StringType, map[string]attr.Value{}),
-		"ipv6_settings": types.MapValueMust(types.StringType, map[string]attr.Value{}),
-		"leases":        types.SetValueMust(types.StringType, []attr.Value{}),
-		"static_leases": types.SetValueMust(types.StringType, []attr.Value{}),
-	}
-}
-
 // dhcpConfigModel maps DHCP schema data
 type dhcpConfigModel struct {
 	Enabled      types.Bool   `tfsdk:"enabled"`
@@ -362,16 +350,6 @@ func (o dhcpLeasesModel) attrTypes() map[string]attr.Type {
 	}
 }
 
-// defaultObject - return default object for this model
-func (o dhcpLeasesModel) defaultObject() map[string]attr.Value {
-	return map[string]attr.Value{
-		"mac":        types.StringValue(""),
-		"ip":         types.StringValue(""),
-		"hostname":   types.StringValue(""),
-		"expiration": types.StringValue(""),
-	}
-}
-
 // dhcpStaticLeasesModel maps DHCP leases schema data
 type dhcpStaticLeasesModel struct {
 	Mac      types.String `tfsdk:"mac"`
@@ -385,15 +363,6 @@ func (o dhcpStaticLeasesModel) attrTypes() map[string]attr.Type {
 		"mac":      types.StringType,
 		"ip":       types.StringType,
 		"hostname": types.StringType,
-	}
-}
-
-// defaultObject - return default object for this model
-func (o dhcpStaticLeasesModel) defaultObject() map[string]attr.Value {
-	return map[string]attr.Value{
-		"mac":      types.StringValue(""),
-		"ip":       types.StringValue(""),
-		"hostname": types.StringValue(""),
 	}
 }
 
