@@ -464,7 +464,6 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(CONFIG_DHCP_ENABLED),
-						// TODO add validators
 					},
 					"interface": schema.StringAttribute{
 						Description: "The interface to use for the DHCP server",
