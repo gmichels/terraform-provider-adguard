@@ -541,8 +541,17 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Description: "Static leases for the DHCP server",
 						Computed:    true,
 						Optional:    true,
+						Validators: []validator.Set{
+							setvalidator.Any(
+								setvalidator.AlsoRequires(path.Expressions{
+									path.MatchRelative().AtParent().AtName("ipv4_settings"),
+								}...),
+								setvalidator.AlsoRequires(path.Expressions{
+									path.MatchRelative().AtParent().AtName("ipv6_settings"),
+								}...),
+							),
+						},
 						Default:     setdefault.StaticValue(types.SetNull(types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()})),
-						// Default:     setdefault.StaticValue(types.SetValueMust(types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()}, []attr.Value{types.ObjectValueMust(dhcpStaticLeasesModel{}.attrTypes(), dhcpStaticLeasesModel{}.defaultObject())})),
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
 								"mac": schema.StringAttribute{

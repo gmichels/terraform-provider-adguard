@@ -589,11 +589,22 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 		return
 	}
 	if len(dhcpStatus.StaticLeases) > 0 {
-		stateDhcpConfig.StaticLeases, *diags = types.SetValueFrom(ctx, types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()}, dhcpStatus.StaticLeases)
+		// need to go through all entries to create a slice
+		var dhcpStaticLeases []dhcpStaticLeasesModel
+		var stateDhcpConfigStaticLease dhcpStaticLeasesModel
+		for _, dhcpStaticLease := range dhcpStatus.StaticLeases {
+			stateDhcpConfigStaticLease.Mac = types.StringValue(dhcpStaticLease.Mac)
+			stateDhcpConfigStaticLease.Ip = types.StringValue(dhcpStaticLease.Ip)
+			stateDhcpConfigStaticLease.Hostname = types.StringValue(dhcpStaticLease.Hostname)
+			dhcpStaticLeases = append(dhcpStaticLeases, stateDhcpConfigStaticLease)
+		}
+		// convert to a set
+		stateDhcpConfig.StaticLeases, *diags = types.SetValueFrom(ctx, types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()}, dhcpStaticLeases)
 		if diags.HasError() {
 			return
 		}
 	} else {
+		// use a null set
 		stateDhcpConfig.StaticLeases = types.SetNull(types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()})
 	}
 
@@ -928,8 +939,8 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		// instantiate empty object for storing plan data
 		var dhcpStaticLease adguard.DhcpStaticLease
 		dhcpStaticLease.Mac = planDhcpStaticLease.Mac.ValueString()
-		dhcpStaticLease.Ip = planDhcpStaticLease.Ip.String()
-		dhcpStaticLease.Hostname = planDhcpStaticLease.Hostname.String()
+		dhcpStaticLease.Ip = planDhcpStaticLease.Ip.ValueString()
+		dhcpStaticLease.Hostname = planDhcpStaticLease.Hostname.ValueString()
 
 		// set this dhcp static lease using plan
 		_, err = r.adg.ManageDhcpStaticLease(true, dhcpStaticLease)

@@ -55,6 +55,18 @@ resource "adguard_config" "test" {
 			range_end      = "192.168.250.100"
 			lease_duration = 7200
 		}
+		static_leases = [
+			{
+				mac = "00:11:22:33:44:55"
+				ip = "192.168.250.20"
+				hostname = "test_lease_1"
+			},
+			{
+				mac = "aa:bb:cc:dd:ee:ff"
+				ip = "192.168.250.30"
+				hostname = "test_lease_2"
+			}
+		]
 	}
 }
 `,
@@ -96,6 +108,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.range_start", "192.168.250.10"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.range_end", "192.168.250.100"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.lease_duration", "7200"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.#", "2"),
 					// Verify dynamic values have any value set in the state.
 					resource.TestCheckResourceAttrSet("adguard_config.test", "id"),
 					resource.TestCheckResourceAttrSet("adguard_config.test", "last_updated"),

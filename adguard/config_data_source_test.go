@@ -67,6 +67,7 @@ func TestAccConfigDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dhcp.ipv4_settings.range_end", "192.168.200.50"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dhcp.ipv4_settings.lease_duration", "3600"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dhcp.ipv6_settings.lease_duration", "86400"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "dhcp.static_leases.#", "0"),
 					// Verify internal attributes
 					resource.TestCheckResourceAttr("data.adguard_config.test", "id", "placeholder"),
 					resource.TestCheckResourceAttrSet("data.adguard_config.test", "last_updated"),
