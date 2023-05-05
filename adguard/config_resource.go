@@ -450,7 +450,6 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					"interface": schema.StringAttribute{
 						Description: "The interface to use for the DHCP server",
 						Required:    true,
-						// TODO add validators
 					},
 					"ipv4_settings": schema.SingleNestedAttribute{
 						Computed: true,
@@ -538,6 +537,29 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 							},
 						},
 					},
+					"static_leases": schema.SetNestedAttribute{
+						Description: "Static leases for the DHCP server",
+						Computed:    true,
+						Optional:    true,
+						Default:     setdefault.StaticValue(types.SetNull(types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()})),
+						// Default:     setdefault.StaticValue(types.SetValueMust(types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()}, []attr.Value{types.ObjectValueMust(dhcpStaticLeasesModel{}.attrTypes(), dhcpStaticLeasesModel{}.defaultObject())})),
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"mac": schema.StringAttribute{
+									Description: "MAC address associated with the static lease",
+									Required:    true,
+								},
+								"ip": schema.StringAttribute{
+									Description: "IP address associated with the static lease",
+									Required:    true,
+								},
+								"hostname": schema.StringAttribute{
+									Description: "Hostname associated with the static lease",
+									Required:    true,
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -564,7 +586,7 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	// defer to common function to create or update the resource
-	r.CreateOrUpdate(ctx, plan, &resp.Diagnostics)
+	r.CreateOrUpdate(ctx, &plan, &resp.Diagnostics)
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
@@ -625,7 +647,7 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// defer to common function to create or update the resource
-	r.CreateOrUpdate(ctx, plan, &resp.Diagnostics)
+	r.CreateOrUpdate(ctx, &plan, &resp.Diagnostics)
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return

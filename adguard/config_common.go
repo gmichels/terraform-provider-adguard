@@ -238,6 +238,7 @@ type dhcpConfigModel struct {
 	Interface    types.String `tfsdk:"interface"`
 	Ipv4Settings types.Object `tfsdk:"ipv4_settings"`
 	Ipv6Settings types.Object `tfsdk:"ipv6_settings"`
+	StaticLeases types.Set    `tfsdk:"static_leases"`
 }
 
 // attrTypes - return attribute types for this model
@@ -247,6 +248,7 @@ func (o dhcpConfigModel) attrTypes() map[string]attr.Type {
 		"interface":     types.StringType,
 		"ipv4_settings": types.ObjectType{AttrTypes: dhcpIpv4Model{}.attrTypes()},
 		"ipv6_settings": types.ObjectType{AttrTypes: dhcpIpv6Model{}.attrTypes()},
+		"static_leases": types.SetType{ElemType: types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()}},
 	}
 }
 
@@ -255,8 +257,9 @@ func (o dhcpConfigModel) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
 		"enabled":       types.BoolValue(CONFIG_DHCP_ENABLED),
 		"interface":     types.StringValue(""),
-		"ipv4_settings": types.ObjectValueMust(dhcpIpv4Model{}.attrTypes(), dhcpIpv4Model{}.defaultObject()),
-		"ipv6_settings": types.ObjectValueMust(dhcpIpv6Model{}.attrTypes(), dhcpIpv6Model{}.defaultObject()),
+		"ipv4_settings": types.ObjectNull(dhcpIpv4Model{}.attrTypes()),
+		"ipv6_settings": types.ObjectNull(dhcpIpv6Model{}.attrTypes()),
+		"static_leases": types.SetNull(types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()}),
 	}
 }
 
@@ -585,6 +588,14 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 	if diags.HasError() {
 		return
 	}
+	if len(dhcpStatus.StaticLeases) > 0 {
+		stateDhcpConfig.StaticLeases, *diags = types.SetValueFrom(ctx, types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()}, dhcpStatus.StaticLeases)
+		if diags.HasError() {
+			return
+		}
+	} else {
+		stateDhcpConfig.StaticLeases = types.SetNull(types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()})
+	}
 
 	if rtype == "resource" {
 		// no need to do anything else, just add to config model
@@ -599,12 +610,9 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 		stateDhcpStatus.Interface = stateDhcpConfig.Interface
 		stateDhcpStatus.Ipv4Settings = stateDhcpConfig.Ipv4Settings
 		stateDhcpStatus.Ipv6Settings = stateDhcpConfig.Ipv6Settings
+		stateDhcpStatus.StaticLeases = stateDhcpConfig.StaticLeases
 		// add the extra attributes for the data source
 		stateDhcpStatus.Leases, *diags = types.SetValueFrom(ctx, types.ObjectType{AttrTypes: dhcpLeasesModel{}.attrTypes()}, dhcpStatus.Leases)
-		if diags.HasError() {
-			return
-		}
-		stateDhcpStatus.StaticLeases, *diags = types.SetValueFrom(ctx, types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()}, dhcpStatus.StaticLeases)
 		if diags.HasError() {
 			return
 		}
@@ -619,7 +627,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 }
 
 // common `Create` and `Update` function for the resource
-func (r *configResource) CreateOrUpdate(ctx context.Context, plan configCommonModel, diags *diag.Diagnostics) {
+func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonModel, diags *diag.Diagnostics) {
 	// FILTERING CONFIG
 	// unpack nested attributes from plan
 	var planFiltering filteringModel
@@ -871,14 +879,25 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan configCommonMo
 		return
 	}
 	var planDhcpIpv4Settings dhcpIpv4Model
-	*diags = planDhcpConfig.Ipv4Settings.As(ctx, &planDhcpIpv4Settings, basetypes.ObjectAsOptions{})
-	if diags.HasError() {
-		return
+	if !planDhcpConfig.Ipv4Settings.IsNull() {
+		*diags = planDhcpConfig.Ipv4Settings.As(ctx, &planDhcpIpv4Settings, basetypes.ObjectAsOptions{})
+		if diags.HasError() {
+			return
+		}
 	}
 	var planDhcpIpv6Settings dhcpIpv6Model
-	*diags = planDhcpConfig.Ipv6Settings.As(ctx, &planDhcpIpv6Settings, basetypes.ObjectAsOptions{})
-	if diags.HasError() {
-		return
+	if !planDhcpConfig.Ipv6Settings.IsNull() {
+		*diags = planDhcpConfig.Ipv6Settings.As(ctx, &planDhcpIpv6Settings, basetypes.ObjectAsOptions{})
+		if diags.HasError() {
+			return
+		}
+	}
+	var planDhcpStaticLeases []dhcpStaticLeasesModel
+	if !planDhcpConfig.StaticLeases.IsNull() {
+		*diags = planDhcpConfig.StaticLeases.ElementsAs(ctx, &planDhcpStaticLeases, false)
+		if diags.HasError() {
+			return
+		}
 	}
 
 	// instantiate empty object for storing plan data
@@ -902,6 +921,26 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan configCommonMo
 			err.Error(),
 		)
 		return
+	}
+
+	// go through all dhcp static leases in plan
+	for _, planDhcpStaticLease := range planDhcpStaticLeases {
+		// instantiate empty object for storing plan data
+		var dhcpStaticLease adguard.DhcpStaticLease
+		dhcpStaticLease.Mac = planDhcpStaticLease.Mac.ValueString()
+		dhcpStaticLease.Ip = planDhcpStaticLease.Ip.String()
+		dhcpStaticLease.Hostname = planDhcpStaticLease.Hostname.String()
+
+		// set this dhcp static lease using plan
+		_, err = r.adg.ManageDhcpStaticLease(true, dhcpStaticLease)
+		if err != nil {
+			diags.AddError(
+				"Unable to Update AdGuard Home Config",
+				err.Error(),
+			)
+			return
+		}
+
 	}
 
 	// if we got here, all went fine
