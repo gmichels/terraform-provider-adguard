@@ -56,23 +56,13 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 					},
 				},
 			},
-			"safebrowsing": schema.SingleNestedAttribute{
-				Computed: true,
-				Attributes: map[string]schema.Attribute{
-					"enabled": schema.BoolAttribute{
-						Description: "Whether Safe Browsing is enabled",
-						Computed:    true,
-					},
-				},
+			"safebrowsing": schema.BoolAttribute{
+				Description: "Whether Safe Browsing is enabled",
+				Computed:    true,
 			},
-			"parental_control": schema.SingleNestedAttribute{
-				Computed: true,
-				Attributes: map[string]schema.Attribute{
-					"enabled": schema.BoolAttribute{
-						Description: "Whether Parental Control is enabled",
-						Computed:    true,
-					},
-				},
+			"parental_control": schema.BoolAttribute{
+				Description: "Whether Parental Control is enabled",
+				Computed:    true,
 			},
 			"safesearch": schema.SingleNestedAttribute{
 				Computed: true,

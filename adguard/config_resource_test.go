@@ -17,6 +17,7 @@ resource "adguard_config" "test" {
 	filtering = {
 		update_interval = 1
 	}
+	safebrowsing = true
 	safesearch = {
 		enabled  = true
 		services = ["bing", "youtube", "google"]
@@ -60,8 +61,8 @@ resource "adguard_config" "test" {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("adguard_config.test", "filtering.enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "filtering.update_interval", "1"),
-					resource.TestCheckResourceAttr("adguard_config.test", "safebrowsing.enabled", "false"),
-					resource.TestCheckResourceAttr("adguard_config.test", "parental_control.enabled", "false"),
+					resource.TestCheckResourceAttr("adguard_config.test", "safebrowsing", "true"),
+					resource.TestCheckResourceAttr("adguard_config.test", "parental_control", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "safesearch.enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "safesearch.services.#", "3"),
 					resource.TestCheckResourceAttr("adguard_config.test", "safesearch.services.1", "google"),
@@ -150,8 +151,8 @@ resource "adguard_config" "test" {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("adguard_config.test", "filtering.enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "filtering.update_interval", "72"),
-					resource.TestCheckResourceAttr("adguard_config.test", "safebrowsing.enabled", "false"),
-					resource.TestCheckResourceAttr("adguard_config.test", "parental_control.enabled", "false"),
+					resource.TestCheckResourceAttr("adguard_config.test", "safebrowsing", "false"),
+					resource.TestCheckResourceAttr("adguard_config.test", "parental_control", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "safesearch.enabled", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "safesearch.services.#", "6"),
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.enabled", "true"),

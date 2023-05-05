@@ -16,8 +16,8 @@ func TestAccConfigDataSource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.adguard_config.test", "filtering.enabled", "true"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "filtering.update_interval", "24"),
-					resource.TestCheckResourceAttr("data.adguard_config.test", "safebrowsing.enabled", "false"),
-					resource.TestCheckResourceAttr("data.adguard_config.test", "parental_control.enabled", "false"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "safebrowsing", "false"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "parental_control", "false"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "safesearch.enabled", "false"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "safesearch.services.#", "6"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "safesearch.services.0", "bing"),

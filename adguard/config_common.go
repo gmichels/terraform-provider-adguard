@@ -17,8 +17,8 @@ type configCommonModel struct {
 	ID              types.String `tfsdk:"id"`
 	LastUpdated     types.String `tfsdk:"last_updated"`
 	Filtering       types.Object `tfsdk:"filtering"`
-	SafeBrowsing    types.Object `tfsdk:"safebrowsing"`
-	ParentalControl types.Object `tfsdk:"parental_control"`
+	SafeBrowsing    types.Bool   `tfsdk:"safebrowsing"`
+	ParentalControl types.Bool   `tfsdk:"parental_control"`
 	SafeSearch      types.Object `tfsdk:"safesearch"`
 	QueryLog        types.Object `tfsdk:"querylog"`
 	Stats           types.Object `tfsdk:"stats"`
@@ -48,25 +48,6 @@ func (o filteringModel) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
 		"enabled":         types.BoolValue(CONFIG_FILTERING_ENABLED),
 		"update_interval": types.Int64Value(int64(CONFIG_FILTERING_UPDATE_INTERVAL)),
-	}
-}
-
-// enabledModel maps both safe browsing and parental control schema data
-type enabledModel struct {
-	Enabled types.Bool `tfsdk:"enabled"`
-}
-
-// attrTypes - return attribute types for this model
-func (o enabledModel) attrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"enabled": types.BoolType,
-	}
-}
-
-// defaultObject - return default object for this model
-func (o enabledModel) defaultObject() map[string]attr.Value {
-	return map[string]attr.Value{
-		"enabled": types.BoolValue(false),
 	}
 }
 
@@ -395,11 +376,8 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 		)
 		return
 	}
-	// map safe browsing config to state
-	var stateSafeBrowsingStatus enabledModel
-	stateSafeBrowsingStatus.Enabled = types.BoolValue(*safeBrowsingStatus)
 	// add to config model
-	o.SafeBrowsing, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateSafeBrowsingStatus)
+	o.SafeBrowsing = types.BoolValue(*safeBrowsingStatus)
 
 	// PARENTAL CONTROL
 	// get refreshed safe parental control status from AdGuard Home
@@ -411,11 +389,8 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 		)
 		return
 	}
-	// map parental control config to state
-	var stateParentalStatus enabledModel
-	stateParentalStatus.Enabled = types.BoolValue(*parentalStatus)
 	// add to config model
-	o.ParentalControl, _ = types.ObjectValueFrom(ctx, enabledModel{}.attrTypes(), &stateParentalStatus)
+	o.ParentalControl = types.BoolValue(*parentalStatus)
 
 	// SAFE SEARCH
 	// retrieve safe search info
@@ -669,14 +644,8 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan configCommonMo
 	}
 
 	// SAFE BROWSING
-	// unpack nested attributes from plan
-	var planSafeBrowsing enabledModel
-	*diags = plan.SafeBrowsing.As(ctx, &planSafeBrowsing, basetypes.ObjectAsOptions{})
-	if diags.HasError() {
-		return
-	}
 	// set safe browsing status using plan
-	err = r.adg.SetSafeBrowsingStatus(planSafeBrowsing.Enabled.ValueBool())
+	err = r.adg.SetSafeBrowsingStatus(plan.SafeBrowsing.ValueBool())
 	if err != nil {
 		diags.AddError(
 			"Unable to Update AdGuard Home Config",
@@ -686,13 +655,8 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan configCommonMo
 	}
 
 	// PARENTAL CONTROL
-	// unpack nested attributes from plan
-	var planParentalControl enabledModel
-	*diags = plan.ParentalControl.As(ctx, &planParentalControl, basetypes.ObjectAsOptions{})
-	if diags.HasError() {
-		return
-	}
 	// set parental control status using plan
+	err = r.adg.SetParentalStatus(plan.ParentalControl.ValueBool())
 	if err != nil {
 		diags.AddError(
 			"Unable to Update AdGuard Home Config",

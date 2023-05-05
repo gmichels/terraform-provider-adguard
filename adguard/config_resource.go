@@ -88,35 +88,17 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					},
 				},
 			},
-			"safebrowsing": schema.SingleNestedAttribute{
-				Computed: true,
-				Optional: true,
-				Default: objectdefault.StaticValue(types.ObjectValueMust(
-					enabledModel{}.attrTypes(), enabledModel{}.defaultObject()),
-				),
-				Attributes: map[string]schema.Attribute{
-					"enabled": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether Safe Browsing is enabled. Defaults to `%t`", CONFIG_SAFEBROWSING_ENABLED),
-						Computed:    true,
-						Optional:    true,
-						Default:     booldefault.StaticBool(CONFIG_SAFEBROWSING_ENABLED),
-					},
-				},
+			"safebrowsing": schema.BoolAttribute{
+				Description: fmt.Sprintf("Whether Safe Browsing is enabled. Defaults to `%t`", CONFIG_SAFEBROWSING_ENABLED),
+				Computed:    true,
+				Optional:    true,
+				Default:     booldefault.StaticBool(CONFIG_SAFEBROWSING_ENABLED),
 			},
-			"parental_control": schema.SingleNestedAttribute{
-				Computed: true,
-				Optional: true,
-				Default: objectdefault.StaticValue(types.ObjectValueMust(
-					enabledModel{}.attrTypes(), enabledModel{}.defaultObject()),
-				),
-				Attributes: map[string]schema.Attribute{
-					"enabled": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether Parental Control is enabled. Defaults to `%t`", CONFIG_PARENTAL_CONTROL_ENABLED),
-						Computed:    true,
-						Optional:    true,
-						Default:     booldefault.StaticBool(CONFIG_PARENTAL_CONTROL_ENABLED),
-					},
-				},
+			"parental_control": schema.BoolAttribute{
+				Description: fmt.Sprintf("Whether Parental Control is enabled. Defaults to `%t`", CONFIG_PARENTAL_CONTROL_ENABLED),
+				Computed:    true,
+				Optional:    true,
+				Default:     booldefault.StaticBool(CONFIG_PARENTAL_CONTROL_ENABLED),
 			},
 			"safesearch": schema.SingleNestedAttribute{
 				Computed: true,
