@@ -551,20 +551,38 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 								}...),
 							),
 						},
-						Default:     setdefault.StaticValue(types.SetNull(types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()})),
+						Default: setdefault.StaticValue(types.SetNull(types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()})),
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
 								"mac": schema.StringAttribute{
 									Description: "MAC address associated with the static lease",
 									Required:    true,
+									Validators: []validator.String{
+										stringvalidator.RegexMatches(
+											regexp.MustCompile(`^[a-f0-9:]+$`),
+											"must be a valid MAC address",
+										),
+									},
 								},
 								"ip": schema.StringAttribute{
 									Description: "IP address associated with the static lease",
 									Required:    true,
+									Validators: []validator.String{
+										stringvalidator.RegexMatches(
+											regexp.MustCompile(`\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b`),
+											"must be a valid IPv4 address",
+										),
+									},
 								},
 								"hostname": schema.StringAttribute{
 									Description: "Hostname associated with the static lease",
 									Required:    true,
+									Validators: []validator.String{
+										stringvalidator.RegexMatches(
+											regexp.MustCompile(`^[a-z0-9-]+$`),
+											"must be a valid hostname",
+										),
+									},
 								},
 							},
 						},

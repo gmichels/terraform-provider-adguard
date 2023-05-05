@@ -59,12 +59,12 @@ resource "adguard_config" "test" {
 			{
 				mac = "00:11:22:33:44:55"
 				ip = "192.168.250.20"
-				hostname = "test_lease_1"
+				hostname = "test-lease-1"
 			},
 			{
 				mac = "aa:bb:cc:dd:ee:ff"
 				ip = "192.168.250.30"
-				hostname = "test_lease_2"
+				hostname = "test-lease-2"
 			}
 		]
 	}
