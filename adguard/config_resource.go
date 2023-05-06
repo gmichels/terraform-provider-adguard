@@ -612,8 +612,11 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
+	// empty state as it's a create operation
+	var state configCommonModel
+
 	// defer to common function to create or update the resource
-	r.CreateOrUpdate(ctx, &plan, &resp.Diagnostics)
+	r.CreateOrUpdate(ctx, &plan, &state, &resp.Diagnostics)
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
@@ -673,8 +676,16 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
+	// retrieve values from state
+	var state configCommonModel
+	diags = req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// defer to common function to create or update the resource
-	r.CreateOrUpdate(ctx, &plan, &resp.Diagnostics)
+	r.CreateOrUpdate(ctx, &plan, &state, &resp.Diagnostics)
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
@@ -846,6 +857,16 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	// set dhcp config to defaults
 	err = r.adg.ResetDhcpConfig()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Deleting AdGuard Home Config",
+			"Could not delete config, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// remove all dhcp static leases
+	err = r.adg.ResetDhcpStaticLeases()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",

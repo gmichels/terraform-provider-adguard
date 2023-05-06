@@ -638,7 +638,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 }
 
 // common `Create` and `Update` function for the resource
-func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonModel, diags *diag.Diagnostics) {
+func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonModel, state *configCommonModel, diags *diag.Diagnostics) {
 	// FILTERING CONFIG
 	// unpack nested attributes from plan
 	var planFiltering filteringModel
@@ -934,6 +934,34 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		return
 	}
 
+	// initialize variables related to state
+	var allStateDhcpStaticLeases []string
+	var stateDhcpConfig dhcpConfigModel
+	var stateDhcpStaticLeases []dhcpStaticLeasesModel
+
+	// grab data from state if it exists
+	if !state.Dhcp.IsNull() {
+		*diags = state.Dhcp.As(ctx, &stateDhcpConfig, basetypes.ObjectAsOptions{})
+		if diags.HasError() {
+			return
+		}
+		if !stateDhcpConfig.StaticLeases.IsNull() {
+			*diags = stateDhcpConfig.StaticLeases.ElementsAs(ctx, &stateDhcpStaticLeases, false)
+			if diags.HasError() {
+				return
+			}
+		}
+
+		// go through the dhcp static leases existing in state
+		for _, stateDhcpStaticLease := range stateDhcpStaticLeases {
+			// track dhcp static leases in state
+			allStateDhcpStaticLeases = append(allStateDhcpStaticLeases, stateDhcpStaticLease.Mac.ValueString())
+		}
+	}
+
+	// initialize slice for all dhcp static leases in the plan
+	var allPlanDhcpStaticLeases []string
+
 	// go through all dhcp static leases in plan
 	for _, planDhcpStaticLease := range planDhcpStaticLeases {
 		// instantiate empty object for storing plan data
@@ -941,17 +969,43 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		dhcpStaticLease.Mac = planDhcpStaticLease.Mac.ValueString()
 		dhcpStaticLease.Ip = planDhcpStaticLease.Ip.ValueString()
 		dhcpStaticLease.Hostname = planDhcpStaticLease.Hostname.ValueString()
+		// track dhcp static leases in plan
+		allPlanDhcpStaticLeases = append(allPlanDhcpStaticLeases, dhcpStaticLease.Mac)
 
-		// set this dhcp static lease using plan
-		_, err = r.adg.ManageDhcpStaticLease(true, dhcpStaticLease)
-		if err != nil {
-			diags.AddError(
-				"Unable to Update AdGuard Home Config",
-				err.Error(),
-			)
-			return
+		// check if this dhcp static lease isn't already in state
+		if !contains(allStateDhcpStaticLeases, dhcpStaticLease.Mac) {
+			// set this dhcp static lease using plan
+			_, err = r.adg.ManageDhcpStaticLease(true, dhcpStaticLease)
+			if err != nil {
+				diags.AddError(
+					"Unable to Update AdGuard Home Config",
+					err.Error(),
+				)
+				return
+			}
 		}
+	}
 
+	// go through the dhcp static leases existing in state
+	for _, stateDhcpStaticLease := range stateDhcpStaticLeases {
+		// instantiate empty object for storing plan data
+		var dhcpStaticLease adguard.DhcpStaticLease
+		dhcpStaticLease.Mac = stateDhcpStaticLease.Mac.ValueString()
+		dhcpStaticLease.Ip = stateDhcpStaticLease.Ip.ValueString()
+		dhcpStaticLease.Hostname = stateDhcpStaticLease.Hostname.ValueString()
+
+		// check if this dhcp static lease is still in the plan
+		if !contains(allPlanDhcpStaticLeases, dhcpStaticLease.Mac) {
+			// not in plan, delete it
+			_, err = r.adg.ManageDhcpStaticLease(false, dhcpStaticLease)
+			if err != nil {
+				diags.AddError(
+					"Unable to Update AdGuard Home Config",
+					err.Error(),
+				)
+				return
+			}
+		}
 	}
 
 	// if we got here, all went fine

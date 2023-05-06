@@ -57,13 +57,13 @@ resource "adguard_config" "test" {
 		}
 		static_leases = [
 			{
-				mac = "00:11:22:33:44:55"
-				ip = "192.168.250.20"
+				mac      = "00:11:22:33:44:55"
+				ip       = "192.168.250.20"
 				hostname = "test-lease-1"
 			},
 			{
-				mac = "aa:bb:cc:dd:ee:ff"
-				ip = "192.168.250.30"
+				mac      = "aa:bb:cc:dd:ee:ff"
+				ip       = "192.168.250.30"
 				hostname = "test-lease-2"
 			}
 		]
@@ -109,6 +109,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.range_end", "192.168.250.100"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.lease_duration", "7200"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.#", "2"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.1.ip", "192.168.250.30"),
 					// Verify dynamic values have any value set in the state.
 					resource.TestCheckResourceAttrSet("adguard_config.test", "id"),
 					resource.TestCheckResourceAttrSet("adguard_config.test", "last_updated"),
@@ -158,6 +159,23 @@ resource "adguard_config" "test" {
 			range_end      = "192.168.250.90"
 			lease_duration = 14400
 		}
+		static_leases = [
+			{
+				mac      = "aa:bb:cc:dd:ee:ff"
+				ip       = "192.168.250.30"
+				hostname = "test-lease-2"
+			},
+			{
+				mac      = "ff:ee:dd:cc:bb:aa"
+				ip       = "192.168.250.40"
+				hostname = "test-lease-3"
+			},
+			{
+				mac      = "ab:cd:ef:01:23:45"
+				ip       = "192.168.250.50"
+				hostname = "test-lease-4"
+			},
+		]
 	}
 }
 `,
@@ -202,6 +220,9 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.range_start", "192.168.250.20"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.range_end", "192.168.250.90"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.lease_duration", "14400"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.#", "3"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.1.ip", "192.168.250.40"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.2.hostname", "test-lease-4"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
