@@ -23,15 +23,71 @@ data "adguard_config" "test" {}
 ### Read-Only
 
 - `blocked_services` (Set of String) Set of services that are blocked globally
+- `dhcp` (Attributes) (see [below for nested schema](#nestedatt--dhcp))
 - `dns` (Attributes) (see [below for nested schema](#nestedatt--dns))
 - `filtering` (Attributes) (see [below for nested schema](#nestedatt--filtering))
 - `id` (String) Identifier attribute
 - `last_updated` (String) Timestamp of the last Terraform refresh
-- `parental_control` (Attributes) (see [below for nested schema](#nestedatt--parental_control))
+- `parental_control` (Boolean) Whether Parental Control is enabled
 - `querylog` (Attributes) (see [below for nested schema](#nestedatt--querylog))
-- `safebrowsing` (Attributes) (see [below for nested schema](#nestedatt--safebrowsing))
+- `safebrowsing` (Boolean) Whether Safe Browsing is enabled
 - `safesearch` (Attributes) (see [below for nested schema](#nestedatt--safesearch))
 - `stats` (Attributes) (see [below for nested schema](#nestedatt--stats))
+
+<a id="nestedatt--dhcp"></a>
+### Nested Schema for `dhcp`
+
+Read-Only:
+
+- `enabled` (Boolean) Whether the DHCP server is enabled
+- `interface` (String) The interface to use for the DHCP server
+- `ipv4_settings` (Attributes) (see [below for nested schema](#nestedatt--dhcp--ipv4_settings))
+- `ipv6_settings` (Attributes) (see [below for nested schema](#nestedatt--dhcp--ipv6_settings))
+- `leases` (Attributes Set) Current leases in the DHCP server (see [below for nested schema](#nestedatt--dhcp--leases))
+- `static_leases` (Attributes Set) Current static leases in the DHCP server (see [below for nested schema](#nestedatt--dhcp--static_leases))
+
+<a id="nestedatt--dhcp--ipv4_settings"></a>
+### Nested Schema for `dhcp.ipv4_settings`
+
+Read-Only:
+
+- `gateway_ip` (String) The gateway IP for the DHCP server scope
+- `lease_duration` (Number) The lease duration for the DHCP server scope, in seconds
+- `range_end` (String) The start range for the DHCP server scope
+- `range_start` (String) The start range for the DHCP server scope
+- `subnet_mask` (String) The subnet mask for the DHCP server scope
+
+
+<a id="nestedatt--dhcp--ipv6_settings"></a>
+### Nested Schema for `dhcp.ipv6_settings`
+
+Read-Only:
+
+- `lease_duration` (Number) The lease duration for the DHCP server scope
+- `range_start` (String) The start range for the DHCP server scope
+
+
+<a id="nestedatt--dhcp--leases"></a>
+### Nested Schema for `dhcp.leases`
+
+Read-Only:
+
+- `expiration` (String) Expiration timestamp for the lease
+- `hostname` (String) Hostname associated with the lease
+- `ip` (String) IP address associated with the lease
+- `mac` (String) MAC address associated with the lease
+
+
+<a id="nestedatt--dhcp--static_leases"></a>
+### Nested Schema for `dhcp.static_leases`
+
+Read-Only:
+
+- `hostname` (String) Hostname associated with the static lease
+- `ip` (String) IP address associated with the static lease
+- `mac` (String) MAC address associated with the static lease
+
+
 
 <a id="nestedatt--dns"></a>
 ### Nested Schema for `dns`
@@ -69,14 +125,6 @@ Read-Only:
 - `update_interval` (Number) Update interval for all list-based filters, in hours
 
 
-<a id="nestedatt--parental_control"></a>
-### Nested Schema for `parental_control`
-
-Read-Only:
-
-- `enabled` (Boolean) Whether Parental Control is enabled
-
-
 <a id="nestedatt--querylog"></a>
 ### Nested Schema for `querylog`
 
@@ -86,14 +134,6 @@ Read-Only:
 - `enabled` (Boolean) Whether the query log is enabled
 - `ignored` (Set of String) Set of host names which should not be written to log
 - `interval` (Number) Time period for query log rotation, in hours
-
-
-<a id="nestedatt--safebrowsing"></a>
-### Nested Schema for `safebrowsing`
-
-Read-Only:
-
-- `enabled` (Boolean) Whether Safe Browsing is enabled
 
 
 <a id="nestedatt--safesearch"></a>
