@@ -446,6 +446,10 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(CONFIG_DHCP_ENABLED),
+						Validators: []validator.Bool{AlsoRequiresNOf(1,
+							path.MatchRelative().AtParent().AtName("ipv4_settings"),
+							path.MatchRelative().AtParent().AtName("ipv6_settings"),
+						)},
 					},
 					"interface": schema.StringAttribute{
 						Description: "The interface to use for the DHCP server",
