@@ -25,6 +25,7 @@ type configCommonModel struct {
 	BlockedServices types.Set    `tfsdk:"blocked_services"`
 	Dns             types.Object `tfsdk:"dns"`
 	Dhcp            types.Object `tfsdk:"dhcp"`
+	Tls             types.Object `tfsdk:"tls"`
 }
 
 // nested attributes objects
@@ -350,6 +351,60 @@ func (o dhcpStaticLeasesModel) attrTypes() map[string]attr.Type {
 	}
 }
 
+// tlsConfigModel maps filtering schema data
+type tlsConfigModel struct {
+	Enabled           types.Bool   `tfsdk:"enabled"`
+	ServerName        types.String `tfsdk:"server_name"`
+	ForceHttps        types.Bool   `tfsdk:"force_https"`
+	PortHttps         types.Int64  `tfsdk:"port_https"`
+	PortDnsOverTls    types.Int64  `tfsdk:"port_dns_over_tls"`
+	PortDnsOverQuic   types.Int64  `tfsdk:"port_dns_over_quic"`
+	CertificateChain  types.String `tfsdk:"certificate_chain"`
+	PrivateKey        types.String `tfsdk:"private_key"`
+	PrivateKeySaved   types.Bool   `tfsdk:"private_key_saved"`
+	CertificatePath   types.String `tfsdk:"certificate_path"`
+	PrivateKeyPath    types.String `tfsdk:"private_key_path"`
+	ValidCert         types.Bool   `tfsdk:"valid_cert"`
+	ValidChain        types.Bool   `tfsdk:"valid_chain"`
+	Subject           types.String `tfsdk:"subject"`
+	Issuer            types.String `tfsdk:"issuer"`
+	NotBefore         types.String `tfsdk:"not_before"`
+	NotAfter          types.String `tfsdk:"not_after"`
+	DnsNames          types.List   `tfsdk:"dns_names"`
+	ValidKey          types.Bool   `tfsdk:"valid_key"`
+	KeyType           types.String `tfsdk:"key_type"`
+	WarningValidation types.String `tfsdk:"warning_validation"`
+	ValidPair         types.Bool   `tfsdk:"valid_pair"`
+}
+
+// attrTypes - return attribute types for this model
+func (o tlsConfigModel) attrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"enabled":            types.BoolType,
+		"server_name":        types.StringType,
+		"force_https":        types.BoolType,
+		"port_https":         types.Int64Type,
+		"port_dns_over_tls":  types.Int64Type,
+		"port_dns_over_quic": types.Int64Type,
+		"certificate_chain":  types.StringType,
+		"private_key":        types.StringType,
+		"private_key_saved":  types.BoolType,
+		"certificate_path":   types.StringType,
+		"private_key_path":   types.StringType,
+		"valid_cert":         types.BoolType,
+		"valid_chain":        types.BoolType,
+		"subject":            types.StringType,
+		"issuer":             types.StringType,
+		"not_before":         types.StringType,
+		"not_after":          types.StringType,
+		"dns_names":          types.ListType{ElemType: types.StringType},
+		"valid_key":          types.BoolType,
+		"key_type":           types.StringType,
+		"warning_validation": types.StringType,
+		"valid_pair":         types.BoolType,
+	}
+}
+
 // common `Read` function for both data source and resource
 func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *diag.Diagnostics, rtype string) {
 	// FILTERING CONFIG
@@ -633,6 +688,47 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 			return
 		}
 	}
+
+	// TLS
+	// get refreshed filtering config value from AdGuard Home
+	tlsConfig, err := adg.GetTlsConfig()
+	if err != nil {
+		diags.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// map filter config to state
+	var stateTlsConfig tlsConfigModel
+	stateTlsConfig.Enabled = types.BoolValue(tlsConfig.Enabled)
+	stateTlsConfig.ServerName = types.StringValue(tlsConfig.ServerName)
+	stateTlsConfig.ForceHttps = types.BoolValue(tlsConfig.ForceHttps)
+	stateTlsConfig.PortHttps = types.Int64Value(int64(tlsConfig.PortHttps))
+	stateTlsConfig.PortDnsOverTls = types.Int64Value(int64(tlsConfig.PortDnsOverTls))
+	stateTlsConfig.PortDnsOverQuic = types.Int64Value(int64(tlsConfig.PortDnsOverQuic))
+	stateTlsConfig.CertificateChain = types.StringValue(tlsConfig.CertificateChain)
+	stateTlsConfig.PrivateKey = types.StringValue(tlsConfig.PrivateKey)
+	stateTlsConfig.PrivateKeySaved = types.BoolValue(tlsConfig.PrivateKeySaved)
+	stateTlsConfig.CertificatePath = types.StringValue(tlsConfig.CertificatePath)
+	stateTlsConfig.PrivateKeyPath = types.StringValue(tlsConfig.PrivateKeyPath)
+	stateTlsConfig.ValidCert = types.BoolValue(tlsConfig.ValidCert)
+	stateTlsConfig.ValidChain = types.BoolValue(tlsConfig.ValidChain)
+	stateTlsConfig.Subject = types.StringValue(tlsConfig.Subject)
+	stateTlsConfig.Issuer = types.StringValue(tlsConfig.Issuer)
+	stateTlsConfig.NotBefore = types.StringValue(tlsConfig.NotBefore)
+	stateTlsConfig.NotAfter = types.StringValue(tlsConfig.NotAfter)
+	stateTlsConfig.DnsNames, *diags = types.ListValueFrom(ctx, types.StringType, tlsConfig.DnsNames)
+	if diags.HasError() {
+		return
+	}
+	stateTlsConfig.ValidKey = types.BoolValue(tlsConfig.ValidKey)
+	stateTlsConfig.KeyType = types.StringValue(tlsConfig.KeyType)
+	stateTlsConfig.WarningValidation = types.StringValue(tlsConfig.WarningValidation)
+	stateTlsConfig.ValidPair = types.BoolValue(tlsConfig.ValidPair)
+
+	// add to config model
+	o.Tls, _ = types.ObjectValueFrom(ctx, tlsConfigModel{}.attrTypes(), &stateTlsConfig)
 
 	// if we got here, all went fine
 }
