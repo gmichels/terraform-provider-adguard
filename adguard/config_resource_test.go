@@ -17,6 +17,7 @@ resource "adguard_config" "test" {
 	filtering = {
 		update_interval = 1
 	}
+	safebrowsing = true
 	safesearch = {
 		enabled  = true
 		services = ["bing", "youtube", "google"]
@@ -45,13 +46,35 @@ resource "adguard_config" "test" {
 		local_ptr_upstreams = ["192.168.0.1", "192.168.0.2"]
 		allowed_clients     = ["allowed-client", "192.168.200.200"]
 	}
+	dhcp = {
+		interface = "eth1"
+		ipv4_settings = {
+			gateway_ip     = "192.168.250.1"
+			subnet_mask    = "255.255.255.0"
+			range_start    = "192.168.250.10"
+			range_end      = "192.168.250.100"
+			lease_duration = 7200
+		}
+		static_leases = [
+			{
+				mac      = "00:11:22:33:44:55"
+				ip       = "192.168.250.20"
+				hostname = "test-lease-1"
+			},
+			{
+				mac      = "aa:bb:cc:dd:ee:ff"
+				ip       = "192.168.250.30"
+				hostname = "test-lease-2"
+			}
+		]
+	}
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("adguard_config.test", "filtering.enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "filtering.update_interval", "1"),
-					resource.TestCheckResourceAttr("adguard_config.test", "safebrowsing.enabled", "false"),
-					resource.TestCheckResourceAttr("adguard_config.test", "parental_control.enabled", "false"),
+					resource.TestCheckResourceAttr("adguard_config.test", "safebrowsing", "true"),
+					resource.TestCheckResourceAttr("adguard_config.test", "parental_control", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "safesearch.enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "safesearch.services.#", "3"),
 					resource.TestCheckResourceAttr("adguard_config.test", "safesearch.services.1", "google"),
@@ -80,6 +103,13 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.local_ptr_upstreams.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.1", "allowed-client"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.interface", "eth1"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.gateway_ip", "192.168.250.1"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.range_start", "192.168.250.10"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.range_end", "192.168.250.100"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.lease_duration", "7200"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.#", "2"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.1.ip", "192.168.250.30"),
 					// Verify dynamic values have any value set in the state.
 					resource.TestCheckResourceAttrSet("adguard_config.test", "id"),
 					resource.TestCheckResourceAttrSet("adguard_config.test", "last_updated"),
@@ -120,13 +150,40 @@ resource "adguard_config" "test" {
 		resolve_clients           = false
 		disallowed_clients        = ["blocked-client", "172.16.0.0/16"]
 	}
+	dhcp = {
+		interface = "eth1"
+		ipv4_settings = {
+			gateway_ip     = "192.168.250.1"
+			subnet_mask    = "255.255.255.0"
+			range_start    = "192.168.250.20"
+			range_end      = "192.168.250.90"
+			lease_duration = 14400
+		}
+		static_leases = [
+			{
+				mac      = "aa:bb:cc:dd:ee:ff"
+				ip       = "192.168.250.30"
+				hostname = "test-lease-2"
+			},
+			{
+				mac      = "ff:ee:dd:cc:bb:aa"
+				ip       = "192.168.250.40"
+				hostname = "test-lease-3"
+			},
+			{
+				mac      = "ab:cd:ef:01:23:45"
+				ip       = "192.168.250.50"
+				hostname = "test-lease-4"
+			},
+		]
+	}
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("adguard_config.test", "filtering.enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "filtering.update_interval", "72"),
-					resource.TestCheckResourceAttr("adguard_config.test", "safebrowsing.enabled", "false"),
-					resource.TestCheckResourceAttr("adguard_config.test", "parental_control.enabled", "false"),
+					resource.TestCheckResourceAttr("adguard_config.test", "safebrowsing", "false"),
+					resource.TestCheckResourceAttr("adguard_config.test", "parental_control", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "safesearch.enabled", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "safesearch.services.#", "6"),
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.enabled", "true"),
@@ -160,6 +217,12 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.#", "0"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.disallowed_clients.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.disallowed_clients.1", "blocked-client"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.range_start", "192.168.250.20"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.range_end", "192.168.250.90"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.lease_duration", "14400"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.#", "3"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.1.ip", "192.168.250.40"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.2.hostname", "test-lease-4"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

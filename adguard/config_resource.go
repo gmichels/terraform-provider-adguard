@@ -88,35 +88,17 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					},
 				},
 			},
-			"safebrowsing": schema.SingleNestedAttribute{
-				Computed: true,
-				Optional: true,
-				Default: objectdefault.StaticValue(types.ObjectValueMust(
-					enabledModel{}.attrTypes(), enabledModel{}.defaultObject()),
-				),
-				Attributes: map[string]schema.Attribute{
-					"enabled": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether Safe Browsing is enabled. Defaults to `%t`", CONFIG_SAFEBROWSING_ENABLED),
-						Computed:    true,
-						Optional:    true,
-						Default:     booldefault.StaticBool(CONFIG_SAFEBROWSING_ENABLED),
-					},
-				},
+			"safebrowsing": schema.BoolAttribute{
+				Description: fmt.Sprintf("Whether Safe Browsing is enabled. Defaults to `%t`", CONFIG_SAFEBROWSING_ENABLED),
+				Computed:    true,
+				Optional:    true,
+				Default:     booldefault.StaticBool(CONFIG_SAFEBROWSING_ENABLED),
 			},
-			"parental_control": schema.SingleNestedAttribute{
-				Computed: true,
-				Optional: true,
-				Default: objectdefault.StaticValue(types.ObjectValueMust(
-					enabledModel{}.attrTypes(), enabledModel{}.defaultObject()),
-				),
-				Attributes: map[string]schema.Attribute{
-					"enabled": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether Parental Control is enabled. Defaults to `%t`", CONFIG_PARENTAL_CONTROL_ENABLED),
-						Computed:    true,
-						Optional:    true,
-						Default:     booldefault.StaticBool(CONFIG_PARENTAL_CONTROL_ENABLED),
-					},
-				},
+			"parental_control": schema.BoolAttribute{
+				Description: fmt.Sprintf("Whether Parental Control is enabled. Defaults to `%t`", CONFIG_PARENTAL_CONTROL_ENABLED),
+				Computed:    true,
+				Optional:    true,
+				Default:     booldefault.StaticBool(CONFIG_PARENTAL_CONTROL_ENABLED),
 			},
 			"safesearch": schema.SingleNestedAttribute{
 				Computed: true,
@@ -452,6 +434,165 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					},
 				},
 			},
+			"dhcp": schema.SingleNestedAttribute{
+				Computed: true,
+				Optional: true,
+				Default: objectdefault.StaticValue(types.ObjectValueMust(
+					dhcpConfigModel{}.attrTypes(), dhcpConfigModel{}.defaultObject()),
+				),
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: fmt.Sprintf("Whether the DHCP server is enabled. Defaults to `%t`", CONFIG_DHCP_ENABLED),
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(CONFIG_DHCP_ENABLED),
+						Validators: []validator.Bool{AlsoRequiresNOf(1,
+							path.MatchRelative().AtParent().AtName("ipv4_settings"),
+							path.MatchRelative().AtParent().AtName("ipv6_settings"),
+						)},
+					},
+					"interface": schema.StringAttribute{
+						Description: "The interface to use for the DHCP server",
+						Required:    true,
+					},
+					"ipv4_settings": schema.SingleNestedAttribute{
+						Computed: true,
+						Optional: true,
+						Default: objectdefault.StaticValue(types.ObjectValueMust(
+							dhcpIpv4Model{}.attrTypes(), dhcpIpv4Model{}.defaultObject()),
+						),
+						Attributes: map[string]schema.Attribute{
+							"gateway_ip": schema.StringAttribute{
+								Description: "The gateway IP for the DHCP server scope",
+								Required:    true,
+								Validators: []validator.String{
+									stringvalidator.RegexMatches(
+										regexp.MustCompile(`\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b`),
+										"must be a valid IPv4 address",
+									),
+								},
+							},
+							"subnet_mask": schema.StringAttribute{
+								Description: "The subnet mask for the DHCP server scope",
+								Required:    true,
+								Validators: []validator.String{
+									stringvalidator.RegexMatches(
+										regexp.MustCompile(`\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b`),
+										"must be a valid IPv4 address",
+									),
+								},
+							},
+							"range_start": schema.StringAttribute{
+								Description: "The start range for the DHCP server scope",
+								Required:    true,
+								Validators: []validator.String{
+									stringvalidator.RegexMatches(
+										regexp.MustCompile(`\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b`),
+										"must be a valid IPv4 address",
+									),
+								},
+							},
+							"range_end": schema.StringAttribute{
+								Description: "The start range for the DHCP server scope",
+								Required:    true,
+								Validators: []validator.String{
+									stringvalidator.RegexMatches(
+										regexp.MustCompile(`\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b`),
+										"must be a valid IPv4 address",
+									),
+								},
+							},
+							"lease_duration": schema.Int64Attribute{
+								Description: fmt.Sprintf("The lease duration for the DHCP server scope, in seconds. Defaults to `%d`", CONFIG_DHCP_LEASE_DURATION),
+								Computed:    true,
+								Optional:    true,
+								Default:     int64default.StaticInt64(CONFIG_DHCP_LEASE_DURATION),
+								Validators: []validator.Int64{
+									int64validator.AtLeast(1),
+								},
+							},
+						},
+					},
+					"ipv6_settings": schema.SingleNestedAttribute{
+						Computed: true,
+						Optional: true,
+						Default: objectdefault.StaticValue(types.ObjectValueMust(
+							dhcpIpv6Model{}.attrTypes(), dhcpIpv6Model{}.defaultObject()),
+						),
+						Attributes: map[string]schema.Attribute{
+							"range_start": schema.StringAttribute{
+								Description: "The start range for the DHCP server scope",
+								Required:    true,
+								Validators: []validator.String{
+									stringvalidator.RegexMatches(
+										regexp.MustCompile(`(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))`),
+										"must be a valid IPv6 address",
+									),
+								},
+							},
+							"lease_duration": schema.Int64Attribute{
+								Description: fmt.Sprintf("The lease duration for the DHCP server scope, in seconds. Defaults to `%d`", CONFIG_DHCP_LEASE_DURATION),
+								Computed:    true,
+								Optional:    true,
+								Default:     int64default.StaticInt64(CONFIG_DHCP_LEASE_DURATION),
+								Validators: []validator.Int64{
+									int64validator.AtLeast(1),
+								},
+							},
+						},
+					},
+					"static_leases": schema.SetNestedAttribute{
+						Description: "Static leases for the DHCP server",
+						Computed:    true,
+						Optional:    true,
+						Validators: []validator.Set{
+							setvalidator.Any(
+								setvalidator.AlsoRequires(path.Expressions{
+									path.MatchRelative().AtParent().AtName("ipv4_settings"),
+								}...),
+								setvalidator.AlsoRequires(path.Expressions{
+									path.MatchRelative().AtParent().AtName("ipv6_settings"),
+								}...),
+							),
+						},
+						Default: setdefault.StaticValue(types.SetNull(types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()})),
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"mac": schema.StringAttribute{
+									Description: "MAC address associated with the static lease",
+									Required:    true,
+									Validators: []validator.String{
+										stringvalidator.RegexMatches(
+											regexp.MustCompile(`^[a-f0-9:]+$`),
+											"must be a valid MAC address",
+										),
+									},
+								},
+								"ip": schema.StringAttribute{
+									Description: "IP address associated with the static lease",
+									Required:    true,
+									Validators: []validator.String{
+										stringvalidator.RegexMatches(
+											regexp.MustCompile(`\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b`),
+											"must be a valid IPv4 address",
+										),
+									},
+								},
+								"hostname": schema.StringAttribute{
+									Description: "Hostname associated with the static lease",
+									Required:    true,
+									Validators: []validator.String{
+										stringvalidator.RegexMatches(
+											regexp.MustCompile(`^[a-z0-9-]+$`),
+											"must be a valid hostname",
+										),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -475,8 +616,11 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
+	// empty state as it's a create operation
+	var state configCommonModel
+
 	// defer to common function to create or update the resource
-	r.CreateOrUpdate(ctx, plan, &resp.Diagnostics)
+	r.CreateOrUpdate(ctx, &plan, &state, &resp.Diagnostics)
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
@@ -508,7 +652,7 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 	// use common model for state
 	var newState configCommonModel
 	// use common Read function
-	newState.Read(ctx, *r.adg, &resp.Diagnostics)
+	newState.Read(ctx, *r.adg, &resp.Diagnostics, "resource")
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
@@ -536,8 +680,16 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
+	// retrieve values from state
+	var state configCommonModel
+	diags = req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// defer to common function to create or update the resource
-	r.CreateOrUpdate(ctx, plan, &resp.Diagnostics)
+	r.CreateOrUpdate(ctx, &plan, &state, &resp.Diagnostics)
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
@@ -699,6 +851,26 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	// set dns access list to defaults
 	_, err = r.adg.SetAccess(dnsAccess)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Deleting AdGuard Home Config",
+			"Could not delete config, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// set dhcp config to defaults
+	err = r.adg.ResetDhcpConfig()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Deleting AdGuard Home Config",
+			"Could not delete config, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// remove all dhcp static leases
+	err = r.adg.ResetDhcpStaticLeases()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",

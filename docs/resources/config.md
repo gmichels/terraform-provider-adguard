@@ -20,22 +20,29 @@ resource "adguard_config" "test" {
   filtering = {
     update_interval = 1
   }
+
+  safebrowsing = true
+
   safesearch = {
     enabled  = true
     services = ["bing", "youtube", "google"]
   }
+
   querylog = {
     enabled             = false
     interval            = 8
     anonymize_client_ip = true
     ignored             = ["test2.com", "example2.com"]
   }
+
   stats = {
     enabled  = false
     interval = 2
     ignored  = ["test3.net", "example4.com"]
   }
+
   blocked_services = ["youtube", "pinterest"]
+
   dns = {
     upstream_dns        = ["https://1.1.1.1/dns-query", "https://1.0.0.1/dns-query"]
     rate_limit          = 30
@@ -48,6 +55,31 @@ resource "adguard_config" "test" {
     local_ptr_upstreams = ["192.168.0.1", "192.168.0.2"]
     allowed_clients     = ["allowed-client", "192.168.200.200"]
   }
+
+  dhcp = {
+    interface = "eth1"
+
+    ipv4_settings = {
+      gateway_ip     = "192.168.250.1"
+      subnet_mask    = "255.255.255.0"
+      range_start    = "192.168.250.10"
+      range_end      = "192.168.250.100"
+      lease_duration = 7200
+    }
+
+    static_leases = [
+      {
+        mac      = "00:11:22:33:44:55"
+        ip       = "192.168.250.20"
+        hostname = "test-lease-1"
+      },
+      {
+        mac      = "aa:bb:cc:dd:ee:ff"
+        ip       = "192.168.250.30"
+        hostname = "test-lease-2"
+      }
+    ]
+  }
 }
 ```
 
@@ -57,11 +89,12 @@ resource "adguard_config" "test" {
 ### Optional
 
 - `blocked_services` (Set of String) Set of services to be blocked globally
+- `dhcp` (Attributes) (see [below for nested schema](#nestedatt--dhcp))
 - `dns` (Attributes) (see [below for nested schema](#nestedatt--dns))
 - `filtering` (Attributes) (see [below for nested schema](#nestedatt--filtering))
-- `parental_control` (Attributes) (see [below for nested schema](#nestedatt--parental_control))
+- `parental_control` (Boolean) Whether Parental Control is enabled. Defaults to `false`
 - `querylog` (Attributes) (see [below for nested schema](#nestedatt--querylog))
-- `safebrowsing` (Attributes) (see [below for nested schema](#nestedatt--safebrowsing))
+- `safebrowsing` (Boolean) Whether Safe Browsing is enabled. Defaults to `false`
 - `safesearch` (Attributes) (see [below for nested schema](#nestedatt--safesearch))
 - `stats` (Attributes) (see [below for nested schema](#nestedatt--stats))
 
@@ -69,6 +102,58 @@ resource "adguard_config" "test" {
 
 - `id` (String) Internal identifier for this config
 - `last_updated` (String) Timestamp of the last Terraform update of the config
+
+<a id="nestedatt--dhcp"></a>
+### Nested Schema for `dhcp`
+
+Required:
+
+- `interface` (String) The interface to use for the DHCP server
+
+Optional:
+
+- `enabled` (Boolean) Whether the DHCP server is enabled. Defaults to `false`
+- `ipv4_settings` (Attributes) (see [below for nested schema](#nestedatt--dhcp--ipv4_settings))
+- `ipv6_settings` (Attributes) (see [below for nested schema](#nestedatt--dhcp--ipv6_settings))
+- `static_leases` (Attributes Set) Static leases for the DHCP server (see [below for nested schema](#nestedatt--dhcp--static_leases))
+
+<a id="nestedatt--dhcp--ipv4_settings"></a>
+### Nested Schema for `dhcp.ipv4_settings`
+
+Required:
+
+- `gateway_ip` (String) The gateway IP for the DHCP server scope
+- `range_end` (String) The start range for the DHCP server scope
+- `range_start` (String) The start range for the DHCP server scope
+- `subnet_mask` (String) The subnet mask for the DHCP server scope
+
+Optional:
+
+- `lease_duration` (Number) The lease duration for the DHCP server scope, in seconds. Defaults to `86400`
+
+
+<a id="nestedatt--dhcp--ipv6_settings"></a>
+### Nested Schema for `dhcp.ipv6_settings`
+
+Required:
+
+- `range_start` (String) The start range for the DHCP server scope
+
+Optional:
+
+- `lease_duration` (Number) The lease duration for the DHCP server scope, in seconds. Defaults to `86400`
+
+
+<a id="nestedatt--dhcp--static_leases"></a>
+### Nested Schema for `dhcp.static_leases`
+
+Required:
+
+- `hostname` (String) Hostname associated with the static lease
+- `ip` (String) IP address associated with the static lease
+- `mac` (String) MAC address associated with the static lease
+
+
 
 <a id="nestedatt--dns"></a>
 ### Nested Schema for `dns`
@@ -106,14 +191,6 @@ Optional:
 - `update_interval` (Number) Update interval for all list-based filters, in hours. Defaults to `24`
 
 
-<a id="nestedatt--parental_control"></a>
-### Nested Schema for `parental_control`
-
-Optional:
-
-- `enabled` (Boolean) Whether Parental Control is enabled. Defaults to `false`
-
-
 <a id="nestedatt--querylog"></a>
 ### Nested Schema for `querylog`
 
@@ -123,14 +200,6 @@ Optional:
 - `enabled` (Boolean) Whether the query log is enabled. Defaults to `true`
 - `ignored` (Set of String) Set of host names which should not be written to log
 - `interval` (Number) Time period for query log rotation, in hours. Defaults to `2160` (90 days)
-
-
-<a id="nestedatt--safebrowsing"></a>
-### Nested Schema for `safebrowsing`
-
-Optional:
-
-- `enabled` (Boolean) Whether Safe Browsing is enabled. Defaults to `false`
 
 
 <a id="nestedatt--safesearch"></a>

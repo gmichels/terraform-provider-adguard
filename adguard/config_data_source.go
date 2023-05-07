@@ -56,23 +56,13 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 					},
 				},
 			},
-			"safebrowsing": schema.SingleNestedAttribute{
-				Computed: true,
-				Attributes: map[string]schema.Attribute{
-					"enabled": schema.BoolAttribute{
-						Description: "Whether Safe Browsing is enabled",
-						Computed:    true,
-					},
-				},
+			"safebrowsing": schema.BoolAttribute{
+				Description: "Whether Safe Browsing is enabled",
+				Computed:    true,
 			},
-			"parental_control": schema.SingleNestedAttribute{
-				Computed: true,
-				Attributes: map[string]schema.Attribute{
-					"enabled": schema.BoolAttribute{
-						Description: "Whether Parental Control is enabled",
-						Computed:    true,
-					},
-				},
+			"parental_control": schema.BoolAttribute{
+				Description: "Whether Parental Control is enabled",
+				Computed:    true,
 			},
 			"safesearch": schema.SingleNestedAttribute{
 				Computed: true,
@@ -224,6 +214,101 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 					},
 				},
 			},
+			"dhcp": schema.SingleNestedAttribute{
+				Computed: true,
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: "Whether the DHCP server is enabled",
+						Computed:    true,
+					},
+					"interface": schema.StringAttribute{
+						Description: "The interface to use for the DHCP server",
+						Computed:    true,
+					},
+					"ipv4_settings": schema.SingleNestedAttribute{
+						Computed: true,
+						Attributes: map[string]schema.Attribute{
+							"gateway_ip": schema.StringAttribute{
+								Description: "The gateway IP for the DHCP server scope",
+								Computed:    true,
+							},
+							"subnet_mask": schema.StringAttribute{
+								Description: "The subnet mask for the DHCP server scope",
+								Computed:    true,
+							},
+							"range_start": schema.StringAttribute{
+								Description: "The start range for the DHCP server scope",
+								Computed:    true,
+							},
+							"range_end": schema.StringAttribute{
+								Description: "The start range for the DHCP server scope",
+								Computed:    true,
+							},
+							"lease_duration": schema.Int64Attribute{
+								Description: "The lease duration for the DHCP server scope, in seconds",
+								Computed:    true,
+							},
+						},
+					},
+					"ipv6_settings": schema.SingleNestedAttribute{
+						Computed: true,
+						Attributes: map[string]schema.Attribute{
+							"range_start": schema.StringAttribute{
+								Description: "The start range for the DHCP server scope",
+								Computed:    true,
+							},
+							"lease_duration": schema.Int64Attribute{
+								Description: "The lease duration for the DHCP server scope",
+								Computed:    true,
+							},
+						},
+					},
+					"leases": schema.SetNestedAttribute{
+						Description: "Current leases in the DHCP server",
+						Computed:    true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"mac": schema.StringAttribute{
+									Description: "MAC address associated with the lease",
+									Computed:    true,
+								},
+								"ip": schema.StringAttribute{
+									Description: "IP address associated with the lease",
+									Computed:    true,
+								},
+								"hostname": schema.StringAttribute{
+									Description: "Hostname associated with the lease",
+									Computed:    true,
+								},
+								"expiration": schema.StringAttribute{
+									Description: "Expiration timestamp for the lease",
+									Computed:    true,
+								},
+							},
+						},
+					},
+					"static_leases": schema.SetNestedAttribute{
+						Description: "Current static leases in the DHCP server",
+						Computed:    true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"mac": schema.StringAttribute{
+									Description: "MAC address associated with the static lease",
+									Computed:    true,
+								},
+								"ip": schema.StringAttribute{
+									Description: "IP address associated with the static lease",
+									Computed:    true,
+								},
+								"hostname": schema.StringAttribute{
+									Description: "Hostname associated with the static lease",
+									Computed:    true,
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -238,7 +323,7 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	// use common model for state
 	var newState configCommonModel
 	// use common Read function
-	newState.Read(ctx, *d.adg, &resp.Diagnostics)
+	newState.Read(ctx, *d.adg, &resp.Diagnostics, "datasource")
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
