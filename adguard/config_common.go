@@ -1169,7 +1169,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	var filePathIdentifier = regexp.MustCompile(`^/\w|\w:`)
 
 	// check what is the certificate chain
-	if filePathIdentifier.MatchString(planTlsConfig.CertificateChain.ValueString()[0:2]) {
+	if len(planTlsConfig.CertificateChain.ValueString()) > 0 && filePathIdentifier.MatchString(planTlsConfig.CertificateChain.ValueString()[0:2]) {
 		// it's a file path
 		tlsConfig.CertificatePath = planTlsConfig.CertificateChain.ValueString()
 	} else {
@@ -1178,7 +1178,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	}
 
 	// check what is the private key
-	if filePathIdentifier.MatchString(planTlsConfig.PrivateKey.ValueString()[0:2]) {
+	if len(planTlsConfig.PrivateKey.ValueString()) > 0 && filePathIdentifier.MatchString(planTlsConfig.PrivateKey.ValueString()[0:2]) {
 		// it's a file path
 		tlsConfig.PrivateKeyPath = planTlsConfig.PrivateKey.ValueString()
 	} else {
