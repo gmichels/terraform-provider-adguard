@@ -405,6 +405,34 @@ func (o tlsConfigModel) attrTypes() map[string]attr.Type {
 	}
 }
 
+// defaultObject - return default object for this model
+func (o tlsConfigModel) defaultObject() map[string]attr.Value {
+	return map[string]attr.Value{
+		"enabled":            types.BoolValue(CONFIG_TLS_ENABLED),
+		"server_name":        types.StringValue(""),
+		"force_https":        types.BoolValue(CONFIG_TLS_FORCE_HTTPS),
+		"port_https":         types.Int64Value(CONFIG_TLS_PORT_HTTPS),
+		"port_dns_over_tls":  types.Int64Value(CONFIG_TLS_PORT_DNS_OVER_TLS),
+		"port_dns_over_quic": types.Int64Value(CONFIG_TLS_PORT_DNS_OVER_QUIC),
+		"certificate_chain":  types.StringValue(""),
+		"private_key":        types.StringValue(""),
+		"private_key_saved":  types.BoolValue(false),
+		"certificate_path":   types.StringValue(""),
+		"private_key_path":   types.StringValue(""),
+		"valid_cert":         types.BoolValue(false),
+		"valid_chain":        types.BoolValue(false),
+		"valid_key":          types.BoolValue(false),
+		"valid_pair":         types.BoolValue(false),
+		"key_type":           types.StringValue(""),
+		"subject":            types.StringValue(""),
+		"issuer":             types.StringValue(""),
+		"not_before":         types.StringValue(""),
+		"not_after":          types.StringValue(""),
+		"dns_names":          types.ListNull(types.StringType),
+		"warning_validation": types.StringValue(""),
+	}
+}
+
 // common `Read` function for both data source and resource
 func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *diag.Diagnostics, rtype string) {
 	// FILTERING CONFIG
@@ -716,8 +744,18 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 	stateTlsConfig.ValidChain = types.BoolValue(tlsConfig.ValidChain)
 	stateTlsConfig.Subject = types.StringValue(tlsConfig.Subject)
 	stateTlsConfig.Issuer = types.StringValue(tlsConfig.Issuer)
-	stateTlsConfig.NotBefore = types.StringValue(tlsConfig.NotBefore)
-	stateTlsConfig.NotAfter = types.StringValue(tlsConfig.NotAfter)
+	// handle default timestamp from upstream
+	if tlsConfig.NotBefore != "0001-01-01T00:00:00Z" {
+		stateTlsConfig.NotBefore = types.StringValue(tlsConfig.NotBefore)
+	} else {
+		stateTlsConfig.NotBefore = types.StringValue("")
+	}
+	// handle default timestamp from upstream
+	if tlsConfig.NotAfter != "0001-01-01T00:00:00Z" {
+		stateTlsConfig.NotAfter = types.StringValue(tlsConfig.NotAfter)
+	} else {
+		stateTlsConfig.NotAfter = types.StringValue("")
+	}
 	stateTlsConfig.DnsNames, *diags = types.ListValueFrom(ctx, types.StringType, tlsConfig.DnsNames)
 	if diags.HasError() {
 		return
@@ -1103,6 +1141,57 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 			}
 		}
 	}
+
+	// TLS CONFIG
+	// unpack nested attributes from plan
+	var planTlsConfig tlsConfigModel
+	*diags = plan.Tls.As(ctx, &planTlsConfig, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return
+	}
+	// instantiate empty object for storing plan data
+	var tlsConfig adguard.TlsConfig
+	// populate tls config from plan
+	tlsConfig.Enabled = planTlsConfig.Enabled.ValueBool()
+	tlsConfig.ServerName = planTlsConfig.ServerName.ValueString()
+	tlsConfig.ForceHttps = planTlsConfig.ForceHttps.ValueBool()
+	tlsConfig.PortHttps = uint16(planTlsConfig.PortHttps.ValueInt64())
+	tlsConfig.PortDnsOverTls = uint16(planTlsConfig.PortDnsOverTls.ValueInt64())
+	tlsConfig.PortDnsOverQuic = uint16(planTlsConfig.PortDnsOverQuic.ValueInt64())
+	tlsConfig.CertificateChain = planTlsConfig.CertificateChain.ValueString()
+	tlsConfig.PrivateKey = planTlsConfig.PrivateKey.ValueString()
+	tlsConfig.CertificatePath = planTlsConfig.CertificatePath.ValueString()
+	tlsConfig.PrivateKeyPath = planTlsConfig.PrivateKeyPath.ValueString()
+
+	// set tls config using plan
+	tlsConfigResponse, err := r.adg.SetTlsConfig(tlsConfig)
+	if err != nil {
+		diags.AddError(
+			"Unable to Update AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+
+	// populate computed attributes
+	planTlsConfig.PrivateKeySaved = types.BoolValue(tlsConfigResponse.PrivateKeySaved)
+	planTlsConfig.ValidCert = types.BoolValue(tlsConfigResponse.ValidCert)
+	planTlsConfig.ValidChain = types.BoolValue(tlsConfigResponse.ValidChain)
+	planTlsConfig.ValidKey = types.BoolValue(tlsConfigResponse.ValidKey)
+	planTlsConfig.ValidPair = types.BoolValue(tlsConfigResponse.ValidPair)
+	planTlsConfig.KeyType = types.StringValue(tlsConfigResponse.KeyType)
+	planTlsConfig.Subject = types.StringValue(tlsConfigResponse.Subject)
+	planTlsConfig.Issuer = types.StringValue(tlsConfigResponse.Issuer)
+	planTlsConfig.NotBefore = types.StringValue(tlsConfigResponse.NotBefore)
+	planTlsConfig.NotAfter = types.StringValue(tlsConfigResponse.NotAfter)
+	planTlsConfig.DnsNames, *diags = types.ListValueFrom(ctx, types.StringType, tlsConfig.DnsNames)
+	if diags.HasError() {
+		return
+	}
+	planTlsConfig.WarningValidation = types.StringValue(tlsConfigResponse.WarningValidation)
+
+	// overwrite plan with computed values
+	plan.Tls, _ = types.ObjectValueFrom(ctx, tlsConfigModel{}.attrTypes(), &planTlsConfig)
 
 	// if we got here, all went fine
 }
