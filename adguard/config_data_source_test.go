@@ -72,7 +72,7 @@ func TestAccConfigDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr("data.adguard_config.test", "tls.server_name", "TestAdGuardHome"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "tls.port_https", "443"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "tls.port_dns_over_tls", "853"),
-					resource.TestCheckResourceAttr("data.adguard_config.test", "tls.certificate_path", "/opt/adguardhome/ssl/server.crt"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "tls.certificate_chain", "/opt/adguardhome/ssl/server.crt"),
 					// Verify internal attributes
 					resource.TestCheckResourceAttr("data.adguard_config.test", "id", "placeholder"),
 					resource.TestCheckResourceAttrSet("data.adguard_config.test", "last_updated"),
