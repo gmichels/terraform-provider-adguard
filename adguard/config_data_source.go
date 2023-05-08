@@ -309,6 +309,92 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 					},
 				},
 			},
+			"tls": schema.SingleNestedAttribute{
+				Computed: true,
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: "Whether encryption (DoT/DoH/HTTPS) is enabled",
+						Computed:    true,
+					},
+					"server_name": schema.StringAttribute{
+						Description: "The hostname of the TLS/HTTPS server",
+						Computed:    true,
+					},
+					"certificate_chain": schema.StringAttribute{
+						Description: "The certificates chain, either the path to a file or a base64 encoded string of the certificates chain in PEM format",
+						Computed:    true,
+					},
+					"private_key": schema.StringAttribute{
+						Description: "The private key, either the path to a file or a base64 encoded string of the private key in PEM format",
+						Computed:    true,
+					},
+					"force_https": schema.BoolAttribute{
+						Description: "When `true`, forces HTTP-to-HTTPS redirect",
+						Computed:    true,
+					},
+					"port_https": schema.Int64Attribute{
+						Description: "The HTTPS port",
+						Computed:    true,
+					},
+					"port_dns_over_tls": schema.Int64Attribute{
+						Description: "The DNS-over-TLS (DoT) port",
+						Computed:    true,
+					},
+					"port_dns_over_quic": schema.Int64Attribute{
+						Description: "The DNS-over-Quic (DoQ) port",
+						Computed:    true,
+					},
+					"private_key_saved": schema.BoolAttribute{
+						Description: "Whether the user has previously saved a private key",
+						Computed:    true,
+					},
+					"valid_cert": schema.BoolAttribute{
+						Description: "Whether the specified certificates chain is a valid chain of X.509 certificates",
+						Computed:    true,
+					},
+					"valid_chain": schema.BoolAttribute{
+						Description: "Whether the specified certificates chain is verified and issued by a known CA",
+						Computed:    true,
+					},
+					"valid_key": schema.BoolAttribute{
+						Description: "Whether the private key is valid",
+						Computed:    true,
+					},
+					"valid_pair": schema.BoolAttribute{
+						Description: "Whether both certificate and private key are correct",
+						Computed:    true,
+					},
+					"key_type": schema.StringAttribute{
+						Description: "The private key type, either `RSA` or `ECDSA`",
+						Computed:    true,
+					},
+					"subject": schema.StringAttribute{
+						Description: "The subject of the first certificate in the chain",
+						Computed:    true,
+					},
+					"issuer": schema.StringAttribute{
+						Description: "The issuer of the first certificate in the chain",
+						Computed:    true,
+					},
+					"not_before": schema.StringAttribute{
+						Description: "The NotBefore field of the first certificate in the chain",
+						Computed:    true,
+					},
+					"not_after": schema.StringAttribute{
+						Description: "The NotAfter field of the first certificate in the chain",
+						Computed:    true,
+					},
+					"dns_names": schema.ListAttribute{
+						Description: "The value of SubjectAltNames field of the first certificate in the chain",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+					"warning_validation": schema.StringAttribute{
+						Description: "The validation warning message with the issue description",
+						Computed:    true,
+					},
+				},
+			},
 		},
 	}
 }

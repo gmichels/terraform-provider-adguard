@@ -68,6 +68,11 @@ func TestAccConfigDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dhcp.ipv4_settings.lease_duration", "3600"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dhcp.ipv6_settings.lease_duration", "86400"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dhcp.static_leases.#", "0"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "tls.enabled", "true"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "tls.server_name", "TestAdGuardHome"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "tls.port_https", "443"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "tls.port_dns_over_tls", "853"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "tls.certificate_chain", "/opt/adguardhome/ssl/server.crt"),
 					// Verify internal attributes
 					resource.TestCheckResourceAttr("data.adguard_config.test", "id", "placeholder"),
 					resource.TestCheckResourceAttrSet("data.adguard_config.test", "last_updated"),

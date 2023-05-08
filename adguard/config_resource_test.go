@@ -68,6 +68,12 @@ resource "adguard_config" "test" {
 			}
 		]
 	}
+	tls = {
+		enabled           = true
+		server_name       = "Test AdGuard Home"
+		certificate_chain = "/opt/adguardhome/ssl/server.crt"
+		private_key       = "/opt/adguardhome/ssl/server.key"
+	}
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -110,6 +116,9 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.lease_duration", "7200"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.1.ip", "192.168.250.30"),
+					resource.TestCheckResourceAttr("adguard_config.test", "tls.enabled", "true"),
+					resource.TestCheckResourceAttr("adguard_config.test", "tls.server_name", "Test AdGuard Home"),
+					resource.TestCheckResourceAttr("adguard_config.test", "tls.issuer", ""),
 					// Verify dynamic values have any value set in the state.
 					resource.TestCheckResourceAttrSet("adguard_config.test", "id"),
 					resource.TestCheckResourceAttrSet("adguard_config.test", "last_updated"),
@@ -177,6 +186,12 @@ resource "adguard_config" "test" {
 			},
 		]
 	}
+	tls = {
+		enabled           = true
+		server_name       = "Test AdGuard Home Modified"
+		certificate_chain = "/opt/adguardhome/ssl/ca.crt"
+		private_key       = "/opt/adguardhome/ssl/ca.key"
+	}
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -223,6 +238,8 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.#", "3"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.1.ip", "192.168.250.40"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.2.hostname", "test-lease-4"),
+					resource.TestCheckResourceAttr("adguard_config.test", "tls.enabled", "true"),
+					resource.TestCheckResourceAttr("adguard_config.test", "tls.server_name", "Test AdGuard Home Modified"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

@@ -96,8 +96,8 @@ dns:
   serve_http3: false
   use_http3_upstreams: false
 tls:
-  enabled: false
-  server_name: ""
+  enabled: true
+  server_name: TestAdGuardHome
   force_https: false
   port_https: 443
   port_dns_over_tls: 853
@@ -107,8 +107,8 @@ tls:
   allow_unencrypted_doh: false
   certificate_chain: ""
   private_key: ""
-  certificate_path: ""
-  private_key_path: ""
+  certificate_path: /opt/adguardhome/ssl/server.crt
+  private_key_path: /opt/adguardhome/ssl/server.key
   strict_sni_check: false
 querylog:
   ignored:

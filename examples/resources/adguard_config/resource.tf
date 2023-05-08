@@ -65,4 +65,11 @@ resource "adguard_config" "test" {
       }
     ]
   }
+
+  tls = {
+    enabled           = true
+    server_name       = "Test AdGuard Home"
+    certificate_chain = "/opt/adguardhome/ssl/chain.crt"
+    private_key       = "/opt/adguardhome/ssl/server.key"
+  }
 }

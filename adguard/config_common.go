@@ -3,6 +3,7 @@ package adguard
 import (
 	"context"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/gmichels/adguard-client-go"
@@ -25,6 +26,7 @@ type configCommonModel struct {
 	BlockedServices types.Set    `tfsdk:"blocked_services"`
 	Dns             types.Object `tfsdk:"dns"`
 	Dhcp            types.Object `tfsdk:"dhcp"`
+	Tls             types.Object `tfsdk:"tls"`
 }
 
 // nested attributes objects
@@ -350,6 +352,82 @@ func (o dhcpStaticLeasesModel) attrTypes() map[string]attr.Type {
 	}
 }
 
+// tlsConfigModel maps filtering schema data
+type tlsConfigModel struct {
+	Enabled           types.Bool   `tfsdk:"enabled"`
+	ServerName        types.String `tfsdk:"server_name"`
+	ForceHttps        types.Bool   `tfsdk:"force_https"`
+	PortHttps         types.Int64  `tfsdk:"port_https"`
+	PortDnsOverTls    types.Int64  `tfsdk:"port_dns_over_tls"`
+	PortDnsOverQuic   types.Int64  `tfsdk:"port_dns_over_quic"`
+	CertificateChain  types.String `tfsdk:"certificate_chain"`
+	PrivateKey        types.String `tfsdk:"private_key"`
+	PrivateKeySaved   types.Bool   `tfsdk:"private_key_saved"`
+	ValidCert         types.Bool   `tfsdk:"valid_cert"`
+	ValidChain        types.Bool   `tfsdk:"valid_chain"`
+	Subject           types.String `tfsdk:"subject"`
+	Issuer            types.String `tfsdk:"issuer"`
+	NotBefore         types.String `tfsdk:"not_before"`
+	NotAfter          types.String `tfsdk:"not_after"`
+	DnsNames          types.List   `tfsdk:"dns_names"`
+	ValidKey          types.Bool   `tfsdk:"valid_key"`
+	KeyType           types.String `tfsdk:"key_type"`
+	WarningValidation types.String `tfsdk:"warning_validation"`
+	ValidPair         types.Bool   `tfsdk:"valid_pair"`
+}
+
+// attrTypes - return attribute types for this model
+func (o tlsConfigModel) attrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"enabled":            types.BoolType,
+		"server_name":        types.StringType,
+		"force_https":        types.BoolType,
+		"port_https":         types.Int64Type,
+		"port_dns_over_tls":  types.Int64Type,
+		"port_dns_over_quic": types.Int64Type,
+		"certificate_chain":  types.StringType,
+		"private_key":        types.StringType,
+		"private_key_saved":  types.BoolType,
+		"valid_cert":         types.BoolType,
+		"valid_chain":        types.BoolType,
+		"subject":            types.StringType,
+		"issuer":             types.StringType,
+		"not_before":         types.StringType,
+		"not_after":          types.StringType,
+		"dns_names":          types.ListType{ElemType: types.StringType},
+		"valid_key":          types.BoolType,
+		"key_type":           types.StringType,
+		"warning_validation": types.StringType,
+		"valid_pair":         types.BoolType,
+	}
+}
+
+// defaultObject - return default object for this model
+func (o tlsConfigModel) defaultObject() map[string]attr.Value {
+	return map[string]attr.Value{
+		"enabled":            types.BoolValue(CONFIG_TLS_ENABLED),
+		"server_name":        types.StringValue(""),
+		"force_https":        types.BoolValue(CONFIG_TLS_FORCE_HTTPS),
+		"port_https":         types.Int64Value(CONFIG_TLS_PORT_HTTPS),
+		"port_dns_over_tls":  types.Int64Value(CONFIG_TLS_PORT_DNS_OVER_TLS),
+		"port_dns_over_quic": types.Int64Value(CONFIG_TLS_PORT_DNS_OVER_QUIC),
+		"certificate_chain":  types.StringValue(""),
+		"private_key":        types.StringValue(""),
+		"private_key_saved":  types.BoolValue(false),
+		"valid_cert":         types.BoolValue(false),
+		"valid_chain":        types.BoolValue(false),
+		"valid_key":          types.BoolValue(false),
+		"valid_pair":         types.BoolValue(false),
+		"key_type":           types.StringValue(""),
+		"subject":            types.StringValue(""),
+		"issuer":             types.StringValue(""),
+		"not_before":         types.StringValue(""),
+		"not_after":          types.StringValue(""),
+		"dns_names":          types.ListNull(types.StringType),
+		"warning_validation": types.StringValue(""),
+	}
+}
+
 // common `Read` function for both data source and resource
 func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *diag.Diagnostics, rtype string) {
 	// FILTERING CONFIG
@@ -633,6 +711,68 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 			return
 		}
 	}
+
+	// TLS
+	// get refreshed filtering config value from AdGuard Home
+	tlsConfig, err := adg.GetTlsConfig()
+	if err != nil {
+		diags.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// map filter config to state
+	var stateTlsConfig tlsConfigModel
+	stateTlsConfig.Enabled = types.BoolValue(tlsConfig.Enabled)
+	stateTlsConfig.ServerName = types.StringValue(tlsConfig.ServerName)
+	stateTlsConfig.ForceHttps = types.BoolValue(tlsConfig.ForceHttps)
+	stateTlsConfig.PortHttps = types.Int64Value(int64(tlsConfig.PortHttps))
+	stateTlsConfig.PortDnsOverTls = types.Int64Value(int64(tlsConfig.PortDnsOverTls))
+	stateTlsConfig.PortDnsOverQuic = types.Int64Value(int64(tlsConfig.PortDnsOverQuic))
+	// check if the certificate chain is provided directly or as a file path
+	if tlsConfig.CertificateChain != "" {
+		// it's the base64 PEM file
+		stateTlsConfig.CertificateChain = types.StringValue(tlsConfig.CertificateChain)
+	} else {
+		// it's a file path
+		stateTlsConfig.CertificateChain = types.StringValue(tlsConfig.CertificatePath)
+	}
+	// check if the private key is provided directly or as a file path
+	if tlsConfig.PrivateKey != "" {
+		// it's the base64 PEM file
+		stateTlsConfig.PrivateKey = types.StringValue(tlsConfig.PrivateKey)
+	} else {
+		// it's a file path
+		stateTlsConfig.PrivateKey = types.StringValue(tlsConfig.PrivateKeyPath)
+	}
+	stateTlsConfig.ValidCert = types.BoolValue(tlsConfig.ValidCert)
+	stateTlsConfig.ValidChain = types.BoolValue(tlsConfig.ValidChain)
+	stateTlsConfig.Subject = types.StringValue(tlsConfig.Subject)
+	stateTlsConfig.Issuer = types.StringValue(tlsConfig.Issuer)
+	// handle default timestamp from upstream
+	if tlsConfig.NotBefore != "0001-01-01T00:00:00Z" {
+		stateTlsConfig.NotBefore = types.StringValue(tlsConfig.NotBefore)
+	} else {
+		stateTlsConfig.NotBefore = types.StringValue("")
+	}
+	// handle default timestamp from upstream
+	if tlsConfig.NotAfter != "0001-01-01T00:00:00Z" {
+		stateTlsConfig.NotAfter = types.StringValue(tlsConfig.NotAfter)
+	} else {
+		stateTlsConfig.NotAfter = types.StringValue("")
+	}
+	stateTlsConfig.DnsNames, *diags = types.ListValueFrom(ctx, types.StringType, tlsConfig.DnsNames)
+	if diags.HasError() {
+		return
+	}
+	stateTlsConfig.ValidKey = types.BoolValue(tlsConfig.ValidKey)
+	stateTlsConfig.KeyType = types.StringValue(tlsConfig.KeyType)
+	stateTlsConfig.WarningValidation = types.StringValue(tlsConfig.WarningValidation)
+	stateTlsConfig.ValidPair = types.BoolValue(tlsConfig.ValidPair)
+
+	// add to config model
+	o.Tls, _ = types.ObjectValueFrom(ctx, tlsConfigModel{}.attrTypes(), &stateTlsConfig)
 
 	// if we got here, all went fine
 }
@@ -1007,6 +1147,74 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 			}
 		}
 	}
+
+	// TLS CONFIG
+	// unpack nested attributes from plan
+	var planTlsConfig tlsConfigModel
+	*diags = plan.Tls.As(ctx, &planTlsConfig, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return
+	}
+	// instantiate empty object for storing plan data
+	var tlsConfig adguard.TlsConfig
+	// populate tls config from plan
+	tlsConfig.Enabled = planTlsConfig.Enabled.ValueBool()
+	tlsConfig.ServerName = planTlsConfig.ServerName.ValueString()
+	tlsConfig.ForceHttps = planTlsConfig.ForceHttps.ValueBool()
+	tlsConfig.PortHttps = uint16(planTlsConfig.PortHttps.ValueInt64())
+	tlsConfig.PortDnsOverTls = uint16(planTlsConfig.PortDnsOverTls.ValueInt64())
+	tlsConfig.PortDnsOverQuic = uint16(planTlsConfig.PortDnsOverQuic.ValueInt64())
+
+	// regex to match a file path
+	var filePathIdentifier = regexp.MustCompile(`^/\w|\w:`)
+
+	// check what is the certificate chain
+	if filePathIdentifier.MatchString(planTlsConfig.CertificateChain.ValueString()[0:2]) {
+		// it's a file path
+		tlsConfig.CertificatePath = planTlsConfig.CertificateChain.ValueString()
+	} else {
+		// it's the base64 PEM file
+		tlsConfig.CertificateChain = planTlsConfig.CertificateChain.ValueString()
+	}
+
+	// check what is the private key
+	if filePathIdentifier.MatchString(planTlsConfig.PrivateKey.ValueString()[0:2]) {
+		// it's a file path
+		tlsConfig.PrivateKeyPath = planTlsConfig.PrivateKey.ValueString()
+	} else {
+		// it's the base64 PEM file
+		tlsConfig.PrivateKey = planTlsConfig.PrivateKey.ValueString()
+	}
+
+	// set tls config using plan
+	tlsConfigResponse, err := r.adg.SetTlsConfig(tlsConfig)
+	if err != nil {
+		diags.AddError(
+			"Unable to Update AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+
+	// populate computed attributes
+	planTlsConfig.PrivateKeySaved = types.BoolValue(tlsConfigResponse.PrivateKeySaved)
+	planTlsConfig.ValidCert = types.BoolValue(tlsConfigResponse.ValidCert)
+	planTlsConfig.ValidChain = types.BoolValue(tlsConfigResponse.ValidChain)
+	planTlsConfig.ValidKey = types.BoolValue(tlsConfigResponse.ValidKey)
+	planTlsConfig.ValidPair = types.BoolValue(tlsConfigResponse.ValidPair)
+	planTlsConfig.KeyType = types.StringValue(tlsConfigResponse.KeyType)
+	planTlsConfig.Subject = types.StringValue(tlsConfigResponse.Subject)
+	planTlsConfig.Issuer = types.StringValue(tlsConfigResponse.Issuer)
+	planTlsConfig.NotBefore = types.StringValue(tlsConfigResponse.NotBefore)
+	planTlsConfig.NotAfter = types.StringValue(tlsConfigResponse.NotAfter)
+	planTlsConfig.DnsNames, *diags = types.ListValueFrom(ctx, types.StringType, tlsConfig.DnsNames)
+	if diags.HasError() {
+		return
+	}
+	planTlsConfig.WarningValidation = types.StringValue(tlsConfigResponse.WarningValidation)
+
+	// overwrite plan with computed values
+	plan.Tls, _ = types.ObjectValueFrom(ctx, tlsConfigModel{}.attrTypes(), &planTlsConfig)
 
 	// if we got here, all went fine
 }

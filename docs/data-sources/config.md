@@ -33,6 +33,7 @@ data "adguard_config" "test" {}
 - `safebrowsing` (Boolean) Whether Safe Browsing is enabled
 - `safesearch` (Attributes) (see [below for nested schema](#nestedatt--safesearch))
 - `stats` (Attributes) (see [below for nested schema](#nestedatt--stats))
+- `tls` (Attributes) (see [below for nested schema](#nestedatt--tls))
 
 <a id="nestedatt--dhcp"></a>
 ### Nested Schema for `dhcp`
@@ -153,5 +154,32 @@ Read-Only:
 - `enabled` (Boolean) Whether server statistics enabled
 - `ignored` (Set of String) Set of host names which should not be counted in the server statistics
 - `interval` (Number) Time period for the server statistics rotation, in hours
+
+
+<a id="nestedatt--tls"></a>
+### Nested Schema for `tls`
+
+Read-Only:
+
+- `certificate_chain` (String) The certificates chain, either the path to a file or a base64 encoded string of the certificates chain in PEM format
+- `dns_names` (List of String) The value of SubjectAltNames field of the first certificate in the chain
+- `enabled` (Boolean) Whether encryption (DoT/DoH/HTTPS) is enabled
+- `force_https` (Boolean) When `true`, forces HTTP-to-HTTPS redirect
+- `issuer` (String) The issuer of the first certificate in the chain
+- `key_type` (String) The private key type, either `RSA` or `ECDSA`
+- `not_after` (String) The NotAfter field of the first certificate in the chain
+- `not_before` (String) The NotBefore field of the first certificate in the chain
+- `port_dns_over_quic` (Number) The DNS-over-Quic (DoQ) port
+- `port_dns_over_tls` (Number) The DNS-over-TLS (DoT) port
+- `port_https` (Number) The HTTPS port
+- `private_key` (String) The private key, either the path to a file or a base64 encoded string of the private key in PEM format
+- `private_key_saved` (Boolean) Whether the user has previously saved a private key
+- `server_name` (String) The hostname of the TLS/HTTPS server
+- `subject` (String) The subject of the first certificate in the chain
+- `valid_cert` (Boolean) Whether the specified certificates chain is a valid chain of X.509 certificates
+- `valid_chain` (Boolean) Whether the specified certificates chain is verified and issued by a known CA
+- `valid_key` (Boolean) Whether the private key is valid
+- `valid_pair` (Boolean) Whether both certificate and private key are correct
+- `warning_validation` (String) The validation warning message with the issue description
 
 

@@ -593,6 +593,104 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					},
 				},
 			},
+			"tls": schema.SingleNestedAttribute{
+				Computed: true,
+				Optional: true,
+				Default: objectdefault.StaticValue(types.ObjectValueMust(
+					tlsConfigModel{}.attrTypes(), tlsConfigModel{}.defaultObject()),
+				),
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: "Whether encryption (DoT/DoH/HTTPS) is enabled",
+						Required:    true,
+					},
+					"server_name": schema.StringAttribute{
+						Description: "The hostname of the TLS/HTTPS server",
+						Required:    true,
+					},
+					"certificate_chain": schema.StringAttribute{
+						Description: "The certificates chain. Supply either a path to a file or a base64 encoded string of the certificates chain in PEM format",
+						Required:    true,
+					},
+					"private_key": schema.StringAttribute{
+						Description: "The private key. Supply either a path to a file or a base64 encoded string of the private key in PEM format",
+						Required:    true,
+					},
+					"force_https": schema.BoolAttribute{
+						Description: fmt.Sprintf("When `true`, forces HTTP-to-HTTPS redirect. Defaults to `%t`", CONFIG_TLS_FORCE_HTTPS),
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(CONFIG_TLS_FORCE_HTTPS),
+					},
+					"port_https": schema.Int64Attribute{
+						Description: fmt.Sprintf("The HTTPS port. Set to `0` to disable. Defaults to `%d`", CONFIG_TLS_PORT_HTTPS),
+						Computed:    true,
+						Optional:    true,
+						Default:     int64default.StaticInt64(CONFIG_TLS_PORT_HTTPS),
+					},
+					"port_dns_over_tls": schema.Int64Attribute{
+						Description: fmt.Sprintf("The DNS-over-TLS (DoT) port. Set to `0` to disable. Defaults to `%d`", CONFIG_TLS_PORT_DNS_OVER_TLS),
+						Computed:    true,
+						Optional:    true,
+						Default:     int64default.StaticInt64(CONFIG_TLS_PORT_DNS_OVER_TLS),
+					},
+					"port_dns_over_quic": schema.Int64Attribute{
+						Description: fmt.Sprintf("The DNS-over-Quic (DoQ) port. Set to `0` to disable. Defaults to `%d`", CONFIG_TLS_PORT_DNS_OVER_QUIC),
+						Computed:    true,
+						Optional:    true,
+						Default:     int64default.StaticInt64(CONFIG_TLS_PORT_DNS_OVER_QUIC),
+					},
+					"private_key_saved": schema.BoolAttribute{
+						Description: "Whether the user has previously saved a private key",
+						Computed:    true,
+					},
+					"valid_cert": schema.BoolAttribute{
+						Description: "Whether the specified certificates chain is a valid chain of X.509 certificates",
+						Computed:    true,
+					},
+					"valid_chain": schema.BoolAttribute{
+						Description: "Whether the specified certificates chain is verified and issued by a known CA",
+						Computed:    true,
+					},
+					"valid_key": schema.BoolAttribute{
+						Description: "Whether the private key is valid",
+						Computed:    true,
+					},
+					"valid_pair": schema.BoolAttribute{
+						Description: "Whether both certificate and private key are correct",
+						Computed:    true,
+					},
+					"key_type": schema.StringAttribute{
+						Description: "The private key type, either `RSA` or `ECDSA`",
+						Computed:    true,
+					},
+					"subject": schema.StringAttribute{
+						Description: "The subject of the first certificate in the chain",
+						Computed:    true,
+					},
+					"issuer": schema.StringAttribute{
+						Description: "The issuer of the first certificate in the chain",
+						Computed:    true,
+					},
+					"not_before": schema.StringAttribute{
+						Description: "The NotBefore field of the first certificate in the chain",
+						Computed:    true,
+					},
+					"not_after": schema.StringAttribute{
+						Description: "The NotAfter field of the first certificate in the chain",
+						Computed:    true,
+					},
+					"dns_names": schema.ListAttribute{
+						Description: "The value of SubjectAltNames field of the first certificate in the chain",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+					"warning_validation": schema.StringAttribute{
+						Description: "The validation warning message with the issue description",
+						Computed:    true,
+					},
+				},
+			},
 		},
 	}
 }
@@ -878,6 +976,32 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		)
 		return
 	}
+
+	// instantiate empty tls config for storing default values
+	var tlsConfig adguard.TlsConfig
+
+	// populate tls config list with default values
+	tlsConfig.Enabled = CONFIG_TLS_ENABLED
+	tlsConfig.ServerName = ""
+	tlsConfig.ForceHttps = CONFIG_TLS_FORCE_HTTPS
+	tlsConfig.PortHttps = CONFIG_TLS_PORT_HTTPS
+	tlsConfig.PortDnsOverTls = CONFIG_TLS_PORT_DNS_OVER_TLS
+	tlsConfig.PortDnsOverQuic = CONFIG_TLS_PORT_DNS_OVER_QUIC
+	tlsConfig.CertificateChain = ""
+	tlsConfig.PrivateKey = ""
+	tlsConfig.CertificatePath = ""
+	tlsConfig.PrivateKeyPath = ""
+
+	// set dns access list to defaults
+	_, err = r.adg.SetAccess(dnsAccess)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Deleting AdGuard Home Config",
+			"Could not delete config, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
 }
 
 func (r *configResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
