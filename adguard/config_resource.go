@@ -601,13 +601,19 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				),
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether encryption (DoT/DoH/HTTPS) is enabled. Defaults to `%t`", CONFIG_TLS_ENABLED),
-						Computed:    true,
-						Optional:    true,
-						Default:     booldefault.StaticBool(CONFIG_TLS_ENABLED),
+						Description: "Whether encryption (DoT/DoH/HTTPS) is enabled",
+						Required:    true,
 					},
 					"server_name": schema.StringAttribute{
 						Description: "The hostname of the TLS/HTTPS server",
+						Required:    true,
+					},
+					"certificate_chain": schema.StringAttribute{
+						Description: "The certificates chain. Supply either a path to a file or a base64 encoded string of the certificates chain in PEM format",
+						Required:    true,
+					},
+					"private_key": schema.StringAttribute{
+						Description: "The private key. Supply either a path to a file or a base64 encoded string of the private key in PEM format",
 						Required:    true,
 					},
 					"force_https": schema.BoolAttribute{
@@ -634,53 +640,9 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Optional:    true,
 						Default:     int64default.StaticInt64(CONFIG_TLS_PORT_DNS_OVER_QUIC),
 					},
-					"certificate_chain": schema.StringAttribute{
-						Description: "PEM-encoded certificates chain, in base64 format",
-						Computed:    true,
-						Optional:    true,
-						Default:     stringdefault.StaticString(""),
-						Validators: []validator.String{
-							stringvalidator.ConflictsWith(path.Expressions{
-								path.MatchRelative().AtParent().AtName("certificate_path"),
-							}...),
-						},
-					},
-					"private_key": schema.StringAttribute{
-						Description: "PEM-encoded private key, in base64 format",
-						Computed:    true,
-						Optional:    true,
-						Default:     stringdefault.StaticString(""),
-						Validators: []validator.String{
-							stringvalidator.ConflictsWith(path.Expressions{
-								path.MatchRelative().AtParent().AtName("private_key_path"),
-							}...),
-						},
-					},
 					"private_key_saved": schema.BoolAttribute{
 						Description: "Whether the user has previously saved a private key",
 						Computed:    true,
-					},
-					"certificate_path": schema.StringAttribute{
-						Description: "Path to the certificate file",
-						Computed:    true,
-						Optional:    true,
-						Default:     stringdefault.StaticString(""),
-						Validators: []validator.String{
-							stringvalidator.ConflictsWith(path.Expressions{
-								path.MatchRelative().AtParent().AtName("certificate_chain"),
-							}...),
-						},
-					},
-					"private_key_path": schema.StringAttribute{
-						Description: "Path to the private key file",
-						Computed:    true,
-						Optional:    true,
-						Default:     stringdefault.StaticString(""),
-						Validators: []validator.String{
-							stringvalidator.ConflictsWith(path.Expressions{
-								path.MatchRelative().AtParent().AtName("private_key"),
-							}...),
-						},
 					},
 					"valid_cert": schema.BoolAttribute{
 						Description: "Whether the specified certificates chain is a valid chain of X.509 certificates",

@@ -320,6 +320,14 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 						Description: "The hostname of the TLS/HTTPS server",
 						Computed:    true,
 					},
+					"certificate_chain": schema.StringAttribute{
+						Description: "The certificates chain, either the path to a file or a base64 encoded string of the certificates chain in PEM format",
+						Computed:    true,
+					},
+					"private_key": schema.StringAttribute{
+						Description: "The private key, either the path to a file or a base64 encoded string of the private key in PEM format",
+						Computed:    true,
+					},
 					"force_https": schema.BoolAttribute{
 						Description: "When `true`, forces HTTP-to-HTTPS redirect",
 						Computed:    true,
@@ -336,24 +344,8 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 						Description: "The DNS-over-Quic (DoQ) port",
 						Computed:    true,
 					},
-					"certificate_chain": schema.StringAttribute{
-						Description: "PEM-encoded certificates chain",
-						Computed:    true,
-					},
-					"private_key": schema.StringAttribute{
-						Description: "PEM-encoded private key",
-						Computed:    true,
-					},
 					"private_key_saved": schema.BoolAttribute{
 						Description: "Whether the user has previously saved a private key",
-						Computed:    true,
-					},
-					"certificate_path": schema.StringAttribute{
-						Description: "Path to the certificate file",
-						Computed:    true,
-					},
-					"private_key_path": schema.StringAttribute{
-						Description: "Path to the private key file",
 						Computed:    true,
 					},
 					"valid_cert": schema.BoolAttribute{

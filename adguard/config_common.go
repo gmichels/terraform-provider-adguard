@@ -3,6 +3,7 @@ package adguard
 import (
 	"context"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/gmichels/adguard-client-go"
@@ -362,8 +363,6 @@ type tlsConfigModel struct {
 	CertificateChain  types.String `tfsdk:"certificate_chain"`
 	PrivateKey        types.String `tfsdk:"private_key"`
 	PrivateKeySaved   types.Bool   `tfsdk:"private_key_saved"`
-	CertificatePath   types.String `tfsdk:"certificate_path"`
-	PrivateKeyPath    types.String `tfsdk:"private_key_path"`
 	ValidCert         types.Bool   `tfsdk:"valid_cert"`
 	ValidChain        types.Bool   `tfsdk:"valid_chain"`
 	Subject           types.String `tfsdk:"subject"`
@@ -389,8 +388,6 @@ func (o tlsConfigModel) attrTypes() map[string]attr.Type {
 		"certificate_chain":  types.StringType,
 		"private_key":        types.StringType,
 		"private_key_saved":  types.BoolType,
-		"certificate_path":   types.StringType,
-		"private_key_path":   types.StringType,
 		"valid_cert":         types.BoolType,
 		"valid_chain":        types.BoolType,
 		"subject":            types.StringType,
@@ -417,8 +414,6 @@ func (o tlsConfigModel) defaultObject() map[string]attr.Value {
 		"certificate_chain":  types.StringValue(""),
 		"private_key":        types.StringValue(""),
 		"private_key_saved":  types.BoolValue(false),
-		"certificate_path":   types.StringValue(""),
-		"private_key_path":   types.StringValue(""),
 		"valid_cert":         types.BoolValue(false),
 		"valid_chain":        types.BoolValue(false),
 		"valid_key":          types.BoolValue(false),
@@ -735,11 +730,22 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 	stateTlsConfig.PortHttps = types.Int64Value(int64(tlsConfig.PortHttps))
 	stateTlsConfig.PortDnsOverTls = types.Int64Value(int64(tlsConfig.PortDnsOverTls))
 	stateTlsConfig.PortDnsOverQuic = types.Int64Value(int64(tlsConfig.PortDnsOverQuic))
-	stateTlsConfig.CertificateChain = types.StringValue(tlsConfig.CertificateChain)
-	stateTlsConfig.PrivateKey = types.StringValue(tlsConfig.PrivateKey)
-	stateTlsConfig.PrivateKeySaved = types.BoolValue(tlsConfig.PrivateKeySaved)
-	stateTlsConfig.CertificatePath = types.StringValue(tlsConfig.CertificatePath)
-	stateTlsConfig.PrivateKeyPath = types.StringValue(tlsConfig.PrivateKeyPath)
+	// check if the certificate chain is provided directly or as a file path
+	if tlsConfig.CertificateChain != "" {
+		// it's the base64 PEM file
+		stateTlsConfig.CertificateChain = types.StringValue(tlsConfig.CertificateChain)
+	} else {
+		// it's a file path
+		stateTlsConfig.CertificateChain = types.StringValue(tlsConfig.CertificatePath)
+	}
+	// check if the private key is provided directly or as a file path
+	if tlsConfig.PrivateKey != "" {
+		// it's the base64 PEM file
+		stateTlsConfig.PrivateKey = types.StringValue(tlsConfig.PrivateKey)
+	} else {
+		// it's a file path
+		stateTlsConfig.PrivateKey = types.StringValue(tlsConfig.PrivateKeyPath)
+	}
 	stateTlsConfig.ValidCert = types.BoolValue(tlsConfig.ValidCert)
 	stateTlsConfig.ValidChain = types.BoolValue(tlsConfig.ValidChain)
 	stateTlsConfig.Subject = types.StringValue(tlsConfig.Subject)
@@ -1158,10 +1164,27 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	tlsConfig.PortHttps = uint16(planTlsConfig.PortHttps.ValueInt64())
 	tlsConfig.PortDnsOverTls = uint16(planTlsConfig.PortDnsOverTls.ValueInt64())
 	tlsConfig.PortDnsOverQuic = uint16(planTlsConfig.PortDnsOverQuic.ValueInt64())
-	tlsConfig.CertificateChain = planTlsConfig.CertificateChain.ValueString()
-	tlsConfig.PrivateKey = planTlsConfig.PrivateKey.ValueString()
-	tlsConfig.CertificatePath = planTlsConfig.CertificatePath.ValueString()
-	tlsConfig.PrivateKeyPath = planTlsConfig.PrivateKeyPath.ValueString()
+
+	// regex to match a file path
+	var filePathIdentifier = regexp.MustCompile(`^/\w|\w:`)
+
+	// check what is the certificate chain
+	if filePathIdentifier.MatchString(planTlsConfig.CertificateChain.ValueString()[0:2]) {
+		// it's a file path
+		tlsConfig.CertificatePath = planTlsConfig.CertificateChain.ValueString()
+	} else {
+		// it's the base64 PEM file
+		tlsConfig.CertificateChain = planTlsConfig.CertificateChain.ValueString()
+	}
+
+	// check what is the private key
+	if filePathIdentifier.MatchString(planTlsConfig.PrivateKey.ValueString()[0:2]) {
+		// it's a file path
+		tlsConfig.PrivateKeyPath = planTlsConfig.PrivateKey.ValueString()
+	} else {
+		// it's the base64 PEM file
+		tlsConfig.PrivateKey = planTlsConfig.PrivateKey.ValueString()
+	}
 
 	// set tls config using plan
 	tlsConfigResponse, err := r.adg.SetTlsConfig(tlsConfig)

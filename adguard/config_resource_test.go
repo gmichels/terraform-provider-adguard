@@ -69,10 +69,10 @@ resource "adguard_config" "test" {
 		]
 	}
 	tls = {
-		enabled = true
-		server_name = "Test AdGuard Home"
-		certificate_path = "/opt/adguardhome/ssl/server.crt"
-		private_key_path = "/opt/adguardhome/ssl/server.key"
+		enabled           = true
+		server_name       = "Test AdGuard Home"
+		certificate_chain = "/opt/adguardhome/ssl/server.crt"
+		private_key       = "/opt/adguardhome/ssl/server.key"
 	}
 }
 `,
@@ -187,10 +187,10 @@ resource "adguard_config" "test" {
 		]
 	}
 	tls = {
-		enabled = true
-		server_name = "Test AdGuard Home Modified"
-		certificate_path = "/opt/adguardhome/ssl/ca.crt"
-		private_key_path = "/opt/adguardhome/ssl/ca.key"
+		enabled           = true
+		server_name       = "Test AdGuard Home Modified"
+		certificate_chain = "/opt/adguardhome/ssl/ca.crt"
+		private_key       = "/opt/adguardhome/ssl/ca.key"
 	}
 }
 `,
