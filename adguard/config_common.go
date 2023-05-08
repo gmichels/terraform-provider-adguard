@@ -187,6 +187,7 @@ func (o dnsConfigModel) attrTypes() map[string]attr.Type {
 func (o dnsConfigModel) defaultObject() map[string]attr.Value {
 	bootstrap_dns := convertToAttr(CONFIG_DNS_BOOTSTRAP)
 	upstream_dns := convertToAttr(CONFIG_DNS_UPSTREAM)
+	blocked_hosts := convertToAttr(CONFIG_DNS_BLOCKED_HOSTS)
 
 	return map[string]attr.Value{
 		"bootstrap_dns":             types.ListValueMust(types.StringType, bootstrap_dns),
@@ -206,9 +207,9 @@ func (o dnsConfigModel) defaultObject() map[string]attr.Value {
 		"use_private_ptr_resolvers": types.BoolValue(CONFIG_DNS_USE_PRIVATE_PTR_RESOLVERS),
 		"resolve_clients":           types.BoolValue(CONFIG_DNS_RESOLVE_CLIENTS),
 		"local_ptr_upstreams":       types.SetValueMust(types.StringType, []attr.Value{}),
-		"allowed_clients":           types.SetValueMust(types.StringType, []attr.Value{}),
-		"disallowed_clients":        types.SetValueMust(types.StringType, []attr.Value{}),
-		"blocked_hosts":             types.SetValueMust(types.StringType, []attr.Value{}),
+		"allowed_clients":           types.SetNull(types.StringType),
+		"disallowed_clients":        types.SetNull(types.StringType),
+		"blocked_hosts":             types.SetValueMust(types.StringType, blocked_hosts),
 	}
 }
 

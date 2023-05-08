@@ -33,6 +33,7 @@ const CONFIG_TLS_PORT_DNS_OVER_QUIC = 853
 
 var CONFIG_DNS_BOOTSTRAP = []string{"9.9.9.10", "149.112.112.10", "2620:fe::10", "2620:fe::fe:10"}
 var CONFIG_DNS_UPSTREAM = []string{"https://dns10.quad9.net/dns-query"}
+var CONFIG_DNS_BLOCKED_HOSTS = []string{"version.bind", "id.server", "hostname.bind"}
 var CONFIG_SAFE_SEARCH_SERVICES_OPTIONS = []string{"bing", "duckduckgo", "google", "pixabay", "yandex", "youtube"}
 var CONFIG_GLOBAL_BLOCKED_SERVICES_OPTIONS = []string{"9gag", "amazon", "bilibili", "cloudflare", "crunchyroll", "dailymotion", "deezer",
 	"discord", "disneyplus", "douban", "ebay", "epic_games", "facebook", "gog", "hbomax", "hulu", "icloud_private_relay", "imgur",
