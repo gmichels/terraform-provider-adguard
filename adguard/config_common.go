@@ -260,8 +260,8 @@ func (o dhcpConfigModel) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
 		"enabled":       types.BoolValue(CONFIG_DHCP_ENABLED),
 		"interface":     types.StringValue(""),
-		"ipv4_settings": types.ObjectNull(dhcpIpv4Model{}.attrTypes()),
-		"ipv6_settings": types.ObjectNull(dhcpIpv6Model{}.attrTypes()),
+		"ipv4_settings": types.ObjectValueMust(dhcpIpv4Model{}.attrTypes(), dhcpIpv4Model{}.defaultObject()),
+		"ipv6_settings": types.ObjectValueMust(dhcpIpv6Model{}.attrTypes(), dhcpIpv6Model{}.defaultObject()),
 		"static_leases": types.SetNull(types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()}),
 	}
 }
@@ -293,7 +293,7 @@ func (o dhcpIpv4Model) defaultObject() map[string]attr.Value {
 		"subnet_mask":    types.StringValue(""),
 		"range_start":    types.StringValue(""),
 		"range_end":      types.StringValue(""),
-		"lease_duration": types.Int64Value(CONFIG_DHCP_LEASE_DURATION),
+		"lease_duration": types.Int64Value(CONFIG_DHCP_V4_LEASE_DURATION),
 	}
 }
 
@@ -315,7 +315,7 @@ func (o dhcpIpv6Model) attrTypes() map[string]attr.Type {
 func (o dhcpIpv6Model) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
 		"range_start":    types.StringValue(""),
-		"lease_duration": types.Int64Value(CONFIG_DHCP_LEASE_DURATION),
+		"lease_duration": types.Int64Value(CONFIG_DHCP_V6_LEASE_DURATION),
 	}
 }
 
@@ -747,6 +747,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 		// it's a file path
 		stateTlsConfig.PrivateKey = types.StringValue(tlsConfig.PrivateKeyPath)
 	}
+	stateTlsConfig.PrivateKeySaved = types.BoolValue(tlsConfig.PrivateKeySaved)
 	stateTlsConfig.ValidCert = types.BoolValue(tlsConfig.ValidCert)
 	stateTlsConfig.ValidChain = types.BoolValue(tlsConfig.ValidChain)
 	stateTlsConfig.Subject = types.StringValue(tlsConfig.Subject)

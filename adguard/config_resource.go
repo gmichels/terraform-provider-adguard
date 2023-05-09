@@ -496,10 +496,10 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 								},
 							},
 							"lease_duration": schema.Int64Attribute{
-								Description: fmt.Sprintf("The lease duration for the DHCP server scope, in seconds. Defaults to `%d`", CONFIG_DHCP_LEASE_DURATION),
+								Description: fmt.Sprintf("The lease duration for the DHCP server scope, in seconds. Defaults to `%d`", CONFIG_DHCP_V4_LEASE_DURATION),
 								Computed:    true,
 								Optional:    true,
-								Default:     int64default.StaticInt64(CONFIG_DHCP_LEASE_DURATION),
+								Default:     int64default.StaticInt64(CONFIG_DHCP_V4_LEASE_DURATION),
 								Validators: []validator.Int64{
 									int64validator.AtLeast(1),
 								},
@@ -524,10 +524,10 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 								},
 							},
 							"lease_duration": schema.Int64Attribute{
-								Description: fmt.Sprintf("The lease duration for the DHCP server scope, in seconds. Defaults to `%d`", CONFIG_DHCP_LEASE_DURATION),
+								Description: fmt.Sprintf("The lease duration for the DHCP server scope, in seconds. Defaults to `%d`", CONFIG_DHCP_V6_LEASE_DURATION),
 								Computed:    true,
 								Optional:    true,
-								Default:     int64default.StaticInt64(CONFIG_DHCP_LEASE_DURATION),
+								Default:     int64default.StaticInt64(CONFIG_DHCP_V6_LEASE_DURATION),
 								Validators: []validator.Int64{
 									int64validator.AtLeast(1),
 								},
