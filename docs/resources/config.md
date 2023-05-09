@@ -137,7 +137,7 @@ Required:
 
 Optional:
 
-- `lease_duration` (Number) The lease duration for the DHCP server scope, in seconds. Defaults to `86400`
+- `lease_duration` (Number) The lease duration for the DHCP server scope, in seconds. Defaults to `0`
 
 
 <a id="nestedatt--dhcp--ipv6_settings"></a>

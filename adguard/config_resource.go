@@ -422,14 +422,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Computed:    true,
 						Validators:  []validator.Set{setvalidator.SizeAtLeast(1)},
 						Default: setdefault.StaticValue(
-							types.SetValueMust(
-								types.StringType,
-								[]attr.Value{
-									types.StringValue("version.bind"),
-									types.StringValue("id.server"),
-									types.StringValue("hostname.bind"),
-								},
-							),
+							types.SetValueMust(types.StringType, convertToAttr(CONFIG_DNS_BLOCKED_HOSTS)),
 						),
 					},
 				},
@@ -503,10 +496,10 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 								},
 							},
 							"lease_duration": schema.Int64Attribute{
-								Description: fmt.Sprintf("The lease duration for the DHCP server scope, in seconds. Defaults to `%d`", CONFIG_DHCP_LEASE_DURATION),
+								Description: fmt.Sprintf("The lease duration for the DHCP server scope, in seconds. Defaults to `%d`", CONFIG_DHCP_V4_LEASE_DURATION),
 								Computed:    true,
 								Optional:    true,
-								Default:     int64default.StaticInt64(CONFIG_DHCP_LEASE_DURATION),
+								Default:     int64default.StaticInt64(CONFIG_DHCP_V4_LEASE_DURATION),
 								Validators: []validator.Int64{
 									int64validator.AtLeast(1),
 								},
@@ -531,10 +524,10 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 								},
 							},
 							"lease_duration": schema.Int64Attribute{
-								Description: fmt.Sprintf("The lease duration for the DHCP server scope, in seconds. Defaults to `%d`", CONFIG_DHCP_LEASE_DURATION),
+								Description: fmt.Sprintf("The lease duration for the DHCP server scope, in seconds. Defaults to `%d`", CONFIG_DHCP_V6_LEASE_DURATION),
 								Computed:    true,
 								Optional:    true,
-								Default:     int64default.StaticInt64(CONFIG_DHCP_LEASE_DURATION),
+								Default:     int64default.StaticInt64(CONFIG_DHCP_V6_LEASE_DURATION),
 								Validators: []validator.Int64{
 									int64validator.AtLeast(1),
 								},
@@ -945,7 +938,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	// populate dns access list with default values
 	dnsAccess.AllowedClients = []string{}
 	dnsAccess.DisallowedClients = []string{}
-	dnsAccess.BlockedHosts = []string{"version.bind", "id.server", "hostname.bind"}
+	dnsAccess.BlockedHosts = CONFIG_DNS_BLOCKED_HOSTS
 
 	// set dns access list to defaults
 	_, err = r.adg.SetAccess(dnsAccess)

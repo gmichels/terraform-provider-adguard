@@ -187,6 +187,7 @@ func (o dnsConfigModel) attrTypes() map[string]attr.Type {
 func (o dnsConfigModel) defaultObject() map[string]attr.Value {
 	bootstrap_dns := convertToAttr(CONFIG_DNS_BOOTSTRAP)
 	upstream_dns := convertToAttr(CONFIG_DNS_UPSTREAM)
+	blocked_hosts := convertToAttr(CONFIG_DNS_BLOCKED_HOSTS)
 
 	return map[string]attr.Value{
 		"bootstrap_dns":             types.ListValueMust(types.StringType, bootstrap_dns),
@@ -206,9 +207,9 @@ func (o dnsConfigModel) defaultObject() map[string]attr.Value {
 		"use_private_ptr_resolvers": types.BoolValue(CONFIG_DNS_USE_PRIVATE_PTR_RESOLVERS),
 		"resolve_clients":           types.BoolValue(CONFIG_DNS_RESOLVE_CLIENTS),
 		"local_ptr_upstreams":       types.SetValueMust(types.StringType, []attr.Value{}),
-		"allowed_clients":           types.SetValueMust(types.StringType, []attr.Value{}),
-		"disallowed_clients":        types.SetValueMust(types.StringType, []attr.Value{}),
-		"blocked_hosts":             types.SetValueMust(types.StringType, []attr.Value{}),
+		"allowed_clients":           types.SetNull(types.StringType),
+		"disallowed_clients":        types.SetNull(types.StringType),
+		"blocked_hosts":             types.SetValueMust(types.StringType, blocked_hosts),
 	}
 }
 
@@ -259,8 +260,8 @@ func (o dhcpConfigModel) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
 		"enabled":       types.BoolValue(CONFIG_DHCP_ENABLED),
 		"interface":     types.StringValue(""),
-		"ipv4_settings": types.ObjectNull(dhcpIpv4Model{}.attrTypes()),
-		"ipv6_settings": types.ObjectNull(dhcpIpv6Model{}.attrTypes()),
+		"ipv4_settings": types.ObjectValueMust(dhcpIpv4Model{}.attrTypes(), dhcpIpv4Model{}.defaultObject()),
+		"ipv6_settings": types.ObjectValueMust(dhcpIpv6Model{}.attrTypes(), dhcpIpv6Model{}.defaultObject()),
 		"static_leases": types.SetNull(types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()}),
 	}
 }
@@ -292,7 +293,7 @@ func (o dhcpIpv4Model) defaultObject() map[string]attr.Value {
 		"subnet_mask":    types.StringValue(""),
 		"range_start":    types.StringValue(""),
 		"range_end":      types.StringValue(""),
-		"lease_duration": types.Int64Value(CONFIG_DHCP_LEASE_DURATION),
+		"lease_duration": types.Int64Value(CONFIG_DHCP_V4_LEASE_DURATION),
 	}
 }
 
@@ -314,7 +315,7 @@ func (o dhcpIpv6Model) attrTypes() map[string]attr.Type {
 func (o dhcpIpv6Model) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
 		"range_start":    types.StringValue(""),
-		"lease_duration": types.Int64Value(CONFIG_DHCP_LEASE_DURATION),
+		"lease_duration": types.Int64Value(CONFIG_DHCP_V6_LEASE_DURATION),
 	}
 }
 
@@ -746,6 +747,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 		// it's a file path
 		stateTlsConfig.PrivateKey = types.StringValue(tlsConfig.PrivateKeyPath)
 	}
+	stateTlsConfig.PrivateKeySaved = types.BoolValue(tlsConfig.PrivateKeySaved)
 	stateTlsConfig.ValidCert = types.BoolValue(tlsConfig.ValidCert)
 	stateTlsConfig.ValidChain = types.BoolValue(tlsConfig.ValidChain)
 	stateTlsConfig.Subject = types.StringValue(tlsConfig.Subject)
@@ -1169,7 +1171,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	var filePathIdentifier = regexp.MustCompile(`^/\w|\w:`)
 
 	// check what is the certificate chain
-	if filePathIdentifier.MatchString(planTlsConfig.CertificateChain.ValueString()[0:2]) {
+	if len(planTlsConfig.CertificateChain.ValueString()) > 0 && filePathIdentifier.MatchString(planTlsConfig.CertificateChain.ValueString()[0:2]) {
 		// it's a file path
 		tlsConfig.CertificatePath = planTlsConfig.CertificateChain.ValueString()
 	} else {
@@ -1178,7 +1180,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	}
 
 	// check what is the private key
-	if filePathIdentifier.MatchString(planTlsConfig.PrivateKey.ValueString()[0:2]) {
+	if len(planTlsConfig.PrivateKey.ValueString()) > 0 && filePathIdentifier.MatchString(planTlsConfig.PrivateKey.ValueString()[0:2]) {
 		// it's a file path
 		tlsConfig.PrivateKeyPath = planTlsConfig.PrivateKey.ValueString()
 	} else {
