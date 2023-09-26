@@ -424,7 +424,7 @@ func (o tlsConfigModel) defaultObject() map[string]attr.Value {
 		"issuer":             types.StringValue(""),
 		"not_before":         types.StringValue(""),
 		"not_after":          types.StringValue(""),
-		"dns_names":          types.ListNull(types.StringType),
+		"dns_names":          types.ListValueMust(types.StringType, []attr.Value{}),
 		"warning_validation": types.StringValue(""),
 	}
 }
@@ -514,9 +514,13 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 	stateQueryLogConfig.Enabled = types.BoolValue(queryLogConfig.Enabled)
 	stateQueryLogConfig.Interval = types.Int64Value(int64(queryLogConfig.Interval / 1000 / 3600))
 	stateQueryLogConfig.AnonymizeClientIp = types.BoolValue(queryLogConfig.AnonymizeClientIp)
+	if len(queryLogConfig.Ignored) > 0 {
 	stateQueryLogConfig.Ignored, *diags = types.SetValueFrom(ctx, types.StringType, queryLogConfig.Ignored)
 	if diags.HasError() {
 		return
+	}
+	} else {
+		stateQueryLogConfig.Ignored = types.SetValueMust(types.StringType, []attr.Value{})
 	}
 	// add to config model
 	o.QueryLog, _ = types.ObjectValueFrom(ctx, queryLogConfigModel{}.attrTypes(), &stateQueryLogConfig)
@@ -534,9 +538,13 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 	var stateStatsConfig statsConfigModel
 	stateStatsConfig.Enabled = types.BoolValue(statsConfig.Enabled)
 	stateStatsConfig.Interval = types.Int64Value(int64(statsConfig.Interval / 3600 / 1000))
+	if len(statsConfig.Ignored) > 0 {
 	stateStatsConfig.Ignored, *diags = types.SetValueFrom(ctx, types.StringType, statsConfig.Ignored)
 	if diags.HasError() {
 		return
+	}
+	} else {
+		stateStatsConfig.Ignored = types.SetValueMust(types.StringType, []attr.Value{})
 	}
 	// add to config model
 	o.Stats, _ = types.ObjectValueFrom(ctx, statsConfigModel{}.attrTypes(), &stateStatsConfig)
@@ -764,9 +772,13 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 	} else {
 		stateTlsConfig.NotAfter = types.StringValue("")
 	}
+	if len(tlsConfig.DnsNames) > 0 {
 	stateTlsConfig.DnsNames, *diags = types.ListValueFrom(ctx, types.StringType, tlsConfig.DnsNames)
 	if diags.HasError() {
 		return
+	}
+	} else {
+		stateTlsConfig.DnsNames = types.ListValueMust(types.StringType, []attr.Value{})
 	}
 	stateTlsConfig.ValidKey = types.BoolValue(tlsConfig.ValidKey)
 	stateTlsConfig.KeyType = types.StringValue(tlsConfig.KeyType)
