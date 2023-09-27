@@ -1093,8 +1093,21 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	var stateDhcpConfig dhcpConfigModel
 	var stateDhcpStaticLeases []dhcpStaticLeasesModel
 
-	// grab data from state if it exists
+	// check if we had dhcp config previously in state
 	if !state.Dhcp.IsNull() {
+		// check if the entire dhcp server has been turned off
+		if dhcpConfig.InterfaceName == "" {
+			// it was, set dhcp config to defaults
+			err = r.adg.ResetDhcpConfig()
+			if err != nil {
+				diags.AddError(
+					"Unable to Update AdGuard Home Config",
+					err.Error(),
+				)
+				return
+			}
+		}
+
 		*diags = state.Dhcp.As(ctx, &stateDhcpConfig, basetypes.ObjectAsOptions{})
 		if diags.HasError() {
 			return
@@ -1140,24 +1153,27 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		}
 	}
 
-	// go through the dhcp static leases existing in state
-	for _, stateDhcpStaticLease := range stateDhcpStaticLeases {
-		// instantiate empty object for storing plan data
-		var dhcpStaticLease adguard.DhcpStaticLease
-		dhcpStaticLease.Mac = stateDhcpStaticLease.Mac.ValueString()
-		dhcpStaticLease.Ip = stateDhcpStaticLease.Ip.ValueString()
-		dhcpStaticLease.Hostname = stateDhcpStaticLease.Hostname.ValueString()
+	// only work on state dhcp leases if we the dhcp server is configured appropriately
+	if dhcpConfig.InterfaceName != "" {
+		// go through the dhcp static leases existing in state
+		for _, stateDhcpStaticLease := range stateDhcpStaticLeases {
+			// instantiate empty object for storing plan data
+			var dhcpStaticLease adguard.DhcpStaticLease
+			dhcpStaticLease.Mac = stateDhcpStaticLease.Mac.ValueString()
+			dhcpStaticLease.Ip = stateDhcpStaticLease.Ip.ValueString()
+			dhcpStaticLease.Hostname = stateDhcpStaticLease.Hostname.ValueString()
 
-		// check if this dhcp static lease is still in the plan
-		if !contains(allPlanDhcpStaticLeases, dhcpStaticLease.Mac) {
-			// not in plan, delete it
-			_, err = r.adg.ManageDhcpStaticLease(false, dhcpStaticLease)
-			if err != nil {
-				diags.AddError(
-					"Unable to Update AdGuard Home Config",
-					err.Error(),
-				)
-				return
+			// check if this dhcp static lease is still in the plan
+			if !contains(allPlanDhcpStaticLeases, dhcpStaticLease.Mac) {
+				// not in plan, delete it
+				_, err = r.adg.ManageDhcpStaticLease(false, dhcpStaticLease)
+				if err != nil {
+					diags.AddError(
+						"Unable to Update AdGuard Home Config",
+						err.Error(),
+					)
+					return
+				}
 			}
 		}
 	}
