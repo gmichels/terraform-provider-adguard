@@ -30,5 +30,3 @@ data "adguard_rewrite" "test" {
 
 - `answer` (String) Value of A, AAAA or CNAME DNS record
 - `id` (String) Identifier attribute
-
-

@@ -24,5 +24,3 @@ data "adguard_user_rules" "test" {}
 
 - `id` (String) Placeholder identifier attribute
 - `rules` (List of String) List of user rules
-
-

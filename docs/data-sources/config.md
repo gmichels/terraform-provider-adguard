@@ -181,5 +181,3 @@ Read-Only:
 - `valid_key` (Boolean) Whether the private key is valid
 - `valid_pair` (Boolean) Whether both certificate and private key are correct
 - `warning_validation` (String) The validation warning message with the issue description
-
-

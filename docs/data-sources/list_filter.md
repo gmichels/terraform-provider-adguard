@@ -43,5 +43,3 @@ data "adguard_list_filter" "test_whitelist" {
 - `last_updated` (String) Timestamp of last synchronization
 - `rules_count` (Number) Number of rules in the list filter
 - `url` (String) Url of the list filter
-
-
