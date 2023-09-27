@@ -42,5 +42,3 @@ data "adguard_client" "test" {
 ### Read-Only
 
 - `id` (String) Placeholder identifier attribute
-
-
