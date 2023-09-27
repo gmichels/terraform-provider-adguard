@@ -170,6 +170,11 @@ resource "adguard_config" "test" {
 		}
 		static_leases = [
 			{
+				mac      = "00:11:22:33:44:55"
+				ip       = "192.168.250.20"
+				hostname = "test-lease-1a"
+			},
+			{
 				mac      = "aa:bb:cc:dd:ee:ff"
 				ip       = "192.168.250.30"
 				hostname = "test-lease-2"
@@ -235,9 +240,10 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.range_start", "192.168.250.20"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.range_end", "192.168.250.90"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.lease_duration", "14400"),
-					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.#", "3"),
-					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.1.ip", "192.168.250.40"),
-					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.2.hostname", "test-lease-4"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.#", "4"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.0.hostname", "test-lease-1a"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.2.ip", "192.168.250.40"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.3.hostname", "test-lease-4"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.server_name", "Test AdGuard Home Modified"),
 				),

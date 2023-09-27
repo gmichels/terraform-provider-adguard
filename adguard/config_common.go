@@ -2,6 +2,7 @@ package adguard
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
@@ -515,10 +516,10 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 	stateQueryLogConfig.Interval = types.Int64Value(int64(queryLogConfig.Interval / 1000 / 3600))
 	stateQueryLogConfig.AnonymizeClientIp = types.BoolValue(queryLogConfig.AnonymizeClientIp)
 	if len(queryLogConfig.Ignored) > 0 {
-	stateQueryLogConfig.Ignored, *diags = types.SetValueFrom(ctx, types.StringType, queryLogConfig.Ignored)
-	if diags.HasError() {
-		return
-	}
+		stateQueryLogConfig.Ignored, *diags = types.SetValueFrom(ctx, types.StringType, queryLogConfig.Ignored)
+		if diags.HasError() {
+			return
+		}
 	} else {
 		stateQueryLogConfig.Ignored = types.SetValueMust(types.StringType, []attr.Value{})
 	}
@@ -539,10 +540,10 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 	stateStatsConfig.Enabled = types.BoolValue(statsConfig.Enabled)
 	stateStatsConfig.Interval = types.Int64Value(int64(statsConfig.Interval / 3600 / 1000))
 	if len(statsConfig.Ignored) > 0 {
-	stateStatsConfig.Ignored, *diags = types.SetValueFrom(ctx, types.StringType, statsConfig.Ignored)
-	if diags.HasError() {
-		return
-	}
+		stateStatsConfig.Ignored, *diags = types.SetValueFrom(ctx, types.StringType, statsConfig.Ignored)
+		if diags.HasError() {
+			return
+		}
 	} else {
 		stateStatsConfig.Ignored = types.SetValueMust(types.StringType, []attr.Value{})
 	}
@@ -773,10 +774,10 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 		stateTlsConfig.NotAfter = types.StringValue("")
 	}
 	if len(tlsConfig.DnsNames) > 0 {
-	stateTlsConfig.DnsNames, *diags = types.ListValueFrom(ctx, types.StringType, tlsConfig.DnsNames)
-	if diags.HasError() {
-		return
-	}
+		stateTlsConfig.DnsNames, *diags = types.ListValueFrom(ctx, types.StringType, tlsConfig.DnsNames)
+		if diags.HasError() {
+			return
+		}
 	} else {
 		stateTlsConfig.DnsNames = types.ListValueMust(types.StringType, []attr.Value{})
 	}
@@ -1122,7 +1123,11 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		// go through the dhcp static leases existing in state
 		for _, stateDhcpStaticLease := range stateDhcpStaticLeases {
 			// track dhcp static leases in state
-			allStateDhcpStaticLeases = append(allStateDhcpStaticLeases, stateDhcpStaticLease.Mac.ValueString())
+			allStateDhcpStaticLeases = append(
+				allStateDhcpStaticLeases, fmt.Sprintf(
+					"%s_%s_%s", stateDhcpStaticLease.Hostname.ValueString(), stateDhcpStaticLease.Mac.ValueString(), stateDhcpStaticLease.Ip.ValueString(),
+				),
+			)
 		}
 	}
 
@@ -1131,40 +1136,26 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 
 	// go through all dhcp static leases in plan
 	for _, planDhcpStaticLease := range planDhcpStaticLeases {
-		// instantiate empty object for storing plan data
-		var dhcpStaticLease adguard.DhcpStaticLease
-		dhcpStaticLease.Mac = planDhcpStaticLease.Mac.ValueString()
-		dhcpStaticLease.Ip = planDhcpStaticLease.Ip.ValueString()
-		dhcpStaticLease.Hostname = planDhcpStaticLease.Hostname.ValueString()
+		// create a unique key for this static lease
+		dhcpStaticLease_key := fmt.Sprintf("%s_%s_%s", planDhcpStaticLease.Hostname.ValueString(), planDhcpStaticLease.Mac.ValueString(), planDhcpStaticLease.Ip.ValueString())
 		// track dhcp static leases in plan
-		allPlanDhcpStaticLeases = append(allPlanDhcpStaticLeases, dhcpStaticLease.Mac)
-
-		// check if this dhcp static lease isn't already in state
-		if !contains(allStateDhcpStaticLeases, dhcpStaticLease.Mac) {
-			// set this dhcp static lease using plan
-			_, err = r.adg.ManageDhcpStaticLease(true, dhcpStaticLease)
-			if err != nil {
-				diags.AddError(
-					"Unable to Update AdGuard Home Config",
-					err.Error(),
-				)
-				return
-			}
-		}
+		allPlanDhcpStaticLeases = append(allPlanDhcpStaticLeases, dhcpStaticLease_key)
 	}
 
-	// only work on state dhcp leases if we the dhcp server is configured appropriately
+	// only work on state dhcp leases if the dhcp server is configured appropriately
 	if dhcpConfig.InterfaceName != "" {
 		// go through the dhcp static leases existing in state
 		for _, stateDhcpStaticLease := range stateDhcpStaticLeases {
-			// instantiate empty object for storing plan data
+			// instantiate empty object for storing state data
 			var dhcpStaticLease adguard.DhcpStaticLease
 			dhcpStaticLease.Mac = stateDhcpStaticLease.Mac.ValueString()
 			dhcpStaticLease.Ip = stateDhcpStaticLease.Ip.ValueString()
 			dhcpStaticLease.Hostname = stateDhcpStaticLease.Hostname.ValueString()
+			// create a unique key for this static lease
+			dhcpStaticLease_key := fmt.Sprintf("%s_%s_%s", dhcpStaticLease.Hostname, dhcpStaticLease.Mac, dhcpStaticLease.Ip)
 
 			// check if this dhcp static lease is still in the plan
-			if !contains(allPlanDhcpStaticLeases, dhcpStaticLease.Mac) {
+			if !contains(allPlanDhcpStaticLeases, dhcpStaticLease_key) {
 				// not in plan, delete it
 				_, err = r.adg.ManageDhcpStaticLease(false, dhcpStaticLease)
 				if err != nil {
@@ -1174,6 +1165,28 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 					)
 					return
 				}
+			}
+		}
+	}
+
+	// go through all dhcp static leases in plan
+	for _, planDhcpStaticLease := range planDhcpStaticLeases {
+		// instantiate empty object for storing plan data
+		var dhcpStaticLease adguard.DhcpStaticLease
+		dhcpStaticLease.Mac = planDhcpStaticLease.Mac.ValueString()
+		dhcpStaticLease.Ip = planDhcpStaticLease.Ip.ValueString()
+		dhcpStaticLease.Hostname = planDhcpStaticLease.Hostname.ValueString()
+
+		// check if this dhcp static lease isn't already in state
+		if !contains(allStateDhcpStaticLeases, fmt.Sprintf("%s_%s_%s", dhcpStaticLease.Hostname, dhcpStaticLease.Mac, dhcpStaticLease.Ip)) {
+			// set this dhcp static lease using plan
+			_, err = r.adg.ManageDhcpStaticLease(true, dhcpStaticLease)
+			if err != nil {
+				diags.AddError(
+					"Unable to Update AdGuard Home Config",
+					err.Error(),
+				)
+				return
 			}
 		}
 	}
