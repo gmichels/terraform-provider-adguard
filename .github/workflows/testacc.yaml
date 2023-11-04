@@ -32,4 +32,4 @@ jobs:
           terraform_version: ${{ matrix.terraform_version }}
           terraform_wrapper: false
       - name: Run acceptance tests
-        run: echo Using terraform version $(terraform version --json | jq .terraform_version) && make testacc
+        run: echo Using terraform version $(terraform version --json | jq -r .terraform_version) && make testacc
