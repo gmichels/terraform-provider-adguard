@@ -884,12 +884,11 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	queryLogConfig.Enabled = planQueryLogConfig.Enabled.ValueBool()
 	queryLogConfig.Interval = uint64(planQueryLogConfig.Interval.ValueInt64() * 3600 * 1000)
 	queryLogConfig.AnonymizeClientIp = planQueryLogConfig.AnonymizeClientIp.ValueBool()
-	if len(planQueryLogConfig.Ignored.Elements()) > 0 {
-		*diags = planQueryLogConfig.Ignored.ElementsAs(ctx, &queryLogConfig.Ignored, false)
-		if diags.HasError() {
-			return
-		}
+	*diags = planQueryLogConfig.Ignored.ElementsAs(ctx, &queryLogConfig.Ignored, false)
+	if diags.HasError() {
+		return
 	}
+
 	// set query log config using plan
 	_, err = r.adg.SetQueryLogConfig(queryLogConfig)
 	if err != nil {
@@ -912,11 +911,9 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	// populate stats from plan
 	statsConfig.Enabled = planStatsConfig.Enabled.ValueBool()
 	statsConfig.Interval = uint64(planStatsConfig.Interval.ValueInt64() * 3600 * 1000)
-	if len(planStatsConfig.Ignored.Elements()) > 0 {
-		*diags = planStatsConfig.Ignored.ElementsAs(ctx, &statsConfig.Ignored, false)
-		if diags.HasError() {
-			return
-		}
+	*diags = planStatsConfig.Ignored.ElementsAs(ctx, &statsConfig.Ignored, false)
+	if diags.HasError() {
+		return
 	}
 	// set stats config using plan
 	_, err = r.adg.SetStatsConfig(statsConfig)
