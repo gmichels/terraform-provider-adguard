@@ -221,6 +221,27 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				},
 				Default: setdefault.StaticValue(types.SetNull(types.StringType)),
 			},
+			"blocked_services_schedule": schema.SingleNestedAttribute{
+				Description: "Sets periods of inactivity for filtering blocked services. The schedule contains 7 days (Sunday to Saturday) and a time zone.",
+				Computed:    true,
+				Optional:    true,
+				Default: objectdefault.StaticValue(types.ObjectValueMust(
+					blockedServicesScheduleConfigModel{}.attrTypes(), blockedServicesScheduleConfigModel{}.defaultObject()),
+				),
+				Attributes: map[string]schema.Attribute{
+					"time_zone": schema.StringAttribute{
+						Description: "Time zone name according to IANA time zone database. For example `America/New_York`. `Local` represents the system's local time zone.",
+						Optional:    true,
+					},
+					"sun": dayRangeResourceSchema("Sunday"),
+					"mon": dayRangeResourceSchema("Monday"),
+					"tue": dayRangeResourceSchema("Tueday"),
+					"wed": dayRangeResourceSchema("Wednesday"),
+					"thu": dayRangeResourceSchema("Thursday"),
+					"fri": dayRangeResourceSchema("Friday"),
+					"sat": dayRangeResourceSchema("Saturday"),
+				},
+			},
 			"dns": schema.SingleNestedAttribute{
 				Computed: true,
 				Optional: true,
@@ -743,7 +764,7 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 	// use common model for state
 	var newState configCommonModel
 	// use common Read function
-	newState.Read(ctx, *r.adg, &resp.Diagnostics, "resource")
+	newState.Read(ctx, *r.adg, &state, &resp.Diagnostics, "resource")
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
@@ -889,8 +910,27 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
+	// populate blocked services and schedules with default values
+	var blockedServicesScheduleConfig adguard.BlockedServicesSchedule
+	blockedServicesScheduleConfig.Ids = make([]string, 0)
+	blockedServicesScheduleConfig.Schedule.TimeZone = BLOCKED_SERVICES_SCHEDULE_TIMEZONE
+	blockedServicesScheduleConfig.Schedule.Sunday.Start = BLOCKED_SERVICES_SCHEDULE_START_END
+	blockedServicesScheduleConfig.Schedule.Sunday.End = BLOCKED_SERVICES_SCHEDULE_START_END
+	blockedServicesScheduleConfig.Schedule.Monday.Start = BLOCKED_SERVICES_SCHEDULE_START_END
+	blockedServicesScheduleConfig.Schedule.Monday.End = BLOCKED_SERVICES_SCHEDULE_START_END
+	blockedServicesScheduleConfig.Schedule.Tuesday.Start = BLOCKED_SERVICES_SCHEDULE_START_END
+	blockedServicesScheduleConfig.Schedule.Tuesday.End = BLOCKED_SERVICES_SCHEDULE_START_END
+	blockedServicesScheduleConfig.Schedule.Wednesday.Start = BLOCKED_SERVICES_SCHEDULE_START_END
+	blockedServicesScheduleConfig.Schedule.Wednesday.End = BLOCKED_SERVICES_SCHEDULE_START_END
+	blockedServicesScheduleConfig.Schedule.Thursday.Start = BLOCKED_SERVICES_SCHEDULE_START_END
+	blockedServicesScheduleConfig.Schedule.Thursday.End = BLOCKED_SERVICES_SCHEDULE_START_END
+	blockedServicesScheduleConfig.Schedule.Friday.Start = BLOCKED_SERVICES_SCHEDULE_START_END
+	blockedServicesScheduleConfig.Schedule.Friday.End = BLOCKED_SERVICES_SCHEDULE_START_END
+	blockedServicesScheduleConfig.Schedule.Saturday.Start = BLOCKED_SERVICES_SCHEDULE_START_END
+	blockedServicesScheduleConfig.Schedule.Saturday.End = BLOCKED_SERVICES_SCHEDULE_START_END
+
 	// set blocked services to defaults
-	_, err = r.adg.SetBlockedServices(make([]string, 0))
+	_, err = r.adg.SetBlockedServices(blockedServicesScheduleConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",

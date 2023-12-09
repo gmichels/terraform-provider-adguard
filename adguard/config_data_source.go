@@ -123,6 +123,23 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 				ElementType: types.StringType,
 				Computed:    true,
 			},
+			"blocked_services_schedule": schema.SingleNestedAttribute{
+				Description: "Sets periods of inactivity for filtering blocked services. The schedule contains 7 days (Sunday to Saturday) and a time zone.",
+				Computed: true,
+				Attributes: map[string]schema.Attribute{
+					"time_zone": schema.StringAttribute{
+						Description: "Time zone name according to IANA time zone database. For example `America/New_York`. `Local` represents the system's local time zone.",
+						Computed:    true,
+					},
+					"sun": dayRangeDatasourceSchema("Sunday"),
+					"mon": dayRangeDatasourceSchema("Monday"),
+					"tue": dayRangeDatasourceSchema("Tueday"),
+					"wed": dayRangeDatasourceSchema("Wednesday"),
+					"thu": dayRangeDatasourceSchema("Thursday"),
+					"fri": dayRangeDatasourceSchema("Friday"),
+					"sat": dayRangeDatasourceSchema("Saturday"),
+				},
+			},
 			"dns": schema.SingleNestedAttribute{
 				Computed: true,
 				Attributes: map[string]schema.Attribute{
@@ -409,7 +426,7 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	// use common model for state
 	var newState configCommonModel
 	// use common Read function
-	newState.Read(ctx, *d.adg, &resp.Diagnostics, "datasource")
+	newState.Read(ctx, *d.adg, &state, &resp.Diagnostics, "datasource")
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
