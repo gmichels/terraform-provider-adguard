@@ -605,9 +605,9 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	// empty object for storing state
 	var stateBlockedServicesScheduleConfig blockedServicesScheduleConfigModel
 
-	// need special handling when for timezone when resource and already in state
+	// need special handling for timezone in resource due to inconsistent API response for `Local`
 	if rtype == "resource" {
-		// last updated will be null on import operation
+		// last updated will exist on create operation, null on import operation
 		if !currState.LastUpdated.IsNull() {
 			// unpack current state
 			var currStateBlockedServicesScheduleConfig blockedServicesScheduleConfigModel
@@ -615,16 +615,22 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 			if diags.HasError() {
 				return
 			}
-			// if timezone in state is null, it means it was never defined, so we should ignore the response from ADG
+			// if timezone in state is null, it means it was never defined, so we should ignore the inconsistent response from ADG
 			if !currStateBlockedServicesScheduleConfig.Timezone.IsNull() {
 				// map timezone from response
 				stateBlockedServicesScheduleConfig.Timezone = types.StringValue(blockedServicesSchedule.Schedule.TimeZone)
 			}
+			// ID exists in both create and import operations, but if we got here, it's an import
+			// still, imports for this attribute are finicky and error-prone, therefore ignored in tests
+		} else if !currState.ID.IsNull() {
+			// map timezone from response
+			stateBlockedServicesScheduleConfig.Timezone = types.StringValue(blockedServicesSchedule.Schedule.TimeZone)
 		}
 	} else {
 		// used for datasource
 		stateBlockedServicesScheduleConfig.Timezone = types.StringValue(blockedServicesSchedule.Schedule.TimeZone)
 	}
+
 
 	// go over each day and map to intermediate object
 	var sunDayRangeConfig dayRangeModel
