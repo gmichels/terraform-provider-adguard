@@ -142,7 +142,10 @@ filtering:
   blocking_ipv6: ""
   blocked_services:
     schedule:
-      time_zone: UTC
+      time_zone: America/New_York
+      mon:
+        start: 0s
+        end: 23h59m
     ids:
       - facebook
       - instagram

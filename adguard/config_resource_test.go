@@ -34,6 +34,17 @@ resource "adguard_config" "test" {
 		ignored  = ["test3.net", "example4.com"]
 	}
 	blocked_services = ["youtube", "pinterest"]
+	blocked_services_pause_schedule = {
+		time_zone = "America/Chicago"
+		sun = {
+			start = "18:15"
+			end = "23:15"
+		}
+		wed = {
+			start = "11:00"
+			end = "15:45"
+		}
+	}
 	dns = {
 		upstream_dns        = ["https://1.1.1.1/dns-query", "https://1.0.0.1/dns-query"]
 		rate_limit          = 30
@@ -97,6 +108,11 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.1", "test3.net"),
 					resource.TestCheckResourceAttr("adguard_config.test", "blocked_services.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "blocked_services.0", "pinterest"),
+					resource.TestCheckResourceAttr("adguard_config.test", "blocked_services_pause_schedule.time_zone", "America/Chicago"),
+					resource.TestCheckResourceAttr("adguard_config.test", "blocked_services_pause_schedule.sun.start", "18:15"),
+					resource.TestCheckResourceAttr("adguard_config.test", "blocked_services_pause_schedule.sun.end", "23:15"),
+					resource.TestCheckResourceAttr("adguard_config.test", "blocked_services_pause_schedule.wed.start", "11:00"),
+					resource.TestCheckResourceAttr("adguard_config.test", "blocked_services_pause_schedule.wed.end", "15:45"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.upstream_dns.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.upstream_dns.1", "https://1.0.0.1/dns-query"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.rate_limit", "30"),
@@ -129,9 +145,14 @@ resource "adguard_config" "test" {
 				ResourceName:      "adguard_config.test",
 				ImportState:       true,
 				ImportStateVerify: true,
-				// The last_updated attribute does not exist in AdGuard Home,
-				// therefore there is no value for it during import
-				ImportStateVerifyIgnore: []string{"last_updated"},
+				ImportStateVerifyIgnore: []string{
+					// The last_updated attribute does not exist in AdGuard Home,
+					// therefore there is no value for it during import
+					"last_updated",
+					// time zone implementation by the AdGuard Home provides inconsistent results,
+					// which render verifying its import complicated
+					"blocked_services_pause_schedule.time_zone",
+				},
 			},
 			// Update and Read testing
 			{
@@ -220,6 +241,11 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.1", "example15.com"),
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.2", "test9.com"),
 					resource.TestCheckResourceAttr("adguard_config.test", "blocked_services.#", "0"),
+					resource.TestCheckNoResourceAttr("adguard_config.test", "blocked_services_pause_schedule.time_zone"),
+					resource.TestCheckNoResourceAttr("adguard_config.test", "blocked_services_pause_schedule.sun.start"),
+					resource.TestCheckNoResourceAttr("adguard_config.test", "blocked_services_pause_schedule.sun.end"),
+					resource.TestCheckNoResourceAttr("adguard_config.test", "blocked_services_pause_schedule.wed.start"),
+					resource.TestCheckNoResourceAttr("adguard_config.test", "blocked_services_pause_schedule.wed.end"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.upstream_dns.#", "1"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.upstream_dns.0", "https://1.1.1.1/dns-query"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.rate_limit", "25"),

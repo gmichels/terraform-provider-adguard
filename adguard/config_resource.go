@@ -221,12 +221,12 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				},
 				Default: setdefault.StaticValue(types.SetNull(types.StringType)),
 			},
-			"blocked_services_schedule": schema.SingleNestedAttribute{
+			"blocked_services_pause_schedule": schema.SingleNestedAttribute{
 				Description: "Sets periods of inactivity for filtering blocked services. The schedule contains 7 days (Sunday to Saturday) and a time zone.",
 				Computed:    true,
 				Optional:    true,
 				Default: objectdefault.StaticValue(types.ObjectValueMust(
-					blockedServicesScheduleConfigModel{}.attrTypes(), blockedServicesScheduleConfigModel{}.defaultObject()),
+					blockedServicesPauseScheduleConfigModel{}.attrTypes(), blockedServicesPauseScheduleConfigModel{}.defaultObject()),
 				),
 				Attributes: map[string]schema.Attribute{
 					"time_zone": schema.StringAttribute{
@@ -920,26 +920,26 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// populate blocked services and schedules with default values
-	var blockedServicesScheduleConfig adguard.BlockedServicesSchedule
-	blockedServicesScheduleConfig.Ids = make([]string, 0)
-	blockedServicesScheduleConfig.Schedule.TimeZone = BLOCKED_SERVICES_SCHEDULE_TIMEZONE
-	blockedServicesScheduleConfig.Schedule.Sunday.Start = BLOCKED_SERVICES_SCHEDULE_START_END
-	blockedServicesScheduleConfig.Schedule.Sunday.End = BLOCKED_SERVICES_SCHEDULE_START_END
-	blockedServicesScheduleConfig.Schedule.Monday.Start = BLOCKED_SERVICES_SCHEDULE_START_END
-	blockedServicesScheduleConfig.Schedule.Monday.End = BLOCKED_SERVICES_SCHEDULE_START_END
-	blockedServicesScheduleConfig.Schedule.Tuesday.Start = BLOCKED_SERVICES_SCHEDULE_START_END
-	blockedServicesScheduleConfig.Schedule.Tuesday.End = BLOCKED_SERVICES_SCHEDULE_START_END
-	blockedServicesScheduleConfig.Schedule.Wednesday.Start = BLOCKED_SERVICES_SCHEDULE_START_END
-	blockedServicesScheduleConfig.Schedule.Wednesday.End = BLOCKED_SERVICES_SCHEDULE_START_END
-	blockedServicesScheduleConfig.Schedule.Thursday.Start = BLOCKED_SERVICES_SCHEDULE_START_END
-	blockedServicesScheduleConfig.Schedule.Thursday.End = BLOCKED_SERVICES_SCHEDULE_START_END
-	blockedServicesScheduleConfig.Schedule.Friday.Start = BLOCKED_SERVICES_SCHEDULE_START_END
-	blockedServicesScheduleConfig.Schedule.Friday.End = BLOCKED_SERVICES_SCHEDULE_START_END
-	blockedServicesScheduleConfig.Schedule.Saturday.Start = BLOCKED_SERVICES_SCHEDULE_START_END
-	blockedServicesScheduleConfig.Schedule.Saturday.End = BLOCKED_SERVICES_SCHEDULE_START_END
+	var blockedServicesPauseScheduleConfig adguard.BlockedServicesSchedule
+	blockedServicesPauseScheduleConfig.Ids = make([]string, 0)
+	blockedServicesPauseScheduleConfig.Schedule.TimeZone = BLOCKED_SERVICES_PAUSE_SCHEDULE_TIMEZONE
+	blockedServicesPauseScheduleConfig.Schedule.Sunday.Start = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Sunday.End = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Monday.Start = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Monday.End = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Tuesday.Start = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Tuesday.End = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Wednesday.Start = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Wednesday.End = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Thursday.Start = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Thursday.End = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Friday.Start = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Friday.End = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Saturday.Start = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Saturday.End = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
 
 	// set blocked services to defaults
-	_, err = r.adg.SetBlockedServices(blockedServicesScheduleConfig)
+	_, err = r.adg.SetBlockedServices(blockedServicesPauseScheduleConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",

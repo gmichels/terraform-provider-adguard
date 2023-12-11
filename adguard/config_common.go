@@ -16,19 +16,19 @@ import (
 
 // common config model to be used for working with both resource and data source
 type configCommonModel struct {
-	ID                      types.String `tfsdk:"id"`
-	LastUpdated             types.String `tfsdk:"last_updated"`
-	Filtering               types.Object `tfsdk:"filtering"`
-	SafeBrowsing            types.Bool   `tfsdk:"safebrowsing"`
-	ParentalControl         types.Bool   `tfsdk:"parental_control"`
-	SafeSearch              types.Object `tfsdk:"safesearch"`
-	QueryLog                types.Object `tfsdk:"querylog"`
-	Stats                   types.Object `tfsdk:"stats"`
-	BlockedServices         types.Set    `tfsdk:"blocked_services"`
-	BlockedServicesSchedule types.Object `tfsdk:"blocked_services_schedule"`
-	Dns                     types.Object `tfsdk:"dns"`
-	Dhcp                    types.Object `tfsdk:"dhcp"`
-	Tls                     types.Object `tfsdk:"tls"`
+	ID                           types.String `tfsdk:"id"`
+	LastUpdated                  types.String `tfsdk:"last_updated"`
+	Filtering                    types.Object `tfsdk:"filtering"`
+	SafeBrowsing                 types.Bool   `tfsdk:"safebrowsing"`
+	ParentalControl              types.Bool   `tfsdk:"parental_control"`
+	SafeSearch                   types.Object `tfsdk:"safesearch"`
+	QueryLog                     types.Object `tfsdk:"querylog"`
+	Stats                        types.Object `tfsdk:"stats"`
+	BlockedServices              types.Set    `tfsdk:"blocked_services"`
+	BlockedServicesPauseSchedule types.Object `tfsdk:"blocked_services_pause_schedule"`
+	Dns                          types.Object `tfsdk:"dns"`
+	Dhcp                         types.Object `tfsdk:"dhcp"`
+	Tls                          types.Object `tfsdk:"tls"`
 }
 
 // nested attributes objects
@@ -135,8 +135,8 @@ func (o statsConfigModel) defaultObject() map[string]attr.Value {
 	}
 }
 
-// blockedServicesScheduleConfigModel maps blocked services schedule configuration schema data
-type blockedServicesScheduleConfigModel struct {
+// blockedServicesPauseScheduleConfigModel maps blocked services schedule configuration schema data
+type blockedServicesPauseScheduleConfigModel struct {
 	Timezone  types.String `tfsdk:"time_zone"`
 	Sunday    types.Object `tfsdk:"sun"`
 	Monday    types.Object `tfsdk:"mon"`
@@ -148,7 +148,7 @@ type blockedServicesScheduleConfigModel struct {
 }
 
 // attrTypes - return attribute types for this model
-func (o blockedServicesScheduleConfigModel) attrTypes() map[string]attr.Type {
+func (o blockedServicesPauseScheduleConfigModel) attrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"time_zone": types.StringType,
 		"sun":       types.ObjectType{AttrTypes: dayRangeModel{}.attrTypes()},
@@ -162,7 +162,7 @@ func (o blockedServicesScheduleConfigModel) attrTypes() map[string]attr.Type {
 }
 
 // defaultObject - return default object for this model
-func (o blockedServicesScheduleConfigModel) defaultObject() map[string]attr.Value {
+func (o blockedServicesPauseScheduleConfigModel) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
 		"time_zone": types.StringNull(),
 		"sun":       types.ObjectValueMust(dayRangeModel{}.attrTypes(), dayRangeModel{}.defaultObject()),
@@ -593,7 +593,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 
 	// BLOCKED SERVICES
 	// get refreshed blocked services from AdGuard Home
-	blockedServicesSchedule, err := adg.GetBlockedServices()
+	blockedServicesPauseSchedule, err := adg.GetBlockedServices()
 	if err != nil {
 		diags.AddError(
 			"Unable to Read AdGuard Home Config",
@@ -603,91 +603,90 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	}
 
 	// empty object for storing state
-	var stateBlockedServicesScheduleConfig blockedServicesScheduleConfigModel
+	var stateBlockedServicesPauseScheduleConfig blockedServicesPauseScheduleConfigModel
 
 	// need special handling for timezone in resource due to inconsistent API response for `Local`
 	if rtype == "resource" {
 		// last updated will exist on create operation, null on import operation
 		if !currState.LastUpdated.IsNull() {
 			// unpack current state
-			var currStateBlockedServicesScheduleConfig blockedServicesScheduleConfigModel
-			*diags = currState.BlockedServicesSchedule.As(ctx, &currStateBlockedServicesScheduleConfig, basetypes.ObjectAsOptions{})
+			var currStateBlockedServicesPauseScheduleConfig blockedServicesPauseScheduleConfigModel
+			*diags = currState.BlockedServicesPauseSchedule.As(ctx, &currStateBlockedServicesPauseScheduleConfig, basetypes.ObjectAsOptions{})
 			if diags.HasError() {
 				return
 			}
 			// if timezone in state is null, it means it was never defined, so we should ignore the inconsistent response from ADG
-			if !currStateBlockedServicesScheduleConfig.Timezone.IsNull() {
+			if !currStateBlockedServicesPauseScheduleConfig.Timezone.IsNull() {
 				// map timezone from response
-				stateBlockedServicesScheduleConfig.Timezone = types.StringValue(blockedServicesSchedule.Schedule.TimeZone)
+				stateBlockedServicesPauseScheduleConfig.Timezone = types.StringValue(blockedServicesPauseSchedule.Schedule.TimeZone)
 			}
 			// ID exists in both create and import operations, but if we got here, it's an import
 			// still, imports for this attribute are finicky and error-prone, therefore ignored in tests
 		} else if !currState.ID.IsNull() {
 			// map timezone from response
-			stateBlockedServicesScheduleConfig.Timezone = types.StringValue(blockedServicesSchedule.Schedule.TimeZone)
+			stateBlockedServicesPauseScheduleConfig.Timezone = types.StringValue(blockedServicesPauseSchedule.Schedule.TimeZone)
 		}
 	} else {
 		// used for datasource
-		stateBlockedServicesScheduleConfig.Timezone = types.StringValue(blockedServicesSchedule.Schedule.TimeZone)
+		stateBlockedServicesPauseScheduleConfig.Timezone = types.StringValue(blockedServicesPauseSchedule.Schedule.TimeZone)
 	}
-
 
 	// go over each day and map to intermediate object
 	var sunDayRangeConfig dayRangeModel
-	if blockedServicesSchedule.Schedule.Sunday.Start > 0 {
-		sunDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Sunday.Start)))
-		sunDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Sunday.End)))
+	if blockedServicesPauseSchedule.Schedule.Sunday.End > 0 {
+		sunDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Sunday.Start)))
+		sunDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Sunday.End)))
 	}
-	stateBlockedServicesScheduleConfig.Sunday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &sunDayRangeConfig)
+	stateBlockedServicesPauseScheduleConfig.Sunday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &sunDayRangeConfig)
 
 	var monDayRangeConfig dayRangeModel
-	if blockedServicesSchedule.Schedule.Monday.Start > 0 {
-		monDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Monday.Start)))
-		monDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Monday.End)))
+	if blockedServicesPauseSchedule.Schedule.Monday.End > 0 {
+		monDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Monday.Start)))
+		monDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Monday.End)))
 	}
-	stateBlockedServicesScheduleConfig.Monday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &monDayRangeConfig)
+	stateBlockedServicesPauseScheduleConfig.Monday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &monDayRangeConfig)
 
 	var tueDayRangeConfig dayRangeModel
-	if blockedServicesSchedule.Schedule.Tuesday.Start > 0 {
-		tueDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Tuesday.Start)))
-		tueDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Tuesday.End)))
+	if blockedServicesPauseSchedule.Schedule.Tuesday.End > 0 {
+		tueDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Tuesday.Start)))
+		tueDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Tuesday.End)))
 	}
-	stateBlockedServicesScheduleConfig.Tuesday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &tueDayRangeConfig)
+	stateBlockedServicesPauseScheduleConfig.Tuesday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &tueDayRangeConfig)
 
 	var wedDayRangeConfig dayRangeModel
-	if blockedServicesSchedule.Schedule.Wednesday.Start > 0 {
-		wedDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Wednesday.Start)))
-		wedDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Wednesday.End)))
+	if blockedServicesPauseSchedule.Schedule.Wednesday.End > 0 {
+		wedDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Wednesday.Start)))
+		wedDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Wednesday.End)))
 	}
-	stateBlockedServicesScheduleConfig.Wednesday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &wedDayRangeConfig)
+	stateBlockedServicesPauseScheduleConfig.Wednesday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &wedDayRangeConfig)
 
 	var thuDayRangeConfig dayRangeModel
-	if blockedServicesSchedule.Schedule.Thursday.Start > 0 {
-		thuDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Thursday.Start)))
-		thuDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Thursday.End)))
+	if blockedServicesPauseSchedule.Schedule.Thursday.End > 0 {
+		thuDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Thursday.Start)))
+		thuDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Thursday.End)))
 	}
-	stateBlockedServicesScheduleConfig.Thursday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &thuDayRangeConfig)
+	stateBlockedServicesPauseScheduleConfig.Thursday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &thuDayRangeConfig)
 
 	var friDayRangeConfig dayRangeModel
-	if blockedServicesSchedule.Schedule.Friday.Start > 0 {
-		friDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Friday.Start)))
-		friDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Friday.End)))
+	if blockedServicesPauseSchedule.Schedule.Friday.End > 0 {
+		friDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Friday.Start)))
+		friDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Friday.End)))
 	}
-	stateBlockedServicesScheduleConfig.Friday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &friDayRangeConfig)
+	stateBlockedServicesPauseScheduleConfig.Friday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &friDayRangeConfig)
 
 	var satDayRangeConfig dayRangeModel
-	if blockedServicesSchedule.Schedule.Saturday.Start > 0 {
-		satDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Saturday.Start)))
-		satDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Saturday.End)))
+	if blockedServicesPauseSchedule.Schedule.Saturday.End > 0 {
+		satDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Saturday.Start)))
+		satDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Saturday.End)))
 	}
-	stateBlockedServicesScheduleConfig.Saturday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &satDayRangeConfig)
+	stateBlockedServicesPauseScheduleConfig.Saturday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &satDayRangeConfig)
 
 	// add to config model
-	o.BlockedServices, *diags = types.SetValueFrom(ctx, types.StringType, blockedServicesSchedule.Ids)
+	o.BlockedServices, *diags = types.SetValueFrom(ctx, types.StringType, blockedServicesPauseSchedule.Ids)
 	if diags.HasError() {
 		return
 	}
-	o.BlockedServicesSchedule, *diags = types.ObjectValueFrom(ctx, blockedServicesScheduleConfigModel{}.attrTypes(), &stateBlockedServicesScheduleConfig)
+	o.BlockedServicesPauseSchedule, *diags = types.ObjectValueFrom(ctx, blockedServicesPauseScheduleConfigModel{}.attrTypes(), &stateBlockedServicesPauseScheduleConfig)
 	if diags.HasError() {
 		return
 	}
@@ -1062,71 +1061,71 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		}
 	}
 	// unpack nested attributes from plan
-	var planBlockedServicesScheduleConfig blockedServicesScheduleConfigModel
-	*diags = plan.BlockedServicesSchedule.As(ctx, &planBlockedServicesScheduleConfig, basetypes.ObjectAsOptions{})
+	var planBlockedServicesPauseScheduleConfig blockedServicesPauseScheduleConfigModel
+	*diags = plan.BlockedServicesPauseSchedule.As(ctx, &planBlockedServicesPauseScheduleConfig, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return
 	}
 
 	// unpack nested attributes for each day from plan
 	var planSunDayRangeConfig dayRangeModel
-	*diags = planBlockedServicesScheduleConfig.Sunday.As(ctx, &planSunDayRangeConfig, basetypes.ObjectAsOptions{})
+	*diags = planBlockedServicesPauseScheduleConfig.Sunday.As(ctx, &planSunDayRangeConfig, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return
 	}
 	var planMonDayRangeConfig dayRangeModel
-	*diags = planBlockedServicesScheduleConfig.Monday.As(ctx, &planMonDayRangeConfig, basetypes.ObjectAsOptions{})
+	*diags = planBlockedServicesPauseScheduleConfig.Monday.As(ctx, &planMonDayRangeConfig, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return
 	}
 	var planTueDayRangeConfig dayRangeModel
-	*diags = planBlockedServicesScheduleConfig.Tuesday.As(ctx, &planTueDayRangeConfig, basetypes.ObjectAsOptions{})
+	*diags = planBlockedServicesPauseScheduleConfig.Tuesday.As(ctx, &planTueDayRangeConfig, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return
 	}
 	var planWedDayRangeConfig dayRangeModel
-	*diags = planBlockedServicesScheduleConfig.Wednesday.As(ctx, &planWedDayRangeConfig, basetypes.ObjectAsOptions{})
+	*diags = planBlockedServicesPauseScheduleConfig.Wednesday.As(ctx, &planWedDayRangeConfig, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return
 	}
 	var planThuDayRangeConfig dayRangeModel
-	*diags = planBlockedServicesScheduleConfig.Thursday.As(ctx, &planThuDayRangeConfig, basetypes.ObjectAsOptions{})
+	*diags = planBlockedServicesPauseScheduleConfig.Thursday.As(ctx, &planThuDayRangeConfig, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return
 	}
 	var planFriDayRangeConfig dayRangeModel
-	*diags = planBlockedServicesScheduleConfig.Friday.As(ctx, &planFriDayRangeConfig, basetypes.ObjectAsOptions{})
+	*diags = planBlockedServicesPauseScheduleConfig.Friday.As(ctx, &planFriDayRangeConfig, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return
 	}
 	var planSatDayRangeConfig dayRangeModel
-	*diags = planBlockedServicesScheduleConfig.Saturday.As(ctx, &planSatDayRangeConfig, basetypes.ObjectAsOptions{})
+	*diags = planBlockedServicesPauseScheduleConfig.Saturday.As(ctx, &planSatDayRangeConfig, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return
 	}
 
 	// instantiate empty object for storing plan data
-	var blockedServicesScheduleConfig adguard.BlockedServicesSchedule
+	var blockedServicesPauseScheduleConfig adguard.BlockedServicesSchedule
 	// populate blocked services schedule from plan
-	blockedServicesScheduleConfig.Ids = blockedServices
-	blockedServicesScheduleConfig.Schedule.TimeZone = planBlockedServicesScheduleConfig.Timezone.ValueString()
-	blockedServicesScheduleConfig.Schedule.Sunday.Start = uint(convertHoursMinutesToMs(planSunDayRangeConfig.Start.ValueString()))
-	blockedServicesScheduleConfig.Schedule.Sunday.End = uint(convertHoursMinutesToMs(planSunDayRangeConfig.End.ValueString()))
-	blockedServicesScheduleConfig.Schedule.Monday.Start = uint(convertHoursMinutesToMs(planMonDayRangeConfig.Start.ValueString()))
-	blockedServicesScheduleConfig.Schedule.Monday.End = uint(convertHoursMinutesToMs(planMonDayRangeConfig.End.ValueString()))
-	blockedServicesScheduleConfig.Schedule.Tuesday.Start = uint(convertHoursMinutesToMs(planTueDayRangeConfig.Start.ValueString()))
-	blockedServicesScheduleConfig.Schedule.Tuesday.End = uint(convertHoursMinutesToMs(planTueDayRangeConfig.End.ValueString()))
-	blockedServicesScheduleConfig.Schedule.Wednesday.Start = uint(convertHoursMinutesToMs(planWedDayRangeConfig.Start.ValueString()))
-	blockedServicesScheduleConfig.Schedule.Wednesday.End = uint(convertHoursMinutesToMs(planWedDayRangeConfig.End.ValueString()))
-	blockedServicesScheduleConfig.Schedule.Thursday.Start = uint(convertHoursMinutesToMs(planThuDayRangeConfig.Start.ValueString()))
-	blockedServicesScheduleConfig.Schedule.Thursday.End = uint(convertHoursMinutesToMs(planThuDayRangeConfig.End.ValueString()))
-	blockedServicesScheduleConfig.Schedule.Friday.Start = uint(convertHoursMinutesToMs(planFriDayRangeConfig.Start.ValueString()))
-	blockedServicesScheduleConfig.Schedule.Friday.End = uint(convertHoursMinutesToMs(planFriDayRangeConfig.End.ValueString()))
-	blockedServicesScheduleConfig.Schedule.Saturday.Start = uint(convertHoursMinutesToMs(planSatDayRangeConfig.Start.ValueString()))
-	blockedServicesScheduleConfig.Schedule.Saturday.End = uint(convertHoursMinutesToMs(planSatDayRangeConfig.End.ValueString()))
+	blockedServicesPauseScheduleConfig.Ids = blockedServices
+	blockedServicesPauseScheduleConfig.Schedule.TimeZone = planBlockedServicesPauseScheduleConfig.Timezone.ValueString()
+	blockedServicesPauseScheduleConfig.Schedule.Sunday.Start = uint(convertHoursMinutesToMs(planSunDayRangeConfig.Start.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Sunday.End = uint(convertHoursMinutesToMs(planSunDayRangeConfig.End.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Monday.Start = uint(convertHoursMinutesToMs(planMonDayRangeConfig.Start.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Monday.End = uint(convertHoursMinutesToMs(planMonDayRangeConfig.End.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Tuesday.Start = uint(convertHoursMinutesToMs(planTueDayRangeConfig.Start.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Tuesday.End = uint(convertHoursMinutesToMs(planTueDayRangeConfig.End.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Wednesday.Start = uint(convertHoursMinutesToMs(planWedDayRangeConfig.Start.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Wednesday.End = uint(convertHoursMinutesToMs(planWedDayRangeConfig.End.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Thursday.Start = uint(convertHoursMinutesToMs(planThuDayRangeConfig.Start.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Thursday.End = uint(convertHoursMinutesToMs(planThuDayRangeConfig.End.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Friday.Start = uint(convertHoursMinutesToMs(planFriDayRangeConfig.Start.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Friday.End = uint(convertHoursMinutesToMs(planFriDayRangeConfig.End.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Saturday.Start = uint(convertHoursMinutesToMs(planSatDayRangeConfig.Start.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Saturday.End = uint(convertHoursMinutesToMs(planSatDayRangeConfig.End.ValueString()))
 
 	// set blocked services and schedule using plan
-	_, err = r.adg.SetBlockedServices(blockedServicesScheduleConfig)
+	_, err = r.adg.SetBlockedServices(blockedServicesPauseScheduleConfig)
 	if err != nil {
 		diags.AddError(
 			"Unable to Update AdGuard Home Config",

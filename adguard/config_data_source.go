@@ -123,7 +123,7 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 				ElementType: types.StringType,
 				Computed:    true,
 			},
-			"blocked_services_schedule": schema.SingleNestedAttribute{
+			"blocked_services_pause_schedule": schema.SingleNestedAttribute{
 				Description: "Sets periods of inactivity for filtering blocked services. The schedule contains 7 days (Sunday to Saturday) and a time zone.",
 				Computed: true,
 				Attributes: map[string]schema.Attribute{
