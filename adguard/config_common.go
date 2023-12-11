@@ -605,8 +605,9 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	// empty object for storing state
 	var stateBlockedServicesScheduleConfig blockedServicesScheduleConfigModel
 
-	// need special handling when resource and already in state
+	// need special handling when for timezone when resource and already in state
 	if rtype == "resource" {
+		// last updated will be null on import operation
 		if !currState.LastUpdated.IsNull() {
 			// unpack current state
 			var currStateBlockedServicesScheduleConfig blockedServicesScheduleConfigModel
@@ -627,38 +628,52 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 
 	// go over each day and map to intermediate object
 	var sunDayRangeConfig dayRangeModel
-	sunDayRangeConfig.Start = types.Int64Value(int64(blockedServicesSchedule.Schedule.Sunday.Start))
-	sunDayRangeConfig.End = types.Int64Value(int64(blockedServicesSchedule.Schedule.Sunday.End))
+	if blockedServicesSchedule.Schedule.Sunday.Start > 0 {
+		sunDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Sunday.Start)))
+		sunDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Sunday.End)))
+	}
 	stateBlockedServicesScheduleConfig.Sunday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &sunDayRangeConfig)
 
 	var monDayRangeConfig dayRangeModel
-	monDayRangeConfig.Start = types.Int64Value(int64(blockedServicesSchedule.Schedule.Monday.Start))
-	monDayRangeConfig.End = types.Int64Value(int64(blockedServicesSchedule.Schedule.Monday.End))
+	if blockedServicesSchedule.Schedule.Monday.Start > 0 {
+		monDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Monday.Start)))
+		monDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Monday.End)))
+	}
 	stateBlockedServicesScheduleConfig.Monday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &monDayRangeConfig)
 
 	var tueDayRangeConfig dayRangeModel
-	tueDayRangeConfig.Start = types.Int64Value(int64(blockedServicesSchedule.Schedule.Tuesday.Start))
-	tueDayRangeConfig.End = types.Int64Value(int64(blockedServicesSchedule.Schedule.Tuesday.End))
+	if blockedServicesSchedule.Schedule.Tuesday.Start > 0 {
+		tueDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Tuesday.Start)))
+		tueDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Tuesday.End)))
+	}
 	stateBlockedServicesScheduleConfig.Tuesday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &tueDayRangeConfig)
 
 	var wedDayRangeConfig dayRangeModel
-	wedDayRangeConfig.Start = types.Int64Value(int64(blockedServicesSchedule.Schedule.Wednesday.Start))
-	wedDayRangeConfig.End = types.Int64Value(int64(blockedServicesSchedule.Schedule.Wednesday.End))
+	if blockedServicesSchedule.Schedule.Wednesday.Start > 0 {
+		wedDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Wednesday.Start)))
+		wedDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Wednesday.End)))
+	}
 	stateBlockedServicesScheduleConfig.Wednesday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &wedDayRangeConfig)
 
 	var thuDayRangeConfig dayRangeModel
-	thuDayRangeConfig.Start = types.Int64Value(int64(blockedServicesSchedule.Schedule.Thursday.Start))
-	thuDayRangeConfig.End = types.Int64Value(int64(blockedServicesSchedule.Schedule.Thursday.End))
+	if blockedServicesSchedule.Schedule.Thursday.Start > 0 {
+		thuDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Thursday.Start)))
+		thuDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Thursday.End)))
+	}
 	stateBlockedServicesScheduleConfig.Thursday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &thuDayRangeConfig)
 
 	var friDayRangeConfig dayRangeModel
-	friDayRangeConfig.Start = types.Int64Value(int64(blockedServicesSchedule.Schedule.Friday.Start))
-	friDayRangeConfig.End = types.Int64Value(int64(blockedServicesSchedule.Schedule.Friday.End))
+	if blockedServicesSchedule.Schedule.Friday.Start > 0 {
+		friDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Friday.Start)))
+		friDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Friday.End)))
+	}
 	stateBlockedServicesScheduleConfig.Friday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &friDayRangeConfig)
 
 	var satDayRangeConfig dayRangeModel
-	satDayRangeConfig.Start = types.Int64Value(int64(blockedServicesSchedule.Schedule.Saturday.Start))
-	satDayRangeConfig.End = types.Int64Value(int64(blockedServicesSchedule.Schedule.Saturday.End))
+	if blockedServicesSchedule.Schedule.Saturday.Start > 0 {
+		satDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Saturday.Start)))
+		satDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesSchedule.Schedule.Saturday.End)))
+	}
 	stateBlockedServicesScheduleConfig.Saturday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &satDayRangeConfig)
 
 	// add to config model
@@ -1089,20 +1104,20 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	// populate blocked services schedule from plan
 	blockedServicesScheduleConfig.Ids = blockedServices
 	blockedServicesScheduleConfig.Schedule.TimeZone = planBlockedServicesScheduleConfig.Timezone.ValueString()
-	blockedServicesScheduleConfig.Schedule.Sunday.Start = uint(planSunDayRangeConfig.Start.ValueInt64())
-	blockedServicesScheduleConfig.Schedule.Sunday.End = uint(planSunDayRangeConfig.End.ValueInt64())
-	blockedServicesScheduleConfig.Schedule.Monday.Start = uint(planMonDayRangeConfig.Start.ValueInt64())
-	blockedServicesScheduleConfig.Schedule.Monday.End = uint(planMonDayRangeConfig.End.ValueInt64())
-	blockedServicesScheduleConfig.Schedule.Tuesday.Start = uint(planTueDayRangeConfig.Start.ValueInt64())
-	blockedServicesScheduleConfig.Schedule.Tuesday.End = uint(planTueDayRangeConfig.End.ValueInt64())
-	blockedServicesScheduleConfig.Schedule.Wednesday.Start = uint(planWedDayRangeConfig.Start.ValueInt64())
-	blockedServicesScheduleConfig.Schedule.Wednesday.End = uint(planWedDayRangeConfig.End.ValueInt64())
-	blockedServicesScheduleConfig.Schedule.Thursday.Start = uint(planThuDayRangeConfig.Start.ValueInt64())
-	blockedServicesScheduleConfig.Schedule.Thursday.End = uint(planThuDayRangeConfig.End.ValueInt64())
-	blockedServicesScheduleConfig.Schedule.Friday.Start = uint(planFriDayRangeConfig.Start.ValueInt64())
-	blockedServicesScheduleConfig.Schedule.Friday.End = uint(planFriDayRangeConfig.End.ValueInt64())
-	blockedServicesScheduleConfig.Schedule.Saturday.Start = uint(planSatDayRangeConfig.Start.ValueInt64())
-	blockedServicesScheduleConfig.Schedule.Saturday.End = uint(planSatDayRangeConfig.End.ValueInt64())
+	blockedServicesScheduleConfig.Schedule.Sunday.Start = uint(convertHoursMinutesToMs(planSunDayRangeConfig.Start.ValueString()))
+	blockedServicesScheduleConfig.Schedule.Sunday.End = uint(convertHoursMinutesToMs(planSunDayRangeConfig.End.ValueString()))
+	blockedServicesScheduleConfig.Schedule.Monday.Start = uint(convertHoursMinutesToMs(planMonDayRangeConfig.Start.ValueString()))
+	blockedServicesScheduleConfig.Schedule.Monday.End = uint(convertHoursMinutesToMs(planMonDayRangeConfig.End.ValueString()))
+	blockedServicesScheduleConfig.Schedule.Tuesday.Start = uint(convertHoursMinutesToMs(planTueDayRangeConfig.Start.ValueString()))
+	blockedServicesScheduleConfig.Schedule.Tuesday.End = uint(convertHoursMinutesToMs(planTueDayRangeConfig.End.ValueString()))
+	blockedServicesScheduleConfig.Schedule.Wednesday.Start = uint(convertHoursMinutesToMs(planWedDayRangeConfig.Start.ValueString()))
+	blockedServicesScheduleConfig.Schedule.Wednesday.End = uint(convertHoursMinutesToMs(planWedDayRangeConfig.End.ValueString()))
+	blockedServicesScheduleConfig.Schedule.Thursday.Start = uint(convertHoursMinutesToMs(planThuDayRangeConfig.Start.ValueString()))
+	blockedServicesScheduleConfig.Schedule.Thursday.End = uint(convertHoursMinutesToMs(planThuDayRangeConfig.End.ValueString()))
+	blockedServicesScheduleConfig.Schedule.Friday.Start = uint(convertHoursMinutesToMs(planFriDayRangeConfig.Start.ValueString()))
+	blockedServicesScheduleConfig.Schedule.Friday.End = uint(convertHoursMinutesToMs(planFriDayRangeConfig.End.ValueString()))
+	blockedServicesScheduleConfig.Schedule.Saturday.Start = uint(convertHoursMinutesToMs(planSatDayRangeConfig.Start.ValueString()))
+	blockedServicesScheduleConfig.Schedule.Saturday.End = uint(convertHoursMinutesToMs(planSatDayRangeConfig.End.ValueString()))
 
 	// set blocked services and schedule using plan
 	_, err = r.adg.SetBlockedServices(blockedServicesScheduleConfig)
