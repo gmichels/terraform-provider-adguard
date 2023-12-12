@@ -135,46 +135,6 @@ func (o statsConfigModel) defaultObject() map[string]attr.Value {
 	}
 }
 
-// blockedServicesPauseScheduleConfigModel maps blocked services schedule configuration schema data
-type blockedServicesPauseScheduleConfigModel struct {
-	Timezone  types.String `tfsdk:"time_zone"`
-	Sunday    types.Object `tfsdk:"sun"`
-	Monday    types.Object `tfsdk:"mon"`
-	Tuesday   types.Object `tfsdk:"tue"`
-	Wednesday types.Object `tfsdk:"wed"`
-	Thursday  types.Object `tfsdk:"thu"`
-	Friday    types.Object `tfsdk:"fri"`
-	Saturday  types.Object `tfsdk:"sat"`
-}
-
-// attrTypes - return attribute types for this model
-func (o blockedServicesPauseScheduleConfigModel) attrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"time_zone": types.StringType,
-		"sun":       types.ObjectType{AttrTypes: dayRangeModel{}.attrTypes()},
-		"mon":       types.ObjectType{AttrTypes: dayRangeModel{}.attrTypes()},
-		"tue":       types.ObjectType{AttrTypes: dayRangeModel{}.attrTypes()},
-		"wed":       types.ObjectType{AttrTypes: dayRangeModel{}.attrTypes()},
-		"thu":       types.ObjectType{AttrTypes: dayRangeModel{}.attrTypes()},
-		"fri":       types.ObjectType{AttrTypes: dayRangeModel{}.attrTypes()},
-		"sat":       types.ObjectType{AttrTypes: dayRangeModel{}.attrTypes()},
-	}
-}
-
-// defaultObject - return default object for this model
-func (o blockedServicesPauseScheduleConfigModel) defaultObject() map[string]attr.Value {
-	return map[string]attr.Value{
-		"time_zone": types.StringNull(),
-		"sun":       types.ObjectValueMust(dayRangeModel{}.attrTypes(), dayRangeModel{}.defaultObject()),
-		"mon":       types.ObjectValueMust(dayRangeModel{}.attrTypes(), dayRangeModel{}.defaultObject()),
-		"tue":       types.ObjectValueMust(dayRangeModel{}.attrTypes(), dayRangeModel{}.defaultObject()),
-		"wed":       types.ObjectValueMust(dayRangeModel{}.attrTypes(), dayRangeModel{}.defaultObject()),
-		"thu":       types.ObjectValueMust(dayRangeModel{}.attrTypes(), dayRangeModel{}.defaultObject()),
-		"fri":       types.ObjectValueMust(dayRangeModel{}.attrTypes(), dayRangeModel{}.defaultObject()),
-		"sat":       types.ObjectValueMust(dayRangeModel{}.attrTypes(), dayRangeModel{}.defaultObject()),
-	}
-}
-
 // dnsConfigModel maps DNS configuration schema data
 type dnsConfigModel struct {
 	BootstrapDns           types.List   `tfsdk:"bootstrap_dns"`
@@ -603,32 +563,32 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	}
 
 	// empty object for storing state
-	var stateBlockedServicesPauseScheduleConfig blockedServicesPauseScheduleConfigModel
+	var stateBlockedServicesPauseScheduleConfig scheduleModel
 
 	// need special handling for timezone in resource due to inconsistent API response for `Local`
 	if rtype == "resource" {
 		// last updated will exist on create operation, null on import operation
 		if !currState.LastUpdated.IsNull() {
 			// unpack current state
-			var currStateBlockedServicesPauseScheduleConfig blockedServicesPauseScheduleConfigModel
+			var currStateBlockedServicesPauseScheduleConfig scheduleModel
 			*diags = currState.BlockedServicesPauseSchedule.As(ctx, &currStateBlockedServicesPauseScheduleConfig, basetypes.ObjectAsOptions{})
 			if diags.HasError() {
 				return
 			}
 			// if timezone in state is null, it means it was never defined, so we should ignore the inconsistent response from ADG
-			if !currStateBlockedServicesPauseScheduleConfig.Timezone.IsNull() {
+			if !currStateBlockedServicesPauseScheduleConfig.TimeZone.IsNull() {
 				// map timezone from response
-				stateBlockedServicesPauseScheduleConfig.Timezone = types.StringValue(blockedServicesPauseSchedule.Schedule.TimeZone)
+				stateBlockedServicesPauseScheduleConfig.TimeZone = types.StringValue(blockedServicesPauseSchedule.Schedule.TimeZone)
 			}
 			// ID exists in both create and import operations, but if we got here, it's an import
 			// still, imports for this attribute are finicky and error-prone, therefore ignored in tests
 		} else if !currState.ID.IsNull() {
 			// map timezone from response
-			stateBlockedServicesPauseScheduleConfig.Timezone = types.StringValue(blockedServicesPauseSchedule.Schedule.TimeZone)
+			stateBlockedServicesPauseScheduleConfig.TimeZone = types.StringValue(blockedServicesPauseSchedule.Schedule.TimeZone)
 		}
 	} else {
 		// used for datasource
-		stateBlockedServicesPauseScheduleConfig.Timezone = types.StringValue(blockedServicesPauseSchedule.Schedule.TimeZone)
+		stateBlockedServicesPauseScheduleConfig.TimeZone = types.StringValue(blockedServicesPauseSchedule.Schedule.TimeZone)
 	}
 
 	// go over each day and map to intermediate object
@@ -686,7 +646,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	if diags.HasError() {
 		return
 	}
-	o.BlockedServicesPauseSchedule, *diags = types.ObjectValueFrom(ctx, blockedServicesPauseScheduleConfigModel{}.attrTypes(), &stateBlockedServicesPauseScheduleConfig)
+	o.BlockedServicesPauseSchedule, *diags = types.ObjectValueFrom(ctx, scheduleModel{}.attrTypes(), &stateBlockedServicesPauseScheduleConfig)
 	if diags.HasError() {
 		return
 	}
@@ -1061,7 +1021,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		}
 	}
 	// unpack nested attributes from plan
-	var planBlockedServicesPauseScheduleConfig blockedServicesPauseScheduleConfigModel
+	var planBlockedServicesPauseScheduleConfig scheduleModel
 	*diags = plan.BlockedServicesPauseSchedule.As(ctx, &planBlockedServicesPauseScheduleConfig, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return
@@ -1108,7 +1068,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	var blockedServicesPauseScheduleConfig adguard.BlockedServicesSchedule
 	// populate blocked services schedule from plan
 	blockedServicesPauseScheduleConfig.Ids = blockedServices
-	blockedServicesPauseScheduleConfig.Schedule.TimeZone = planBlockedServicesPauseScheduleConfig.Timezone.ValueString()
+	blockedServicesPauseScheduleConfig.Schedule.TimeZone = planBlockedServicesPauseScheduleConfig.TimeZone.ValueString()
 	blockedServicesPauseScheduleConfig.Schedule.Sunday.Start = uint(convertHoursMinutesToMs(planSunDayRangeConfig.Start.ValueString()))
 	blockedServicesPauseScheduleConfig.Schedule.Sunday.End = uint(convertHoursMinutesToMs(planSunDayRangeConfig.End.ValueString()))
 	blockedServicesPauseScheduleConfig.Schedule.Monday.Start = uint(convertHoursMinutesToMs(planMonDayRangeConfig.Start.ValueString()))

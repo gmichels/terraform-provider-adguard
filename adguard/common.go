@@ -13,6 +13,46 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// scheduleModel maps schedule configuration schema data
+type scheduleModel struct {
+	TimeZone  types.String `tfsdk:"time_zone"`
+	Sunday    types.Object `tfsdk:"sun"`
+	Monday    types.Object `tfsdk:"mon"`
+	Tuesday   types.Object `tfsdk:"tue"`
+	Wednesday types.Object `tfsdk:"wed"`
+	Thursday  types.Object `tfsdk:"thu"`
+	Friday    types.Object `tfsdk:"fri"`
+	Saturday  types.Object `tfsdk:"sat"`
+}
+
+// attrTypes - return attribute types for this model
+func (o scheduleModel) attrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"time_zone": types.StringType,
+		"sun":       types.ObjectType{AttrTypes: dayRangeModel{}.attrTypes()},
+		"mon":       types.ObjectType{AttrTypes: dayRangeModel{}.attrTypes()},
+		"tue":       types.ObjectType{AttrTypes: dayRangeModel{}.attrTypes()},
+		"wed":       types.ObjectType{AttrTypes: dayRangeModel{}.attrTypes()},
+		"thu":       types.ObjectType{AttrTypes: dayRangeModel{}.attrTypes()},
+		"fri":       types.ObjectType{AttrTypes: dayRangeModel{}.attrTypes()},
+		"sat":       types.ObjectType{AttrTypes: dayRangeModel{}.attrTypes()},
+	}
+}
+
+// defaultObject - return default object for this model
+func (o scheduleModel) defaultObject() map[string]attr.Value {
+	return map[string]attr.Value{
+		"time_zone": types.StringNull(),
+		"sun":       types.ObjectValueMust(dayRangeModel{}.attrTypes(), dayRangeModel{}.defaultObject()),
+		"mon":       types.ObjectValueMust(dayRangeModel{}.attrTypes(), dayRangeModel{}.defaultObject()),
+		"tue":       types.ObjectValueMust(dayRangeModel{}.attrTypes(), dayRangeModel{}.defaultObject()),
+		"wed":       types.ObjectValueMust(dayRangeModel{}.attrTypes(), dayRangeModel{}.defaultObject()),
+		"thu":       types.ObjectValueMust(dayRangeModel{}.attrTypes(), dayRangeModel{}.defaultObject()),
+		"fri":       types.ObjectValueMust(dayRangeModel{}.attrTypes(), dayRangeModel{}.defaultObject()),
+		"sat":       types.ObjectValueMust(dayRangeModel{}.attrTypes(), dayRangeModel{}.defaultObject()),
+	}
+}
+
 // dayRangeModel maps day ranges to schema data
 type dayRangeModel struct {
 	Start types.String `tfsdk:"start"`

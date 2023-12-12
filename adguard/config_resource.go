@@ -226,7 +226,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Computed:    true,
 				Optional:    true,
 				Default: objectdefault.StaticValue(types.ObjectValueMust(
-					blockedServicesPauseScheduleConfigModel{}.attrTypes(), blockedServicesPauseScheduleConfigModel{}.defaultObject()),
+					scheduleModel{}.attrTypes(), scheduleModel{}.defaultObject()),
 				),
 				Attributes: map[string]schema.Attribute{
 					"time_zone": schema.StringAttribute{
