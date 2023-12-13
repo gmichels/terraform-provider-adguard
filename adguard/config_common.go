@@ -16,18 +16,19 @@ import (
 
 // common config model to be used for working with both resource and data source
 type configCommonModel struct {
-	ID              types.String `tfsdk:"id"`
-	LastUpdated     types.String `tfsdk:"last_updated"`
-	Filtering       types.Object `tfsdk:"filtering"`
-	SafeBrowsing    types.Bool   `tfsdk:"safebrowsing"`
-	ParentalControl types.Bool   `tfsdk:"parental_control"`
-	SafeSearch      types.Object `tfsdk:"safesearch"`
-	QueryLog        types.Object `tfsdk:"querylog"`
-	Stats           types.Object `tfsdk:"stats"`
-	BlockedServices types.Set    `tfsdk:"blocked_services"`
-	Dns             types.Object `tfsdk:"dns"`
-	Dhcp            types.Object `tfsdk:"dhcp"`
-	Tls             types.Object `tfsdk:"tls"`
+	ID                           types.String `tfsdk:"id"`
+	LastUpdated                  types.String `tfsdk:"last_updated"`
+	Filtering                    types.Object `tfsdk:"filtering"`
+	SafeBrowsing                 types.Bool   `tfsdk:"safebrowsing"`
+	ParentalControl              types.Bool   `tfsdk:"parental_control"`
+	SafeSearch                   types.Object `tfsdk:"safesearch"`
+	QueryLog                     types.Object `tfsdk:"querylog"`
+	Stats                        types.Object `tfsdk:"stats"`
+	BlockedServices              types.Set    `tfsdk:"blocked_services"`
+	BlockedServicesPauseSchedule types.Object `tfsdk:"blocked_services_pause_schedule"`
+	Dns                          types.Object `tfsdk:"dns"`
+	Dhcp                         types.Object `tfsdk:"dhcp"`
+	Tls                          types.Object `tfsdk:"tls"`
 }
 
 // nested attributes objects
@@ -138,11 +139,19 @@ func (o statsConfigModel) defaultObject() map[string]attr.Value {
 type dnsConfigModel struct {
 	BootstrapDns           types.List   `tfsdk:"bootstrap_dns"`
 	UpstreamDns            types.List   `tfsdk:"upstream_dns"`
+	FallbackDns            types.List   `tfsdk:"fallback_dns"`
+	ProtectionEnabled      types.Bool   `tfsdk:"protection_enabled"`
 	RateLimit              types.Int64  `tfsdk:"rate_limit"`
+	RateLimitSubnetLenIpv4 types.Int64  `tfsdk:"rate_limit_subnet_len_ipv4"`
+	RateLimitSubnetLenIpv6 types.Int64  `tfsdk:"rate_limit_subnet_len_ipv6"`
+	RateLimitWhitelist     types.List   `tfsdk:"rate_limit_whitelist"`
 	BlockingMode           types.String `tfsdk:"blocking_mode"`
 	BlockingIpv4           types.String `tfsdk:"blocking_ipv4"`
 	BlockingIpv6           types.String `tfsdk:"blocking_ipv6"`
+	BlockedResponseTtl     types.Int64  `tfsdk:"blocked_response_ttl"`
 	EDnsCsEnabled          types.Bool   `tfsdk:"edns_cs_enabled"`
+	EDnsCsUseCustom        types.Bool   `tfsdk:"edns_cs_use_custom"`
+	EDnsCsCustomIp         types.String `tfsdk:"edns_cs_custom_ip"`
 	DisableIpv6            types.Bool   `tfsdk:"disable_ipv6"`
 	DnsSecEnabled          types.Bool   `tfsdk:"dnssec_enabled"`
 	CacheSize              types.Int64  `tfsdk:"cache_size"`
@@ -161,26 +170,34 @@ type dnsConfigModel struct {
 // attrTypes - return attribute types for this model
 func (o dnsConfigModel) attrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"bootstrap_dns":             types.ListType{ElemType: types.StringType},
-		"upstream_dns":              types.ListType{ElemType: types.StringType},
-		"rate_limit":                types.Int64Type,
-		"blocking_mode":             types.StringType,
-		"blocking_ipv4":             types.StringType,
-		"blocking_ipv6":             types.StringType,
-		"edns_cs_enabled":           types.BoolType,
-		"disable_ipv6":              types.BoolType,
-		"dnssec_enabled":            types.BoolType,
-		"cache_size":                types.Int64Type,
-		"cache_ttl_min":             types.Int64Type,
-		"cache_ttl_max":             types.Int64Type,
-		"cache_optimistic":          types.BoolType,
-		"upstream_mode":             types.StringType,
-		"use_private_ptr_resolvers": types.BoolType,
-		"resolve_clients":           types.BoolType,
-		"local_ptr_upstreams":       types.SetType{ElemType: types.StringType},
-		"allowed_clients":           types.SetType{ElemType: types.StringType},
-		"disallowed_clients":        types.SetType{ElemType: types.StringType},
-		"blocked_hosts":             types.SetType{ElemType: types.StringType},
+		"bootstrap_dns":              types.ListType{ElemType: types.StringType},
+		"upstream_dns":               types.ListType{ElemType: types.StringType},
+		"fallback_dns":               types.ListType{ElemType: types.StringType},
+		"protection_enabled":         types.BoolType,
+		"rate_limit":                 types.Int64Type,
+		"rate_limit_subnet_len_ipv4": types.Int64Type,
+		"rate_limit_subnet_len_ipv6": types.Int64Type,
+		"rate_limit_whitelist":       types.ListType{ElemType: types.StringType},
+		"blocking_mode":              types.StringType,
+		"blocking_ipv4":              types.StringType,
+		"blocking_ipv6":              types.StringType,
+		"blocked_response_ttl":       types.Int64Type,
+		"edns_cs_enabled":            types.BoolType,
+		"edns_cs_use_custom":         types.BoolType,
+		"edns_cs_custom_ip":          types.StringType,
+		"disable_ipv6":               types.BoolType,
+		"dnssec_enabled":             types.BoolType,
+		"cache_size":                 types.Int64Type,
+		"cache_ttl_min":              types.Int64Type,
+		"cache_ttl_max":              types.Int64Type,
+		"cache_optimistic":           types.BoolType,
+		"upstream_mode":              types.StringType,
+		"use_private_ptr_resolvers":  types.BoolType,
+		"resolve_clients":            types.BoolType,
+		"local_ptr_upstreams":        types.SetType{ElemType: types.StringType},
+		"allowed_clients":            types.SetType{ElemType: types.StringType},
+		"disallowed_clients":         types.SetType{ElemType: types.StringType},
+		"blocked_hosts":              types.SetType{ElemType: types.StringType},
 	}
 }
 
@@ -191,26 +208,34 @@ func (o dnsConfigModel) defaultObject() map[string]attr.Value {
 	blocked_hosts := convertToAttr(CONFIG_DNS_BLOCKED_HOSTS)
 
 	return map[string]attr.Value{
-		"bootstrap_dns":             types.ListValueMust(types.StringType, bootstrap_dns),
-		"upstream_dns":              types.ListValueMust(types.StringType, upstream_dns),
-		"rate_limit":                types.Int64Value(CONFIG_DNS_RATE_LIMIT),
-		"blocking_mode":             types.StringValue(CONFIG_DNS_BLOCKING_MODE),
-		"blocking_ipv4":             types.StringValue(""),
-		"blocking_ipv6":             types.StringValue(""),
-		"edns_cs_enabled":           types.BoolValue(CONFIG_DNS_EDNS_CS_ENABLED),
-		"disable_ipv6":              types.BoolValue(CONFIG_DNS_DISABLE_IPV6),
-		"dnssec_enabled":            types.BoolValue(CONFIG_DNS_DNSSEC_ENABLED),
-		"cache_size":                types.Int64Value(CONFIG_DNS_CACHE_SIZE),
-		"cache_ttl_min":             types.Int64Value(CONFIG_DNS_CACHE_TTL_MIN),
-		"cache_ttl_max":             types.Int64Value(CONFIG_DNS_CACHE_TTL_MAX),
-		"cache_optimistic":          types.BoolValue(CONFIG_DNS_CACHE_OPTIMISTIC),
-		"upstream_mode":             types.StringValue(CONFIG_DNS_UPSTREAM_MODE),
-		"use_private_ptr_resolvers": types.BoolValue(CONFIG_DNS_USE_PRIVATE_PTR_RESOLVERS),
-		"resolve_clients":           types.BoolValue(CONFIG_DNS_RESOLVE_CLIENTS),
-		"local_ptr_upstreams":       types.SetValueMust(types.StringType, []attr.Value{}),
-		"allowed_clients":           types.SetNull(types.StringType),
-		"disallowed_clients":        types.SetNull(types.StringType),
-		"blocked_hosts":             types.SetValueMust(types.StringType, blocked_hosts),
+		"bootstrap_dns":              types.ListValueMust(types.StringType, bootstrap_dns),
+		"upstream_dns":               types.ListValueMust(types.StringType, upstream_dns),
+		"fallback_dns":               types.ListNull(types.StringType),
+		"protection_enabled":         types.BoolValue(CONFIG_DNS_PROTECTION_ENABLED),
+		"rate_limit":                 types.Int64Value(CONFIG_DNS_RATE_LIMIT),
+		"rate_limit_subnet_len_ipv4": types.Int64Value(CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV4),
+		"rate_limit_subnet_len_ipv6": types.Int64Value(CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV4),
+		"rate_limit_whitelist":       types.ListNull(types.StringType),
+		"blocking_mode":              types.StringValue(CONFIG_DNS_BLOCKING_MODE),
+		"blocking_ipv4":              types.StringValue(""),
+		"blocking_ipv6":              types.StringValue(""),
+		"blocked_response_ttl":       types.Int64Value(CONFIG_DNS_BLOCKED_RESPONSE_TTL),
+		"edns_cs_enabled":            types.BoolValue(CONFIG_DNS_EDNS_CS_ENABLED),
+		"edns_cs_use_custom":         types.BoolValue(CONFIG_DNS_EDNS_CS_USE_CUSTOM),
+		"edns_cs_custom_ip":          types.StringValue(""),
+		"disable_ipv6":               types.BoolValue(CONFIG_DNS_DISABLE_IPV6),
+		"dnssec_enabled":             types.BoolValue(CONFIG_DNS_DNSSEC_ENABLED),
+		"cache_size":                 types.Int64Value(CONFIG_DNS_CACHE_SIZE),
+		"cache_ttl_min":              types.Int64Value(CONFIG_DNS_CACHE_TTL_MIN),
+		"cache_ttl_max":              types.Int64Value(CONFIG_DNS_CACHE_TTL_MAX),
+		"cache_optimistic":           types.BoolValue(CONFIG_DNS_CACHE_OPTIMISTIC),
+		"upstream_mode":              types.StringValue(CONFIG_DNS_UPSTREAM_MODE),
+		"use_private_ptr_resolvers":  types.BoolValue(CONFIG_DNS_USE_PRIVATE_PTR_RESOLVERS),
+		"resolve_clients":            types.BoolValue(CONFIG_DNS_RESOLVE_CLIENTS),
+		"local_ptr_upstreams":        types.SetValueMust(types.StringType, []attr.Value{}),
+		"allowed_clients":            types.SetNull(types.StringType),
+		"disallowed_clients":         types.SetNull(types.StringType),
+		"blocked_hosts":              types.SetValueMust(types.StringType, blocked_hosts),
 	}
 }
 
@@ -431,7 +456,7 @@ func (o tlsConfigModel) defaultObject() map[string]attr.Value {
 }
 
 // common `Read` function for both data source and resource
-func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *diag.Diagnostics, rtype string) {
+func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState *configCommonModel, diags *diag.Diagnostics, rtype string) {
 	// FILTERING CONFIG
 	// get refreshed filtering config value from AdGuard Home
 	filteringConfig, err := adg.GetAllFilters()
@@ -552,7 +577,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 
 	// BLOCKED SERVICES
 	// get refreshed blocked services from AdGuard Home
-	blockedServices, err := adg.GetBlockedServices()
+	blockedServicesPauseSchedule, err := adg.GetBlockedServices()
 	if err != nil {
 		diags.AddError(
 			"Unable to Read AdGuard Home Config",
@@ -560,8 +585,92 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 		)
 		return
 	}
+
+	// empty object for storing state
+	var stateBlockedServicesPauseScheduleConfig scheduleModel
+
+	// need special handling for timezone in resource due to inconsistent API response for `Local`
+	if rtype == "resource" {
+		// last updated will exist on create operation, null on import operation
+		if !currState.LastUpdated.IsNull() {
+			// unpack current state
+			var currStateBlockedServicesPauseScheduleConfig scheduleModel
+			*diags = currState.BlockedServicesPauseSchedule.As(ctx, &currStateBlockedServicesPauseScheduleConfig, basetypes.ObjectAsOptions{})
+			if diags.HasError() {
+				return
+			}
+			// if timezone in state is null, it means it was never defined, so we should ignore the inconsistent response from ADG
+			if !currStateBlockedServicesPauseScheduleConfig.TimeZone.IsNull() {
+				// map timezone from response
+				stateBlockedServicesPauseScheduleConfig.TimeZone = types.StringValue(blockedServicesPauseSchedule.Schedule.TimeZone)
+			}
+			// ID exists in both create and import operations, but if we got here, it's an import
+			// still, imports for this attribute are finicky and error-prone, therefore ignored in tests
+		} else if !currState.ID.IsNull() {
+			// map timezone from response
+			stateBlockedServicesPauseScheduleConfig.TimeZone = types.StringValue(blockedServicesPauseSchedule.Schedule.TimeZone)
+		}
+	} else {
+		// used for datasource
+		stateBlockedServicesPauseScheduleConfig.TimeZone = types.StringValue(blockedServicesPauseSchedule.Schedule.TimeZone)
+	}
+
+	// go over each day and map to intermediate object
+	var sunDayRangeConfig dayRangeModel
+	if blockedServicesPauseSchedule.Schedule.Sunday.End > 0 {
+		sunDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Sunday.Start)))
+		sunDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Sunday.End)))
+	}
+	stateBlockedServicesPauseScheduleConfig.Sunday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &sunDayRangeConfig)
+
+	var monDayRangeConfig dayRangeModel
+	if blockedServicesPauseSchedule.Schedule.Monday.End > 0 {
+		monDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Monday.Start)))
+		monDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Monday.End)))
+	}
+	stateBlockedServicesPauseScheduleConfig.Monday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &monDayRangeConfig)
+
+	var tueDayRangeConfig dayRangeModel
+	if blockedServicesPauseSchedule.Schedule.Tuesday.End > 0 {
+		tueDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Tuesday.Start)))
+		tueDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Tuesday.End)))
+	}
+	stateBlockedServicesPauseScheduleConfig.Tuesday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &tueDayRangeConfig)
+
+	var wedDayRangeConfig dayRangeModel
+	if blockedServicesPauseSchedule.Schedule.Wednesday.End > 0 {
+		wedDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Wednesday.Start)))
+		wedDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Wednesday.End)))
+	}
+	stateBlockedServicesPauseScheduleConfig.Wednesday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &wedDayRangeConfig)
+
+	var thuDayRangeConfig dayRangeModel
+	if blockedServicesPauseSchedule.Schedule.Thursday.End > 0 {
+		thuDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Thursday.Start)))
+		thuDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Thursday.End)))
+	}
+	stateBlockedServicesPauseScheduleConfig.Thursday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &thuDayRangeConfig)
+
+	var friDayRangeConfig dayRangeModel
+	if blockedServicesPauseSchedule.Schedule.Friday.End > 0 {
+		friDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Friday.Start)))
+		friDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Friday.End)))
+	}
+	stateBlockedServicesPauseScheduleConfig.Friday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &friDayRangeConfig)
+
+	var satDayRangeConfig dayRangeModel
+	if blockedServicesPauseSchedule.Schedule.Saturday.End > 0 {
+		satDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Saturday.Start)))
+		satDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Saturday.End)))
+	}
+	stateBlockedServicesPauseScheduleConfig.Saturday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &satDayRangeConfig)
+
 	// add to config model
-	o.BlockedServices, *diags = types.SetValueFrom(ctx, types.StringType, blockedServices)
+	o.BlockedServices, *diags = types.SetValueFrom(ctx, types.StringType, blockedServicesPauseSchedule.Ids)
+	if diags.HasError() {
+		return
+	}
+	o.BlockedServicesPauseSchedule, *diags = types.ObjectValueFrom(ctx, scheduleModel{}.attrTypes(), &stateBlockedServicesPauseScheduleConfig)
 	if diags.HasError() {
 		return
 	}
@@ -585,7 +694,26 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 	if diags.HasError() {
 		return
 	}
+	if len(dnsConfig.FallbackDns) == 0 && rtype == "resource" {
+		stateDnsConfig.FallbackDns = types.ListNull(types.StringType)
+	} else {
+		stateDnsConfig.FallbackDns, *diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.FallbackDns)
+		if diags.HasError() {
+			return
+		}
+	}
+	stateDnsConfig.ProtectionEnabled = types.BoolValue(dnsConfig.ProtectionEnabled)
 	stateDnsConfig.RateLimit = types.Int64Value(int64(dnsConfig.RateLimit))
+	stateDnsConfig.RateLimitSubnetLenIpv4 = types.Int64Value(int64(dnsConfig.RateLimitSubnetSubnetLenIpv4))
+	stateDnsConfig.RateLimitSubnetLenIpv6 = types.Int64Value(int64(dnsConfig.RateLimitSubnetSubnetLenIpv6))
+	if len(dnsConfig.RateLimitWhitelist) == 0 && rtype == "resource" {
+		stateDnsConfig.RateLimitWhitelist = types.ListNull(types.StringType)
+	} else {
+		stateDnsConfig.RateLimitWhitelist, *diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.RateLimitWhitelist)
+		if diags.HasError() {
+			return
+		}
+	}
 	stateDnsConfig.BlockingMode = types.StringValue(dnsConfig.BlockingMode)
 	// upstream API does not unset blocking_ipv4 and blocking_ipv6 when previously set and blocking mode changes,
 	// so force state to empty values here
@@ -596,7 +724,16 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, diags *di
 		stateDnsConfig.BlockingIpv4 = types.StringValue(dnsConfig.BlockingIpv4)
 		stateDnsConfig.BlockingIpv6 = types.StringValue(dnsConfig.BlockingIpv6)
 	}
+	stateDnsConfig.BlockedResponseTtl = types.Int64Value(int64(dnsConfig.BlockedResponseTtl))
 	stateDnsConfig.EDnsCsEnabled = types.BoolValue(dnsConfig.EDnsCsEnabled)
+	stateDnsConfig.EDnsCsUseCustom = types.BoolValue(dnsConfig.EDnsCsUseCustom)
+	if !dnsConfig.EDnsCsUseCustom {
+		// ignore whatever is in the API response for EDNS custom IP
+		// as it doesn't get actually removed when not in use
+		stateDnsConfig.EDnsCsCustomIp = types.StringValue("")
+	} else {
+		stateDnsConfig.EDnsCsCustomIp = types.StringValue(dnsConfig.EDnsCsCustomIp)
+	}
 	stateDnsConfig.DisableIpv6 = types.BoolValue(dnsConfig.DisableIpv6)
 	stateDnsConfig.DnsSecEnabled = types.BoolValue(dnsConfig.DnsSecEnabled)
 	stateDnsConfig.CacheSize = types.Int64Value(int64(dnsConfig.CacheSize))
@@ -935,8 +1072,72 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 			return
 		}
 	}
-	// set blocked services using plan
-	_, err = r.adg.SetBlockedServices(blockedServices)
+	// unpack nested attributes from plan
+	var planBlockedServicesPauseScheduleConfig scheduleModel
+	*diags = plan.BlockedServicesPauseSchedule.As(ctx, &planBlockedServicesPauseScheduleConfig, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return
+	}
+
+	// unpack nested attributes for each day from plan
+	var planSunDayRangeConfig dayRangeModel
+	*diags = planBlockedServicesPauseScheduleConfig.Sunday.As(ctx, &planSunDayRangeConfig, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return
+	}
+	var planMonDayRangeConfig dayRangeModel
+	*diags = planBlockedServicesPauseScheduleConfig.Monday.As(ctx, &planMonDayRangeConfig, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return
+	}
+	var planTueDayRangeConfig dayRangeModel
+	*diags = planBlockedServicesPauseScheduleConfig.Tuesday.As(ctx, &planTueDayRangeConfig, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return
+	}
+	var planWedDayRangeConfig dayRangeModel
+	*diags = planBlockedServicesPauseScheduleConfig.Wednesday.As(ctx, &planWedDayRangeConfig, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return
+	}
+	var planThuDayRangeConfig dayRangeModel
+	*diags = planBlockedServicesPauseScheduleConfig.Thursday.As(ctx, &planThuDayRangeConfig, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return
+	}
+	var planFriDayRangeConfig dayRangeModel
+	*diags = planBlockedServicesPauseScheduleConfig.Friday.As(ctx, &planFriDayRangeConfig, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return
+	}
+	var planSatDayRangeConfig dayRangeModel
+	*diags = planBlockedServicesPauseScheduleConfig.Saturday.As(ctx, &planSatDayRangeConfig, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return
+	}
+
+	// instantiate empty object for storing plan data
+	var blockedServicesPauseScheduleConfig adguard.BlockedServicesSchedule
+	// populate blocked services schedule from plan
+	blockedServicesPauseScheduleConfig.Ids = blockedServices
+	blockedServicesPauseScheduleConfig.Schedule.TimeZone = planBlockedServicesPauseScheduleConfig.TimeZone.ValueString()
+	blockedServicesPauseScheduleConfig.Schedule.Sunday.Start = uint(convertHoursMinutesToMs(planSunDayRangeConfig.Start.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Sunday.End = uint(convertHoursMinutesToMs(planSunDayRangeConfig.End.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Monday.Start = uint(convertHoursMinutesToMs(planMonDayRangeConfig.Start.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Monday.End = uint(convertHoursMinutesToMs(planMonDayRangeConfig.End.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Tuesday.Start = uint(convertHoursMinutesToMs(planTueDayRangeConfig.Start.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Tuesday.End = uint(convertHoursMinutesToMs(planTueDayRangeConfig.End.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Wednesday.Start = uint(convertHoursMinutesToMs(planWedDayRangeConfig.Start.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Wednesday.End = uint(convertHoursMinutesToMs(planWedDayRangeConfig.End.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Thursday.Start = uint(convertHoursMinutesToMs(planThuDayRangeConfig.Start.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Thursday.End = uint(convertHoursMinutesToMs(planThuDayRangeConfig.End.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Friday.Start = uint(convertHoursMinutesToMs(planFriDayRangeConfig.Start.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Friday.End = uint(convertHoursMinutesToMs(planFriDayRangeConfig.End.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Saturday.Start = uint(convertHoursMinutesToMs(planSatDayRangeConfig.Start.ValueString()))
+	blockedServicesPauseScheduleConfig.Schedule.Saturday.End = uint(convertHoursMinutesToMs(planSatDayRangeConfig.End.ValueString()))
+
+	// set blocked services and schedule using plan
+	_, err = r.adg.SetBlockedServices(blockedServicesPauseScheduleConfig)
 	if err != nil {
 		diags.AddError(
 			"Unable to Update AdGuard Home Config",
@@ -967,11 +1168,33 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 			return
 		}
 	}
+	if len(planDnsConfig.FallbackDns.Elements()) > 0 {
+		*diags = planDnsConfig.FallbackDns.ElementsAs(ctx, &dnsConfig.FallbackDns, false)
+		if diags.HasError() {
+			return
+		}
+	} else {
+		dnsConfig.FallbackDns = []string{}
+	}
+	dnsConfig.ProtectionEnabled = planDnsConfig.ProtectionEnabled.ValueBool()
 	dnsConfig.RateLimit = uint(planDnsConfig.RateLimit.ValueInt64())
+	dnsConfig.RateLimitSubnetSubnetLenIpv4 = uint(planDnsConfig.RateLimitSubnetLenIpv4.ValueInt64())
+	dnsConfig.RateLimitSubnetSubnetLenIpv6 = uint(planDnsConfig.RateLimitSubnetLenIpv6.ValueInt64())
+	if len(planDnsConfig.RateLimitWhitelist.Elements()) > 0 {
+		*diags = planDnsConfig.RateLimitWhitelist.ElementsAs(ctx, &dnsConfig.RateLimitWhitelist, false)
+		if diags.HasError() {
+			return
+		}
+	} else {
+		dnsConfig.RateLimitWhitelist = []string{}
+	}
 	dnsConfig.BlockingMode = planDnsConfig.BlockingMode.ValueString()
 	dnsConfig.BlockingIpv4 = planDnsConfig.BlockingIpv4.ValueString()
 	dnsConfig.BlockingIpv6 = planDnsConfig.BlockingIpv6.ValueString()
+	dnsConfig.BlockedResponseTtl = uint(planDnsConfig.BlockedResponseTtl.ValueInt64())
 	dnsConfig.EDnsCsEnabled = planDnsConfig.EDnsCsEnabled.ValueBool()
+	dnsConfig.EDnsCsUseCustom = planDnsConfig.EDnsCsUseCustom.ValueBool()
+	dnsConfig.EDnsCsCustomIp = planDnsConfig.EDnsCsCustomIp.ValueString()
 	dnsConfig.DisableIpv6 = planDnsConfig.DisableIpv6.ValueBool()
 	dnsConfig.DnsSecEnabled = planDnsConfig.DnsSecEnabled.ValueBool()
 	dnsConfig.CacheSize = uint(planDnsConfig.CacheSize.ValueInt64())

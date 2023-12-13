@@ -18,6 +18,8 @@ dns:
   port: 53
   anonymize_client_ip: false
   ratelimit: 20
+  ratelimit_subnet_len_ipv4: 24
+  ratelimit_subnet_len_ipv6: 56
   ratelimit_whitelist: []
   refuse_any: true
   upstream_dns:
@@ -28,7 +30,8 @@ dns:
     - 149.112.112.10
     - 2620:fe::10
     - 2620:fe::fe:10
-  fallback_dns: []
+  fallback_dns:
+    - 9.9.9.10
   all_servers: false
   fastest_addr: false
   fastest_timeout: 1s
@@ -142,7 +145,10 @@ filtering:
   blocking_ipv6: ""
   blocked_services:
     schedule:
-      time_zone: UTC
+      time_zone: America/New_York
+      mon:
+        start: 0s
+        end: 23h59m
     ids:
       - facebook
       - instagram

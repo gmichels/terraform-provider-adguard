@@ -123,6 +123,23 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 				ElementType: types.StringType,
 				Computed:    true,
 			},
+			"blocked_services_pause_schedule": schema.SingleNestedAttribute{
+				Description: "Sets periods of inactivity for filtering blocked services. The schedule contains 7 days (Sunday to Saturday) and a time zone.",
+				Computed:    true,
+				Attributes: map[string]schema.Attribute{
+					"time_zone": schema.StringAttribute{
+						Description: "Time zone name according to IANA time zone database. For example `America/New_York`. `Local` represents the system's local time zone.",
+						Computed:    true,
+					},
+					"sun": dayRangeDatasourceSchema("Sunday"),
+					"mon": dayRangeDatasourceSchema("Monday"),
+					"tue": dayRangeDatasourceSchema("Tueday"),
+					"wed": dayRangeDatasourceSchema("Wednesday"),
+					"thu": dayRangeDatasourceSchema("Thursday"),
+					"fri": dayRangeDatasourceSchema("Friday"),
+					"sat": dayRangeDatasourceSchema("Saturday"),
+				},
+			},
 			"dns": schema.SingleNestedAttribute{
 				Computed: true,
 				Attributes: map[string]schema.Attribute{
@@ -136,8 +153,30 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 						ElementType: types.StringType,
 						Computed:    true,
 					},
+					"fallback_dns": schema.ListAttribute{
+						Description: "Fallback DNS servers",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+					"protection_enabled": schema.BoolAttribute{
+						Description: "Whether protection is enabled",
+						Computed:    true,
+					},
 					"rate_limit": schema.Int64Attribute{
 						Description: "The number of requests per second allowed per client",
+						Computed:    true,
+					},
+					"rate_limit_subnet_len_ipv4": schema.Int64Attribute{
+						Description: "Subnet prefix length for IPv4 addresses used for rate limiting",
+						Computed:    true,
+					},
+					"rate_limit_subnet_len_ipv6": schema.Int64Attribute{
+						Description: "Subnet prefix length for IPv6 addresses used for rate limiting",
+						Computed:    true,
+					},
+					"rate_limit_whitelist": schema.ListAttribute{
+						Description: "IP addresses excluded from rate limiting",
+						ElementType: types.StringType,
 						Computed:    true,
 					},
 					"blocking_mode": schema.StringAttribute{
@@ -152,8 +191,20 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 						Description: "When `blocking_mode` is set to `custom_ip`, the IPv6 address to be returned for a blocked A request",
 						Computed:    true,
 					},
+					"blocked_response_ttl": schema.Int64Attribute{
+						Description: "How many seconds the clients should cache a filtered response",
+						Computed:    true,
+					},
 					"edns_cs_enabled": schema.BoolAttribute{
 						Description: "Whether EDNS Client Subnet (ECS) is enabled",
+						Computed:    true,
+					},
+					"edns_cs_use_custom": schema.BoolAttribute{
+						Description: "Whether EDNS Client Subnet (ECS) is using a custom IP",
+						Computed:    true,
+					},
+					"edns_cs_custom_ip": schema.StringAttribute{
+						Description: "The custom IP being used for EDNS Client Subnet (ECS)",
 						Computed:    true,
 					},
 					"disable_ipv6": schema.BoolAttribute{
@@ -409,7 +460,7 @@ func (d *configDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	// use common model for state
 	var newState configCommonModel
 	// use common Read function
-	newState.Read(ctx, *d.adg, &resp.Diagnostics, "datasource")
+	newState.Read(ctx, *d.adg, &state, &resp.Diagnostics, "datasource")
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
