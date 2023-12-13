@@ -126,6 +126,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_mode", "custom_ip"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_ipv4", "1.2.3.4"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_ipv6", "fe80::"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocked_response_ttl", "10"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_ttl_min", "600"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_ttl_max", "86400"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_optimistic", "true"),
@@ -180,6 +181,7 @@ resource "adguard_config" "test" {
 		blocking_mode             = "nxdomain"
 		rate_limit                = 25
 		rate_limit_whitelist      = ["1.2.3.4", "fe80::"]
+		blocked_response_ttl      = 30
 		edns_cs_enabled           = true
 		disable_ipv6              = true
 		dnssec_enabled            = true
@@ -265,6 +267,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_mode", "nxdomain"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_ipv4", ""),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_ipv6", ""),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocked_response_ttl", "30"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.edns_cs_enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.disable_ipv6", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.dnssec_enabled", "true"),

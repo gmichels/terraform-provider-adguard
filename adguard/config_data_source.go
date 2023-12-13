@@ -191,6 +191,10 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 						Description: "When `blocking_mode` is set to `custom_ip`, the IPv6 address to be returned for a blocked A request",
 						Computed:    true,
 					},
+					"blocked_response_ttl": schema.Int64Attribute{
+						Description: "How many seconds the clients should cache a filtered response",
+						Computed:    true,
+					},
 					"edns_cs_enabled": schema.BoolAttribute{
 						Description: "Whether EDNS Client Subnet (ECS) is enabled",
 						Computed:    true,

@@ -369,6 +369,12 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 							),
 						},
 					},
+					"blocked_response_ttl": schema.Int64Attribute{
+						Description: fmt.Sprintf("How many seconds the clients should cache a filtered response. Defaults to `%d`", CONFIG_DNS_BLOCKED_RESPONSE_TTL),
+						Computed:    true,
+						Optional:    true,
+						Default:     int64default.StaticInt64(CONFIG_DNS_BLOCKED_RESPONSE_TTL),
+					},
 					"edns_cs_enabled": schema.BoolAttribute{
 						Description: fmt.Sprintf("Whether EDNS Client Subnet (ECS) is enabled. Defaults to `%t`", CONFIG_DNS_EDNS_CS_ENABLED),
 						Computed:    true,
@@ -1002,6 +1008,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	dnsConfig.BlockingMode = CONFIG_DNS_BLOCKING_MODE
 	dnsConfig.BlockingIpv4 = ""
 	dnsConfig.BlockingIpv6 = ""
+	dnsConfig.BlockedResponseTtl = CONFIG_DNS_BLOCKED_RESPONSE_TTL
 	dnsConfig.EDnsCsEnabled = CONFIG_DNS_EDNS_CS_ENABLED
 	dnsConfig.DisableIpv6 = CONFIG_DNS_DISABLE_IPV6
 	dnsConfig.DnsSecEnabled = CONFIG_DNS_DNSSEC_ENABLED

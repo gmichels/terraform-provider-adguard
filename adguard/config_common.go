@@ -148,6 +148,7 @@ type dnsConfigModel struct {
 	BlockingMode           types.String `tfsdk:"blocking_mode"`
 	BlockingIpv4           types.String `tfsdk:"blocking_ipv4"`
 	BlockingIpv6           types.String `tfsdk:"blocking_ipv6"`
+	BlockedResponseTtl     types.Int64  `tfsdk:"blocked_response_ttl"`
 	EDnsCsEnabled          types.Bool   `tfsdk:"edns_cs_enabled"`
 	DisableIpv6            types.Bool   `tfsdk:"disable_ipv6"`
 	DnsSecEnabled          types.Bool   `tfsdk:"dnssec_enabled"`
@@ -178,6 +179,7 @@ func (o dnsConfigModel) attrTypes() map[string]attr.Type {
 		"blocking_mode":              types.StringType,
 		"blocking_ipv4":              types.StringType,
 		"blocking_ipv6":              types.StringType,
+		"blocked_response_ttl":       types.Int64Type,
 		"edns_cs_enabled":            types.BoolType,
 		"disable_ipv6":               types.BoolType,
 		"dnssec_enabled":             types.BoolType,
@@ -213,6 +215,7 @@ func (o dnsConfigModel) defaultObject() map[string]attr.Value {
 		"blocking_mode":              types.StringValue(CONFIG_DNS_BLOCKING_MODE),
 		"blocking_ipv4":              types.StringValue(""),
 		"blocking_ipv6":              types.StringValue(""),
+		"blocked_response_ttl":       types.Int64Value(CONFIG_DNS_BLOCKED_RESPONSE_TTL),
 		"edns_cs_enabled":            types.BoolValue(CONFIG_DNS_EDNS_CS_ENABLED),
 		"disable_ipv6":               types.BoolValue(CONFIG_DNS_DISABLE_IPV6),
 		"dnssec_enabled":             types.BoolValue(CONFIG_DNS_DNSSEC_ENABLED),
@@ -715,6 +718,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		stateDnsConfig.BlockingIpv4 = types.StringValue(dnsConfig.BlockingIpv4)
 		stateDnsConfig.BlockingIpv6 = types.StringValue(dnsConfig.BlockingIpv6)
 	}
+	stateDnsConfig.BlockedResponseTtl = types.Int64Value(int64(dnsConfig.BlockedResponseTtl))
 	stateDnsConfig.EDnsCsEnabled = types.BoolValue(dnsConfig.EDnsCsEnabled)
 	stateDnsConfig.DisableIpv6 = types.BoolValue(dnsConfig.DisableIpv6)
 	stateDnsConfig.DnsSecEnabled = types.BoolValue(dnsConfig.DnsSecEnabled)
@@ -1173,6 +1177,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	dnsConfig.BlockingMode = planDnsConfig.BlockingMode.ValueString()
 	dnsConfig.BlockingIpv4 = planDnsConfig.BlockingIpv4.ValueString()
 	dnsConfig.BlockingIpv6 = planDnsConfig.BlockingIpv6.ValueString()
+	dnsConfig.BlockedResponseTtl = uint(planDnsConfig.BlockedResponseTtl.ValueInt64())
 	dnsConfig.EDnsCsEnabled = planDnsConfig.EDnsCsEnabled.ValueBool()
 	dnsConfig.DisableIpv6 = planDnsConfig.DisableIpv6.ValueBool()
 	dnsConfig.DnsSecEnabled = planDnsConfig.DnsSecEnabled.ValueBool()
