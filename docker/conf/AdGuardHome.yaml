@@ -28,7 +28,8 @@ dns:
     - 149.112.112.10
     - 2620:fe::10
     - 2620:fe::fe:10
-  fallback_dns: []
+  fallback_dns:
+    - 9.9.9.10
   all_servers: false
   fastest_addr: false
   fastest_timeout: 1s

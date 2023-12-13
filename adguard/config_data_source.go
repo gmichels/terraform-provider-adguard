@@ -125,7 +125,7 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 			},
 			"blocked_services_pause_schedule": schema.SingleNestedAttribute{
 				Description: "Sets periods of inactivity for filtering blocked services. The schedule contains 7 days (Sunday to Saturday) and a time zone.",
-				Computed: true,
+				Computed:    true,
 				Attributes: map[string]schema.Attribute{
 					"time_zone": schema.StringAttribute{
 						Description: "Time zone name according to IANA time zone database. For example `America/New_York`. `Local` represents the system's local time zone.",
@@ -150,6 +150,11 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 					},
 					"upstream_dns": schema.ListAttribute{
 						Description: "Upstream DNS servers",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+					"fallback_dns": schema.ListAttribute{
+						Description: "Fallback DNS servers",
 						ElementType: types.StringType,
 						Computed:    true,
 					},

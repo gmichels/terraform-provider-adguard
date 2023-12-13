@@ -278,6 +278,16 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 							types.ListValueMust(types.StringType, convertToAttr(CONFIG_DNS_UPSTREAM)),
 						),
 					},
+					"fallback_dns": schema.ListAttribute{
+						Description: "Fallback DNS servers",
+						ElementType: types.StringType,
+						Optional:    true,
+						Computed:    true,
+						Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
+						Default: listdefault.StaticValue(
+							types.ListNull(types.StringType),
+						),
+					},
 					"rate_limit": schema.Int64Attribute{
 						Description: fmt.Sprintf("The number of requests per second allowed per client. Defaults to `%d`", CONFIG_DNS_RATE_LIMIT),
 						Computed:    true,
@@ -954,6 +964,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	// populate DNS config with default values
 	dnsConfig.BootstrapDns = CONFIG_DNS_BOOTSTRAP
 	dnsConfig.UpstreamDns = CONFIG_DNS_UPSTREAM
+	dnsConfig.FallbackDns = []string{}
 	dnsConfig.UpstreamDnsFile = ""
 	dnsConfig.RateLimit = CONFIG_DNS_RATE_LIMIT
 	dnsConfig.BlockingMode = CONFIG_DNS_BLOCKING_MODE
