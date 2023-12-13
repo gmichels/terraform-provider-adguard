@@ -118,6 +118,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.upstream_dns.1", "https://1.0.0.1/dns-query"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.fallback_dns.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.fallback_dns.1", "https://dns10.quad9.net/dns-query"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.protection_enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.rate_limit", "30"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_mode", "custom_ip"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_ipv4", "1.2.3.4"),
@@ -172,6 +173,7 @@ resource "adguard_config" "test" {
 	}
 	dns = {
 		upstream_dns              = ["https://1.1.1.1/dns-query"]
+		protection_enabled        = false
 		blocking_mode             = "nxdomain"
 		rate_limit                = 25
 		edns_cs_enabled           = true
@@ -252,6 +254,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.upstream_dns.#", "1"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.upstream_dns.0", "https://1.1.1.1/dns-query"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.fallback_dns.#", "0"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.protection_enabled", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.rate_limit", "25"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_mode", "nxdomain"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_ipv4", ""),

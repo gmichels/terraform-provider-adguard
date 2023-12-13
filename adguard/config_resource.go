@@ -288,6 +288,12 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 							types.ListNull(types.StringType),
 						),
 					},
+					"protection_enabled": schema.BoolAttribute{
+						Description: fmt.Sprintf("Whether protection is enabled. Defaults to `%t`", CONFIG_DNS_PROTECTION_ENABLED),
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(CONFIG_DNS_PROTECTION_ENABLED),
+					},
 					"rate_limit": schema.Int64Attribute{
 						Description: fmt.Sprintf("The number of requests per second allowed per client. Defaults to `%d`", CONFIG_DNS_RATE_LIMIT),
 						Computed:    true,
@@ -965,6 +971,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	dnsConfig.BootstrapDns = CONFIG_DNS_BOOTSTRAP
 	dnsConfig.UpstreamDns = CONFIG_DNS_UPSTREAM
 	dnsConfig.FallbackDns = []string{}
+	dnsConfig.ProtectionEnabled = CONFIG_DNS_PROTECTION_ENABLED
 	dnsConfig.UpstreamDnsFile = ""
 	dnsConfig.RateLimit = CONFIG_DNS_RATE_LIMIT
 	dnsConfig.BlockingMode = CONFIG_DNS_BLOCKING_MODE

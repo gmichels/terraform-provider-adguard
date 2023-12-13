@@ -158,6 +158,10 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 						ElementType: types.StringType,
 						Computed:    true,
 					},
+					"protection_enabled": schema.BoolAttribute{
+						Description: "Whether protection is enabled",
+						Computed:    true,
+					},
 					"rate_limit": schema.Int64Attribute{
 						Description: "The number of requests per second allowed per client",
 						Computed:    true,

@@ -140,6 +140,7 @@ type dnsConfigModel struct {
 	BootstrapDns           types.List   `tfsdk:"bootstrap_dns"`
 	UpstreamDns            types.List   `tfsdk:"upstream_dns"`
 	FallbackDns            types.List   `tfsdk:"fallback_dns"`
+	ProtectionEnabled      types.Bool   `tfsdk:"protection_enabled"`
 	RateLimit              types.Int64  `tfsdk:"rate_limit"`
 	BlockingMode           types.String `tfsdk:"blocking_mode"`
 	BlockingIpv4           types.String `tfsdk:"blocking_ipv4"`
@@ -166,6 +167,7 @@ func (o dnsConfigModel) attrTypes() map[string]attr.Type {
 		"bootstrap_dns":             types.ListType{ElemType: types.StringType},
 		"upstream_dns":              types.ListType{ElemType: types.StringType},
 		"fallback_dns":              types.ListType{ElemType: types.StringType},
+		"protection_enabled":        types.BoolType,
 		"rate_limit":                types.Int64Type,
 		"blocking_mode":             types.StringType,
 		"blocking_ipv4":             types.StringType,
@@ -197,6 +199,7 @@ func (o dnsConfigModel) defaultObject() map[string]attr.Value {
 		"bootstrap_dns":             types.ListValueMust(types.StringType, bootstrap_dns),
 		"upstream_dns":              types.ListValueMust(types.StringType, upstream_dns),
 		"fallback_dns":              types.ListNull(types.StringType),
+		"protection_enabled":        types.BoolValue(CONFIG_DNS_PROTECTION_ENABLED),
 		"rate_limit":                types.Int64Value(CONFIG_DNS_RATE_LIMIT),
 		"blocking_mode":             types.StringValue(CONFIG_DNS_BLOCKING_MODE),
 		"blocking_ipv4":             types.StringValue(""),
@@ -681,6 +684,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 			return
 		}
 	}
+	stateDnsConfig.ProtectionEnabled = types.BoolValue(dnsConfig.ProtectionEnabled)
 	stateDnsConfig.RateLimit = types.Int64Value(int64(dnsConfig.RateLimit))
 	stateDnsConfig.BlockingMode = types.StringValue(dnsConfig.BlockingMode)
 	// upstream API does not unset blocking_ipv4 and blocking_ipv6 when previously set and blocking mode changes,
@@ -1135,6 +1139,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	} else {
 		dnsConfig.FallbackDns = []string{}
 	}
+	dnsConfig.ProtectionEnabled = planDnsConfig.ProtectionEnabled.ValueBool()
 	dnsConfig.RateLimit = uint(planDnsConfig.RateLimit.ValueInt64())
 	dnsConfig.BlockingMode = planDnsConfig.BlockingMode.ValueString()
 	dnsConfig.BlockingIpv4 = planDnsConfig.BlockingIpv4.ValueString()
