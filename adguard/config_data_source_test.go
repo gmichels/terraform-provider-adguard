@@ -48,6 +48,7 @@ func TestAccConfigDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.fallback_dns.0", "9.9.9.10"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.protection_enabled", "true"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.rate_limit", "20"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.rate_limit_subnet_len_ipv4", "24"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.blocking_mode", "default"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.blocking_ipv4", ""),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.blocking_ipv6", ""),

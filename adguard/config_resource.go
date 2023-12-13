@@ -300,6 +300,28 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Optional:    true,
 						Default:     int64default.StaticInt64(CONFIG_DNS_RATE_LIMIT),
 					},
+					"rate_limit_subnet_len_ipv4": schema.Int64Attribute{
+						Description: fmt.Sprintf("Subnet prefix length for IPv4 addresses used for rate limiting. Defaults to `%d`", CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV4),
+						Computed:    true,
+						Optional:    true,
+						Default:     int64default.StaticInt64(CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV4),
+					},
+					"rate_limit_subnet_len_ipv6": schema.Int64Attribute{
+						Description: fmt.Sprintf("Subnet prefix length for IPv6 addresses used for rate limiting. Defaults to `%d`", CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV6),
+						Computed:    true,
+						Optional:    true,
+						Default:     int64default.StaticInt64(CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV6),
+					},
+					"rate_limit_whitelist": schema.ListAttribute{
+						Description: "IP addresses excluded from rate limiting",
+						ElementType: types.StringType,
+						Optional:    true,
+						Computed:    true,
+						Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
+						Default: listdefault.StaticValue(
+							types.ListNull(types.StringType),
+						),
+					},
 					"blocking_mode": schema.StringAttribute{
 						Description: "DNS response sent when request is blocked. Valid values are `default` (the default), `refused`, `nxdomain`, `null_ip` or `custom_ip`",
 						Computed:    true,
@@ -974,6 +996,9 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	dnsConfig.ProtectionEnabled = CONFIG_DNS_PROTECTION_ENABLED
 	dnsConfig.UpstreamDnsFile = ""
 	dnsConfig.RateLimit = CONFIG_DNS_RATE_LIMIT
+	dnsConfig.RateLimitSubnetSubnetLenIpv4 = CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV4
+	dnsConfig.RateLimitSubnetSubnetLenIpv6 = CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV6
+	dnsConfig.RateLimitWhitelist = []string{}
 	dnsConfig.BlockingMode = CONFIG_DNS_BLOCKING_MODE
 	dnsConfig.BlockingIpv4 = ""
 	dnsConfig.BlockingIpv6 = ""

@@ -142,6 +142,9 @@ type dnsConfigModel struct {
 	FallbackDns            types.List   `tfsdk:"fallback_dns"`
 	ProtectionEnabled      types.Bool   `tfsdk:"protection_enabled"`
 	RateLimit              types.Int64  `tfsdk:"rate_limit"`
+	RateLimitSubnetLenIpv4 types.Int64  `tfsdk:"rate_limit_subnet_len_ipv4"`
+	RateLimitSubnetLenIpv6 types.Int64  `tfsdk:"rate_limit_subnet_len_ipv6"`
+	RateLimitWhitelist     types.List   `tfsdk:"rate_limit_whitelist"`
 	BlockingMode           types.String `tfsdk:"blocking_mode"`
 	BlockingIpv4           types.String `tfsdk:"blocking_ipv4"`
 	BlockingIpv6           types.String `tfsdk:"blocking_ipv6"`
@@ -164,28 +167,31 @@ type dnsConfigModel struct {
 // attrTypes - return attribute types for this model
 func (o dnsConfigModel) attrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"bootstrap_dns":             types.ListType{ElemType: types.StringType},
-		"upstream_dns":              types.ListType{ElemType: types.StringType},
-		"fallback_dns":              types.ListType{ElemType: types.StringType},
-		"protection_enabled":        types.BoolType,
-		"rate_limit":                types.Int64Type,
-		"blocking_mode":             types.StringType,
-		"blocking_ipv4":             types.StringType,
-		"blocking_ipv6":             types.StringType,
-		"edns_cs_enabled":           types.BoolType,
-		"disable_ipv6":              types.BoolType,
-		"dnssec_enabled":            types.BoolType,
-		"cache_size":                types.Int64Type,
-		"cache_ttl_min":             types.Int64Type,
-		"cache_ttl_max":             types.Int64Type,
-		"cache_optimistic":          types.BoolType,
-		"upstream_mode":             types.StringType,
-		"use_private_ptr_resolvers": types.BoolType,
-		"resolve_clients":           types.BoolType,
-		"local_ptr_upstreams":       types.SetType{ElemType: types.StringType},
-		"allowed_clients":           types.SetType{ElemType: types.StringType},
-		"disallowed_clients":        types.SetType{ElemType: types.StringType},
-		"blocked_hosts":             types.SetType{ElemType: types.StringType},
+		"bootstrap_dns":              types.ListType{ElemType: types.StringType},
+		"upstream_dns":               types.ListType{ElemType: types.StringType},
+		"fallback_dns":               types.ListType{ElemType: types.StringType},
+		"protection_enabled":         types.BoolType,
+		"rate_limit":                 types.Int64Type,
+		"rate_limit_subnet_len_ipv4": types.Int64Type,
+		"rate_limit_subnet_len_ipv6": types.Int64Type,
+		"rate_limit_whitelist":       types.ListType{ElemType: types.StringType},
+		"blocking_mode":              types.StringType,
+		"blocking_ipv4":              types.StringType,
+		"blocking_ipv6":              types.StringType,
+		"edns_cs_enabled":            types.BoolType,
+		"disable_ipv6":               types.BoolType,
+		"dnssec_enabled":             types.BoolType,
+		"cache_size":                 types.Int64Type,
+		"cache_ttl_min":              types.Int64Type,
+		"cache_ttl_max":              types.Int64Type,
+		"cache_optimistic":           types.BoolType,
+		"upstream_mode":              types.StringType,
+		"use_private_ptr_resolvers":  types.BoolType,
+		"resolve_clients":            types.BoolType,
+		"local_ptr_upstreams":        types.SetType{ElemType: types.StringType},
+		"allowed_clients":            types.SetType{ElemType: types.StringType},
+		"disallowed_clients":         types.SetType{ElemType: types.StringType},
+		"blocked_hosts":              types.SetType{ElemType: types.StringType},
 	}
 }
 
@@ -196,28 +202,31 @@ func (o dnsConfigModel) defaultObject() map[string]attr.Value {
 	blocked_hosts := convertToAttr(CONFIG_DNS_BLOCKED_HOSTS)
 
 	return map[string]attr.Value{
-		"bootstrap_dns":             types.ListValueMust(types.StringType, bootstrap_dns),
-		"upstream_dns":              types.ListValueMust(types.StringType, upstream_dns),
-		"fallback_dns":              types.ListNull(types.StringType),
-		"protection_enabled":        types.BoolValue(CONFIG_DNS_PROTECTION_ENABLED),
-		"rate_limit":                types.Int64Value(CONFIG_DNS_RATE_LIMIT),
-		"blocking_mode":             types.StringValue(CONFIG_DNS_BLOCKING_MODE),
-		"blocking_ipv4":             types.StringValue(""),
-		"blocking_ipv6":             types.StringValue(""),
-		"edns_cs_enabled":           types.BoolValue(CONFIG_DNS_EDNS_CS_ENABLED),
-		"disable_ipv6":              types.BoolValue(CONFIG_DNS_DISABLE_IPV6),
-		"dnssec_enabled":            types.BoolValue(CONFIG_DNS_DNSSEC_ENABLED),
-		"cache_size":                types.Int64Value(CONFIG_DNS_CACHE_SIZE),
-		"cache_ttl_min":             types.Int64Value(CONFIG_DNS_CACHE_TTL_MIN),
-		"cache_ttl_max":             types.Int64Value(CONFIG_DNS_CACHE_TTL_MAX),
-		"cache_optimistic":          types.BoolValue(CONFIG_DNS_CACHE_OPTIMISTIC),
-		"upstream_mode":             types.StringValue(CONFIG_DNS_UPSTREAM_MODE),
-		"use_private_ptr_resolvers": types.BoolValue(CONFIG_DNS_USE_PRIVATE_PTR_RESOLVERS),
-		"resolve_clients":           types.BoolValue(CONFIG_DNS_RESOLVE_CLIENTS),
-		"local_ptr_upstreams":       types.SetValueMust(types.StringType, []attr.Value{}),
-		"allowed_clients":           types.SetNull(types.StringType),
-		"disallowed_clients":        types.SetNull(types.StringType),
-		"blocked_hosts":             types.SetValueMust(types.StringType, blocked_hosts),
+		"bootstrap_dns":              types.ListValueMust(types.StringType, bootstrap_dns),
+		"upstream_dns":               types.ListValueMust(types.StringType, upstream_dns),
+		"fallback_dns":               types.ListNull(types.StringType),
+		"protection_enabled":         types.BoolValue(CONFIG_DNS_PROTECTION_ENABLED),
+		"rate_limit":                 types.Int64Value(CONFIG_DNS_RATE_LIMIT),
+		"rate_limit_subnet_len_ipv4": types.Int64Value(CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV4),
+		"rate_limit_subnet_len_ipv6": types.Int64Value(CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV4),
+		"rate_limit_whitelist":       types.ListNull(types.StringType),
+		"blocking_mode":              types.StringValue(CONFIG_DNS_BLOCKING_MODE),
+		"blocking_ipv4":              types.StringValue(""),
+		"blocking_ipv6":              types.StringValue(""),
+		"edns_cs_enabled":            types.BoolValue(CONFIG_DNS_EDNS_CS_ENABLED),
+		"disable_ipv6":               types.BoolValue(CONFIG_DNS_DISABLE_IPV6),
+		"dnssec_enabled":             types.BoolValue(CONFIG_DNS_DNSSEC_ENABLED),
+		"cache_size":                 types.Int64Value(CONFIG_DNS_CACHE_SIZE),
+		"cache_ttl_min":              types.Int64Value(CONFIG_DNS_CACHE_TTL_MIN),
+		"cache_ttl_max":              types.Int64Value(CONFIG_DNS_CACHE_TTL_MAX),
+		"cache_optimistic":           types.BoolValue(CONFIG_DNS_CACHE_OPTIMISTIC),
+		"upstream_mode":              types.StringValue(CONFIG_DNS_UPSTREAM_MODE),
+		"use_private_ptr_resolvers":  types.BoolValue(CONFIG_DNS_USE_PRIVATE_PTR_RESOLVERS),
+		"resolve_clients":            types.BoolValue(CONFIG_DNS_RESOLVE_CLIENTS),
+		"local_ptr_upstreams":        types.SetValueMust(types.StringType, []attr.Value{}),
+		"allowed_clients":            types.SetNull(types.StringType),
+		"disallowed_clients":         types.SetNull(types.StringType),
+		"blocked_hosts":              types.SetValueMust(types.StringType, blocked_hosts),
 	}
 }
 
@@ -686,6 +695,16 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	}
 	stateDnsConfig.ProtectionEnabled = types.BoolValue(dnsConfig.ProtectionEnabled)
 	stateDnsConfig.RateLimit = types.Int64Value(int64(dnsConfig.RateLimit))
+	stateDnsConfig.RateLimitSubnetLenIpv4 = types.Int64Value(int64(dnsConfig.RateLimitSubnetSubnetLenIpv4))
+	stateDnsConfig.RateLimitSubnetLenIpv6 = types.Int64Value(int64(dnsConfig.RateLimitSubnetSubnetLenIpv6))
+	if len(dnsConfig.RateLimitWhitelist) == 0 && rtype == "resource" {
+		stateDnsConfig.RateLimitWhitelist = types.ListNull(types.StringType)
+	} else {
+		stateDnsConfig.RateLimitWhitelist, *diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.RateLimitWhitelist)
+		if diags.HasError() {
+			return
+		}
+	}
 	stateDnsConfig.BlockingMode = types.StringValue(dnsConfig.BlockingMode)
 	// upstream API does not unset blocking_ipv4 and blocking_ipv6 when previously set and blocking mode changes,
 	// so force state to empty values here
@@ -1141,6 +1160,16 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	}
 	dnsConfig.ProtectionEnabled = planDnsConfig.ProtectionEnabled.ValueBool()
 	dnsConfig.RateLimit = uint(planDnsConfig.RateLimit.ValueInt64())
+	dnsConfig.RateLimitSubnetSubnetLenIpv4 = uint(planDnsConfig.RateLimitSubnetLenIpv4.ValueInt64())
+	dnsConfig.RateLimitSubnetSubnetLenIpv6 = uint(planDnsConfig.RateLimitSubnetLenIpv6.ValueInt64())
+	if len(planDnsConfig.RateLimitWhitelist.Elements()) > 0 {
+		*diags = planDnsConfig.RateLimitWhitelist.ElementsAs(ctx, &dnsConfig.RateLimitWhitelist, false)
+		if diags.HasError() {
+			return
+		}
+	} else {
+		dnsConfig.RateLimitWhitelist = []string{}
+	}
 	dnsConfig.BlockingMode = planDnsConfig.BlockingMode.ValueString()
 	dnsConfig.BlockingIpv4 = planDnsConfig.BlockingIpv4.ValueString()
 	dnsConfig.BlockingIpv6 = planDnsConfig.BlockingIpv6.ValueString()

@@ -166,6 +166,19 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 						Description: "The number of requests per second allowed per client",
 						Computed:    true,
 					},
+					"rate_limit_subnet_len_ipv4": schema.Int64Attribute{
+						Description: "Subnet prefix length for IPv4 addresses used for rate limiting",
+						Computed:    true,
+					},
+					"rate_limit_subnet_len_ipv6": schema.Int64Attribute{
+						Description: "Subnet prefix length for IPv6 addresses used for rate limiting",
+						Computed:    true,
+					},
+					"rate_limit_whitelist": schema.ListAttribute{
+						Description: "IP addresses excluded from rate limiting",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
 					"blocking_mode": schema.StringAttribute{
 						Description: "DNS response sent when request is blocked",
 						Computed:    true,
