@@ -199,6 +199,14 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 						Description: "Whether EDNS Client Subnet (ECS) is enabled",
 						Computed:    true,
 					},
+					"edns_cs_use_custom": schema.BoolAttribute{
+						Description: "Whether EDNS Client Subnet (ECS) is using a custom IP",
+						Computed:    true,
+					},
+					"edns_cs_custom_ip": schema.StringAttribute{
+						Description: "The custom IP being used for EDNS Client Subnet (ECS)",
+						Computed:    true,
+					},
 					"disable_ipv6": schema.BoolAttribute{
 						Description: "Whether dropping of all IPv6 DNS queries is enabled",
 						Computed:    true,

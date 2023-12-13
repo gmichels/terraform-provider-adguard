@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gmichels/adguard-client-go"
+	"github.com/hashicorp/terraform-plugin-framework-validators/boolvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
@@ -380,6 +381,34 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(CONFIG_DNS_EDNS_CS_ENABLED),
+					},
+					"edns_cs_use_custom": schema.BoolAttribute{
+						Description: fmt.Sprintf("Whether EDNS Client Subnet (ECS) is using a custom IP. Defaults to `%t`", CONFIG_DNS_EDNS_CS_USE_CUSTOM),
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(CONFIG_DNS_EDNS_CS_USE_CUSTOM),
+						Validators: []validator.Bool{
+							boolvalidator.AlsoRequires(path.Expressions{
+								path.MatchRelative().AtParent().AtName("edns_cs_enabled"),
+							}...),
+						},
+					},
+					"edns_cs_custom_ip": schema.StringAttribute{
+						Description: "The custom IP for EDNS Client Subnet (ECS)",
+						Computed:    true,
+						Optional:    true,
+						Default:     stringdefault.StaticString(""),
+						Validators: []validator.String{
+							stringvalidator.All(
+								stringvalidator.RegexMatches(
+									regexp.MustCompile(`^((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$|^(([a-fA-F]|[a-fA-F][a-fA-F0-9\-]*[a-fA-F0-9])\.)*([A-Fa-f]|[A-Fa-f][A-Fa-f0-9\-]*[A-Fa-f0-9])$|^(?:(?:(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):){6})(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):(?:(?:[0-9a-fA-F]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:::(?:(?:(?:[0-9a-fA-F]{1,4})):){5})(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):(?:(?:[0-9a-fA-F]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})))?::(?:(?:(?:[0-9a-fA-F]{1,4})):){4})(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):(?:(?:[0-9a-fA-F]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):){0,1}(?:(?:[0-9a-fA-F]{1,4})))?::(?:(?:(?:[0-9a-fA-F]{1,4})):){3})(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):(?:(?:[0-9a-fA-F]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):){0,2}(?:(?:[0-9a-fA-F]{1,4})))?::(?:(?:(?:[0-9a-fA-F]{1,4})):){2})(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):(?:(?:[0-9a-fA-F]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):){0,3}(?:(?:[0-9a-fA-F]{1,4})))?::(?:(?:[0-9a-fA-F]{1,4})):)(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):(?:(?:[0-9a-fA-F]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):){0,4}(?:(?:[0-9a-fA-F]{1,4})))?::)(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):(?:(?:[0-9a-fA-F]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):){0,5}(?:(?:[0-9a-fA-F]{1,4})))?::)(?:(?:[0-9a-fA-F]{1,4})))|(?:(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):){0,6}(?:(?:[0-9a-fA-F]{1,4})))?::)))))$`),
+									"must be a valid IPv4 or IPv6 address",
+								),
+								stringvalidator.AlsoRequires(path.Expressions{
+									path.MatchRelative().AtParent().AtName("edns_cs_use_custom"),
+								}...),
+							),
+						},
 					},
 					"disable_ipv6": schema.BoolAttribute{
 						Description: fmt.Sprintf("Whether dropping of all IPv6 DNS queries is enabled. Defaults to `%t`", CONFIG_DNS_DISABLE_IPV6),
@@ -1010,6 +1039,8 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	dnsConfig.BlockingIpv6 = ""
 	dnsConfig.BlockedResponseTtl = CONFIG_DNS_BLOCKED_RESPONSE_TTL
 	dnsConfig.EDnsCsEnabled = CONFIG_DNS_EDNS_CS_ENABLED
+	dnsConfig.EDnsCsUseCustom = CONFIG_DNS_EDNS_CS_USE_CUSTOM
+	dnsConfig.EDnsCsCustomIp = ""
 	dnsConfig.DisableIpv6 = CONFIG_DNS_DISABLE_IPV6
 	dnsConfig.DnsSecEnabled = CONFIG_DNS_DNSSEC_ENABLED
 	dnsConfig.CacheSize = CONFIG_DNS_CACHE_SIZE

@@ -150,6 +150,8 @@ type dnsConfigModel struct {
 	BlockingIpv6           types.String `tfsdk:"blocking_ipv6"`
 	BlockedResponseTtl     types.Int64  `tfsdk:"blocked_response_ttl"`
 	EDnsCsEnabled          types.Bool   `tfsdk:"edns_cs_enabled"`
+	EDnsCsUseCustom        types.Bool   `tfsdk:"edns_cs_use_custom"`
+	EDnsCsCustomIp         types.String `tfsdk:"edns_cs_custom_ip"`
 	DisableIpv6            types.Bool   `tfsdk:"disable_ipv6"`
 	DnsSecEnabled          types.Bool   `tfsdk:"dnssec_enabled"`
 	CacheSize              types.Int64  `tfsdk:"cache_size"`
@@ -181,6 +183,8 @@ func (o dnsConfigModel) attrTypes() map[string]attr.Type {
 		"blocking_ipv6":              types.StringType,
 		"blocked_response_ttl":       types.Int64Type,
 		"edns_cs_enabled":            types.BoolType,
+		"edns_cs_use_custom":         types.BoolType,
+		"edns_cs_custom_ip":          types.StringType,
 		"disable_ipv6":               types.BoolType,
 		"dnssec_enabled":             types.BoolType,
 		"cache_size":                 types.Int64Type,
@@ -217,6 +221,8 @@ func (o dnsConfigModel) defaultObject() map[string]attr.Value {
 		"blocking_ipv6":              types.StringValue(""),
 		"blocked_response_ttl":       types.Int64Value(CONFIG_DNS_BLOCKED_RESPONSE_TTL),
 		"edns_cs_enabled":            types.BoolValue(CONFIG_DNS_EDNS_CS_ENABLED),
+		"edns_cs_use_custom":         types.BoolValue(CONFIG_DNS_EDNS_CS_USE_CUSTOM),
+		"edns_cs_custom_ip":          types.StringValue(""),
 		"disable_ipv6":               types.BoolValue(CONFIG_DNS_DISABLE_IPV6),
 		"dnssec_enabled":             types.BoolValue(CONFIG_DNS_DNSSEC_ENABLED),
 		"cache_size":                 types.Int64Value(CONFIG_DNS_CACHE_SIZE),
@@ -720,6 +726,14 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	}
 	stateDnsConfig.BlockedResponseTtl = types.Int64Value(int64(dnsConfig.BlockedResponseTtl))
 	stateDnsConfig.EDnsCsEnabled = types.BoolValue(dnsConfig.EDnsCsEnabled)
+	stateDnsConfig.EDnsCsUseCustom = types.BoolValue(dnsConfig.EDnsCsUseCustom)
+	if !dnsConfig.EDnsCsUseCustom {
+		// ignore whatever is in the API response for EDNS custom IP
+		// as it doesn't get actually removed when not in use
+		stateDnsConfig.EDnsCsCustomIp = types.StringValue("")
+	} else {
+		stateDnsConfig.EDnsCsCustomIp = types.StringValue(dnsConfig.EDnsCsCustomIp)
+	}
 	stateDnsConfig.DisableIpv6 = types.BoolValue(dnsConfig.DisableIpv6)
 	stateDnsConfig.DnsSecEnabled = types.BoolValue(dnsConfig.DnsSecEnabled)
 	stateDnsConfig.CacheSize = types.Int64Value(int64(dnsConfig.CacheSize))
@@ -1179,6 +1193,8 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	dnsConfig.BlockingIpv6 = planDnsConfig.BlockingIpv6.ValueString()
 	dnsConfig.BlockedResponseTtl = uint(planDnsConfig.BlockedResponseTtl.ValueInt64())
 	dnsConfig.EDnsCsEnabled = planDnsConfig.EDnsCsEnabled.ValueBool()
+	dnsConfig.EDnsCsUseCustom = planDnsConfig.EDnsCsUseCustom.ValueBool()
+	dnsConfig.EDnsCsCustomIp = planDnsConfig.EDnsCsCustomIp.ValueString()
 	dnsConfig.DisableIpv6 = planDnsConfig.DisableIpv6.ValueBool()
 	dnsConfig.DnsSecEnabled = planDnsConfig.DnsSecEnabled.ValueBool()
 	dnsConfig.CacheSize = uint(planDnsConfig.CacheSize.ValueInt64())

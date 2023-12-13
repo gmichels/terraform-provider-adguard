@@ -127,6 +127,9 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_ipv4", "1.2.3.4"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_ipv6", "fe80::"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocked_response_ttl", "10"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.edns_cs_enabled", "false"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.edns_cs_use_custom", "false"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.edns_cs_custom_ip", ""),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_ttl_min", "600"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_ttl_max", "86400"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_optimistic", "true"),
@@ -183,6 +186,8 @@ resource "adguard_config" "test" {
 		rate_limit_whitelist      = ["1.2.3.4", "fe80::"]
 		blocked_response_ttl      = 30
 		edns_cs_enabled           = true
+		edns_cs_use_custom        = true
+		edns_cs_custom_ip         = "2607:f0d0:1002:51::4"
 		disable_ipv6              = true
 		dnssec_enabled            = true
 		cache_size                = 8000000
@@ -269,6 +274,8 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocking_ipv6", ""),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.blocked_response_ttl", "30"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.edns_cs_enabled", "true"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.edns_cs_use_custom", "true"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.edns_cs_custom_ip", "2607:f0d0:1002:51::4"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.disable_ipv6", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.dnssec_enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_size", "8000000"),
