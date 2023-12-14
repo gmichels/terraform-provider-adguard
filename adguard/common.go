@@ -75,6 +75,61 @@ func (o dayRangeModel) defaultObject() map[string]attr.Value {
 	}
 }
 
+// provides schedule schema for datasources
+func scheduleDatasourceSchema() schema.SingleNestedAttribute {
+	return schema.SingleNestedAttribute{
+		Description: "Sets periods of inactivity for filtering blocked services. The schedule contains 7 days (Sunday to Saturday) and a time zone.",
+		Computed:    true,
+		Attributes: map[string]schema.Attribute{
+			"time_zone": schema.StringAttribute{
+				Description: "Time zone name according to IANA time zone database. For example `America/New_York`. `Local` represents the system's local time zone.",
+				Computed:    true,
+			},
+			"sun": dayRangeDatasourceSchema("Sunday"),
+			"mon": dayRangeDatasourceSchema("Monday"),
+			"tue": dayRangeDatasourceSchema("Tueday"),
+			"wed": dayRangeDatasourceSchema("Wednesday"),
+			"thu": dayRangeDatasourceSchema("Thursday"),
+			"fri": dayRangeDatasourceSchema("Friday"),
+			"sat": dayRangeDatasourceSchema("Saturday"),
+		},
+	}
+}
+
+// provides schedule schema for resources
+func scheduleResourceSchema() schema.SingleNestedAttribute {
+	return schema.SingleNestedAttribute{
+		Description: "Sets periods of inactivity for filtering blocked services. The schedule contains 7 days (Sunday to Saturday) and a time zone.",
+		Computed:    true,
+		Optional:    true,
+		Default: objectdefault.StaticValue(types.ObjectValueMust(
+			scheduleModel{}.attrTypes(), scheduleModel{}.defaultObject()),
+		),
+		Attributes: map[string]schema.Attribute{
+			"time_zone": schema.StringAttribute{
+				Description: "Time zone name according to IANA time zone database. For example `America/New_York`. `Local` represents the system's local time zone.",
+				Optional:    true,
+				Validators: []validator.String{AlsoRequiresNOf(1,
+					path.MatchRelative().AtParent().AtName("sun"),
+					path.MatchRelative().AtParent().AtName("mon"),
+					path.MatchRelative().AtParent().AtName("tue"),
+					path.MatchRelative().AtParent().AtName("wed"),
+					path.MatchRelative().AtParent().AtName("thu"),
+					path.MatchRelative().AtParent().AtName("fri"),
+					path.MatchRelative().AtParent().AtName("sat"),
+				)},
+			},
+			"sun": dayRangeResourceSchema("Sunday"),
+			"mon": dayRangeResourceSchema("Monday"),
+			"tue": dayRangeResourceSchema("Tueday"),
+			"wed": dayRangeResourceSchema("Wednesday"),
+			"thu": dayRangeResourceSchema("Thursday"),
+			"fri": dayRangeResourceSchema("Friday"),
+			"sat": dayRangeResourceSchema("Saturday"),
+		},
+	}
+}
+
 // provides day range schema for datasources
 func dayRangeDatasourceSchema(day string) schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
