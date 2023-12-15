@@ -32,6 +32,8 @@ func TestAccClientDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr("data.adguard_client.test", "blocked_services_pause_schedule.thu.end", "17:45"),
 					resource.TestCheckResourceAttr("data.adguard_client.test", "ignore_querylog", "false"),
 					resource.TestCheckResourceAttr("data.adguard_client.test", "ignore_statistics", "true"),
+					resource.TestCheckResourceAttr("data.adguard_client.test", "upstreams_cache_enabled", "false"),
+					resource.TestCheckResourceAttr("data.adguard_client.test", "upstreams_cache_size", "10000"),
 					// Verify placeholder id attribute
 					resource.TestCheckResourceAttr("data.adguard_client.test", "id", "placeholder"),
 				),

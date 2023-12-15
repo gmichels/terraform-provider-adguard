@@ -213,7 +213,7 @@ clients:
       tags:
         - device_other
       upstreams: []
-      upstreams_cache_size: 0
+      upstreams_cache_size: 10000
       upstreams_cache_enabled: false
       use_global_settings: false
       filtering_enabled: false

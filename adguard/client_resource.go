@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gmichels/adguard-client-go"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -14,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -141,6 +143,21 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Computed:    true,
 				Optional:    true,
 				Default:     booldefault.StaticBool(CLIENT_IGNORE_STATISTICS),
+			},
+			"upstreams_cache_enabled": schema.BoolAttribute{
+				Description: fmt.Sprintf("Whether to enable DNS caching for this client's custom upstream configuration. Defaults to `%t`", CLIENT_UPSTREAMS_CACHE_ENABLED),
+				Computed:    true,
+				Optional:    true,
+				Default:     booldefault.StaticBool(CLIENT_UPSTREAMS_CACHE_ENABLED),
+			},
+			"upstreams_cache_size": schema.Int64Attribute{
+				Description: "The upstreams DNS cache size, in bytes",
+				Computed:    true,
+				Optional:    true,
+				Default:     int64default.StaticInt64(CLIENT_UPSTREAMS_CACHE_SIZE),
+				Validators: []validator.Int64{
+					int64validator.Between(CLIENT_UPSTREAMS_CACHE_SIZE, CLIENT_UPSTREAMS_CACHE_SIZE_MAX),
+				},
 			},
 		},
 	}

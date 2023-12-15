@@ -28,6 +28,8 @@ type clientCommonModel struct {
 	Tags                         types.Set    `tfsdk:"tags"`
 	IgnoreQuerylog               types.Bool   `tfsdk:"ignore_querylog"`
 	IgnoreStatistics             types.Bool   `tfsdk:"ignore_statistics"`
+	UpstreamsCacheEnabled        types.Bool   `tfsdk:"upstreams_cache_enabled"`
+	UpstreamsCacheSize           types.Int64  `tfsdk:"upstreams_cache_size"`
 }
 
 // common `Read` function for both data source and resource
@@ -129,6 +131,8 @@ func (o *clientCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	}
 	o.IgnoreQuerylog = types.BoolValue(client.IgnoreQuerylog)
 	o.IgnoreStatistics = types.BoolValue(client.IgnoreStatistics)
+	o.UpstreamsCacheEnabled = types.BoolValue(client.UpstreamsCacheEnabled)
+	o.UpstreamsCacheSize = types.Int64Value(int64(client.UpstreamsCacheSize))
 
 	// if we got here, all went fine
 }
@@ -199,6 +203,8 @@ func (r *clientResource) CreateOrUpdate(ctx context.Context, plan *clientCommonM
 	}
 	client.IgnoreQuerylog = plan.IgnoreQuerylog.ValueBool()
 	client.IgnoreStatistics = plan.IgnoreStatistics.ValueBool()
+	client.UpstreamsCacheEnabled = plan.UpstreamsCacheEnabled.ValueBool()
+	client.UpstreamsCacheSize = uint(plan.UpstreamsCacheSize.ValueInt64())
 
 	if create_operation {
 		// create new client using plan

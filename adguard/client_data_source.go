@@ -97,6 +97,14 @@ func (d *clientDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 				Description: "Whether to this client is included in the statistics",
 				Computed:    true,
 			},
+			"upstreams_cache_enabled": schema.BoolAttribute{
+				Description: "Whether DNS caching for this client's custom upstream configuration is enabled",
+				Computed:    true,
+			},
+			"upstreams_cache_size": schema.Int64Attribute{
+				Description: "The upstreams DNS cache size, in bytes",
+				Computed:    true,
+			},
 		},
 	}
 }

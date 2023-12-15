@@ -63,7 +63,10 @@ resource "adguard_client" "test" {
 			end   = "19:41"
 		}
 	}
-	ignore_querylog = true
+	ignore_querylog         = true
+	upstreams_cache_enabled = true
+	upstreams_cache_size    = 12345
+
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -80,6 +83,8 @@ resource "adguard_client" "test" {
 					resource.TestCheckResourceAttr("adguard_client.test", "blocked_services_pause_schedule.sun.start", "10:00"),
 					resource.TestCheckResourceAttr("adguard_client.test", "blocked_services_pause_schedule.sun.end", "19:41"),
 					resource.TestCheckResourceAttr("adguard_client.test", "ignore_querylog", "true"),
+					resource.TestCheckResourceAttr("adguard_client.test", "upstreams_cache_enabled", "true"),
+					resource.TestCheckResourceAttr("adguard_client.test", "upstreams_cache_size", "12345"),
 				),
 			},
 			// Update client name testing (requires recreate)
