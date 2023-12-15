@@ -32,23 +32,6 @@ type clientResource struct {
 	adg *adguard.ADG
 }
 
-// clientResourceModel maps client schema data
-type clientResourceModel struct {
-	ID                       types.String `tfsdk:"id"`
-	LastUpdated              types.String `tfsdk:"last_updated"`
-	Name                     types.String `tfsdk:"name"`
-	Ids                      types.List   `tfsdk:"ids"`
-	UseGlobalSettings        types.Bool   `tfsdk:"use_global_settings"`
-	FilteringEnabled         types.Bool   `tfsdk:"filtering_enabled"`
-	ParentalEnabled          types.Bool   `tfsdk:"parental_enabled"`
-	SafebrowsingEnabled      types.Bool   `tfsdk:"safebrowsing_enabled"`
-	SafesearchEnabled        types.Bool   `tfsdk:"safesearch_enabled"`
-	UseGlobalBlockedServices types.Bool   `tfsdk:"use_global_blocked_services"`
-	BlockedServices          types.Set    `tfsdk:"blocked_services"`
-	Upstreams                types.List   `tfsdk:"upstreams"`
-	Tags                     types.Set    `tfsdk:"tags"`
-}
-
 // NewClientResource is a helper function to simplify the provider implementation
 func NewClientResource() resource.Resource {
 	return &clientResource{}
@@ -118,23 +101,22 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Optional:    true,
 				Default:     booldefault.StaticBool(CLIENT_SAFEBROWSING_ENABLED),
 			},
-			"safesearch_enabled": schema.BoolAttribute{
-				Description: fmt.Sprintf("Whether to enforce safe search on this client. Defaults to `%t`", CLIENT_SAFE_SEARCH_ENABLED),
-				Computed:    true,
-				Optional:    true,
-				Default:     booldefault.StaticBool(CLIENT_SAFE_SEARCH_ENABLED),
-			},
+			"safesearch": safeSearchResourceSchema(),
 			"use_global_blocked_services": schema.BoolAttribute{
 				Description: fmt.Sprintf("Whether to use global settings for blocked services. Defaults to `%t`", CLIENT_USE_GLOBAL_BLOCKED_SERVICES),
 				Computed:    true,
 				Optional:    true,
 				Default:     booldefault.StaticBool(CLIENT_USE_GLOBAL_BLOCKED_SERVICES),
 			},
+			"blocked_services_pause_schedule": scheduleResourceSchema(),
 			"blocked_services": schema.SetAttribute{
 				Description: "Set of blocked services for this client",
 				ElementType: types.StringType,
 				Optional:    true,
-				Validators:  []validator.Set{setvalidator.SizeAtLeast(1)},
+				Validators: []validator.Set{
+					setvalidator.SizeAtLeast(1),
+					setvalidator.ValueStringsAre(stringvalidator.OneOf(BLOCKED_SERVICES_OPTIONS...)),
+				},
 			},
 			"upstreams": schema.ListAttribute{
 				Description: "List of upstream DNS server for this client",
@@ -147,6 +129,18 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				ElementType: types.StringType,
 				Optional:    true,
 				Validators:  []validator.Set{setvalidator.SizeAtLeast(1)},
+			},
+			"ignore_querylog": schema.BoolAttribute{
+				Description: fmt.Sprintf("Whether to write to the query log. Defaults to `%t`", CLIENT_IGNORE_QUERYLOG),
+				Computed:    true,
+				Optional:    true,
+				Default:     booldefault.StaticBool(CLIENT_IGNORE_QUERYLOG),
+			},
+			"ignore_statistics": schema.BoolAttribute{
+				Description: fmt.Sprintf("Whether to be included in the statistics. Defaults to `%t`", CLIENT_IGNORE_STATISTICS),
+				Computed:    true,
+				Optional:    true,
+				Default:     booldefault.StaticBool(CLIENT_IGNORE_STATISTICS),
 			},
 		},
 	}
@@ -164,64 +158,23 @@ func (r *clientResource) Configure(_ context.Context, req resource.ConfigureRequ
 // Create creates the resource and sets the initial Terraform state
 func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	// retrieve values from plan
-	var plan clientResourceModel
+	var plan clientCommonModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// instantiate empty client for storing plan data
-	var client adguard.Client
-
-	// populate client from plan
-	client.Name = plan.Name.ValueString()
-	diags = plan.Ids.ElementsAs(ctx, &client.Ids, false)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	client.UseGlobalSettings = plan.UseGlobalSettings.ValueBool()
-	client.FilteringEnabled = plan.FilteringEnabled.ValueBool()
-	client.ParentalEnabled = plan.ParentalEnabled.ValueBool()
-	client.SafebrowsingEnabled = plan.SafebrowsingEnabled.ValueBool()
-	client.SafesearchEnabled = plan.SafesearchEnabled.ValueBool()
-	client.UseGlobalBlockedServices = plan.UseGlobalBlockedServices.ValueBool()
-	if len(plan.BlockedServices.Elements()) > 0 {
-		diags = plan.BlockedServices.ElementsAs(ctx, &client.BlockedServices, false)
+	// defer to common function to create or update the resource
+	r.CreateOrUpdate(ctx, &plan, &resp.Diagnostics, true)
+	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-	if len(plan.Upstreams.Elements()) > 0 {
-		diags = plan.Upstreams.ElementsAs(ctx, &client.Upstreams, false)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-	if len(plan.Tags.Elements()) > 0 {
-		diags = plan.Tags.ElementsAs(ctx, &client.Tags, false)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-
-	// create new client using plan
-	newClient, err := r.adg.CreateClient(client)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Creating Client",
-			"Could not create client, unexpected error: "+err.Error(),
-		)
 		return
 	}
 
 	// response sent by AdGuard Home is the same as the sent payload,
 	// just add missing attributes for state
-	plan.ID = types.StringValue(newClient.Name)
+	plan.ID = types.StringValue(plan.Name.ValueString())
 	// add the last updated attribute
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 
@@ -236,64 +189,28 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 // Read refreshes the Terraform state with the latest data
 func (r *clientResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	// get current state
-	var state clientResourceModel
+	var state clientCommonModel
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// get refreshed client value from AdGuard Home
-	client, err := r.adg.GetClient(state.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Reading AdGuard Home Client",
-			"Could not read AdGuard Home client ID "+state.ID.ValueString()+": "+err.Error(),
-		)
-		return
-	} else if client == nil {
-		resp.Diagnostics.AddError(
-			"Error Reading AdGuard Home Client",
-			"No such AdGuard Home client with ID "+state.ID.ValueString(),
-		)
+	// use common model for state
+	var newState clientCommonModel
+	// use common Read function
+	newState.Read(ctx, *r.adg, &state, &resp.Diagnostics, "resource")
+	if diags.HasError() {
+		resp.Diagnostics.Append(diags...)
 		return
 	}
 
-	// overwrite client with refreshed state
-	state.Name = types.StringValue(client.Name)
-	state.Ids, diags = types.ListValueFrom(ctx, types.StringType, client.Ids)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	state.UseGlobalSettings = types.BoolValue(client.UseGlobalSettings)
-	state.FilteringEnabled = types.BoolValue(client.FilteringEnabled)
-	state.ParentalEnabled = types.BoolValue(client.ParentalEnabled)
-	state.SafebrowsingEnabled = types.BoolValue(client.SafebrowsingEnabled)
-	state.SafesearchEnabled = types.BoolValue(client.SafesearchEnabled)
-	state.UseGlobalBlockedServices = types.BoolValue(client.UseGlobalBlockedServices)
-	state.BlockedServices, diags = types.SetValueFrom(ctx, types.StringType, client.BlockedServices)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	// API response returns an actual empty list instead of null for upstreams, therefore
-	// only make the conversion if there are any upstreams
-	if len(client.Upstreams) > 0 {
-		state.Upstreams, diags = types.ListValueFrom(ctx, types.StringType, client.Upstreams)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-	state.Tags, diags = types.SetValueFrom(ctx, types.StringType, client.Tags)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	// populate internal fields into new state
+	newState.ID = state.ID
+	newState.LastUpdated = state.LastUpdated
 
 	// set refreshed state
-	diags = resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, &newState)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -303,57 +220,17 @@ func (r *clientResource) Read(ctx context.Context, req resource.ReadRequest, res
 // Update updates the resource and sets the updated Terraform state on success
 func (r *clientResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	// retrieve values from plan
-	var plan clientResourceModel
+	var plan clientCommonModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// generate API request body from plan
-	var updateClient adguard.ClientUpdate
-	updateClient.Name = plan.ID.ValueString()
-	updateClient.Data.Name = plan.Name.ValueString()
-	diags = plan.Ids.ElementsAs(ctx, &updateClient.Data.Ids, false)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	updateClient.Data.UseGlobalSettings = plan.UseGlobalSettings.ValueBool()
-	updateClient.Data.FilteringEnabled = plan.FilteringEnabled.ValueBool()
-	updateClient.Data.ParentalEnabled = plan.ParentalEnabled.ValueBool()
-	updateClient.Data.SafebrowsingEnabled = plan.SafebrowsingEnabled.ValueBool()
-	updateClient.Data.SafesearchEnabled = plan.SafesearchEnabled.ValueBool()
-	updateClient.Data.UseGlobalBlockedServices = plan.UseGlobalBlockedServices.ValueBool()
-	if len(plan.BlockedServices.Elements()) > 0 {
-		diags = plan.BlockedServices.ElementsAs(ctx, &updateClient.Data.BlockedServices, false)
+	// defer to common function to create or update the resource
+	r.CreateOrUpdate(ctx, &plan, &resp.Diagnostics, false)
+	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-	if len(plan.Upstreams.Elements()) > 0 {
-		diags = plan.Upstreams.ElementsAs(ctx, &updateClient.Data.Upstreams, false)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-	if len(plan.Tags.Elements()) > 0 {
-		diags = plan.Tags.ElementsAs(ctx, &updateClient.Data.Tags, false)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-
-	// update existing client
-	_, err := r.adg.UpdateClient(updateClient)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Updating AdGuard Home Client",
-			"Could not update client, unexpected error: "+err.Error(),
-		)
 		return
 	}
 
@@ -371,7 +248,7 @@ func (r *clientResource) Update(ctx context.Context, req resource.UpdateRequest,
 // Delete deletes the resource and removes the Terraform state on success
 func (r *clientResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	// retrieve values from state
-	var state clientResourceModel
+	var state clientCommonModel
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

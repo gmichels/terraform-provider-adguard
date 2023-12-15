@@ -68,11 +68,6 @@ func (d *clientDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 				Description: "Whether to have AdGuard browsing security enabled on this client",
 				Computed:    true,
 			},
-			"safesearch_enabled": schema.BoolAttribute{
-				DeprecationMessage: "This attribute has been deprecated. Please use `safesearch.enabled`",
-				Description:        "Whether to enforce safe search on this client",
-				Optional:           true,
-			},
 			"safesearch": safeSearchDatasourceSchema(),
 			"use_global_blocked_services": schema.BoolAttribute{
 				Description: "Whether to use global settings for blocked services",

@@ -2,6 +2,7 @@ package adguard
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/gmichels/adguard-client-go"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -19,7 +20,6 @@ type clientCommonModel struct {
 	FilteringEnabled             types.Bool   `tfsdk:"filtering_enabled"`
 	ParentalEnabled              types.Bool   `tfsdk:"parental_enabled"`
 	SafebrowsingEnabled          types.Bool   `tfsdk:"safebrowsing_enabled"`
-	SafesearchEnabled            types.Bool   `tfsdk:"safesearch_enabled"` // deprecated
 	SafeSearch                   types.Object `tfsdk:"safesearch"`
 	UseGlobalBlockedServices     types.Bool   `tfsdk:"use_global_blocked_services"`
 	BlockedServicesPauseSchedule types.Object `tfsdk:"blocked_services_pause_schedule"`
@@ -32,8 +32,17 @@ type clientCommonModel struct {
 
 // common `Read` function for both data source and resource
 func (o *clientCommonModel) Read(ctx context.Context, adg adguard.ADG, currState *clientCommonModel, diags *diag.Diagnostics, rtype string) {
+	// need to define client name based whether it's an import operation
+	var clientName string
+	if !currState.Name.IsNull() {
+		// name exists in plan
+		clientName = currState.Name.ValueString()
+	} else {
+		// this is an import operation, use the ID
+		clientName = currState.ID.ValueString()
+	}
 	// retrieve client info
-	client, err := adg.GetClient(currState.Name.ValueString())
+	client, err := adg.GetClient(clientName)
 	if err != nil {
 		diags.AddError(
 			"Unable to Read AdGuard Home Client",
@@ -44,7 +53,7 @@ func (o *clientCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	if client == nil {
 		diags.AddError(
 			"Unable to Locate AdGuard Home Client",
-			"No client with name `"+currState.Name.ValueString()+"` exists in AdGuard Home.",
+			"No client with name `"+clientName+"` exists in AdGuard Home.",
 		)
 		return
 	}
@@ -62,8 +71,6 @@ func (o *clientCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 
 	var stateSafeSearchClient safeSearchModel
 	stateSafeSearchClient.Enabled = types.BoolValue(client.SafeSearch.Enabled)
-	// deprecated, copy from other value
-	o.SafesearchEnabled = stateSafeSearchClient.Enabled
 	// map safe search config object to a list of enabled services
 	enabledSafeSearchServices := mapSafeSearchServices(&client.SafeSearch)
 	stateSafeSearchClient.Services, *diags = types.SetValueFrom(ctx, types.StringType, enabledSafeSearchServices)
@@ -76,7 +83,7 @@ func (o *clientCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	o.UseGlobalBlockedServices = types.BoolValue(client.UseGlobalBlockedServices)
 
 	// use common function to map blocked services pause schedules for each day
-	stateBlockedServicesPauseScheduleClient := mapBlockedServicesScheduleDays(ctx, &client.BlockedServicesSchedule)
+	stateBlockedServicesPauseScheduleClient := mapAdgScheduleToBlockedServicesPauseSchedule(ctx, &client.BlockedServicesSchedule)
 
 	// need special handling for timezone in resource due to inconsistent API response for `Local`
 	if rtype == "resource" {
@@ -124,4 +131,99 @@ func (o *clientCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	o.IgnoreStatistics = types.BoolValue(client.IgnoreStatistics)
 
 	// if we got here, all went fine
+}
+
+// common `Create` and `Update` function for the resource
+func (r *clientResource) CreateOrUpdate(ctx context.Context, plan *clientCommonModel, diags *diag.Diagnostics, create_operation bool) {
+	// instantiate empty client for storing plan data
+	var client adguard.Client
+
+	// populate client from plan
+	client.Name = plan.Name.ValueString()
+	*diags = plan.Ids.ElementsAs(ctx, &client.Ids, false)
+	if diags.HasError() {
+		return
+	}
+	client.UseGlobalSettings = plan.UseGlobalSettings.ValueBool()
+	client.FilteringEnabled = plan.FilteringEnabled.ValueBool()
+	client.ParentalEnabled = plan.ParentalEnabled.ValueBool()
+	client.SafebrowsingEnabled = plan.SafebrowsingEnabled.ValueBool()
+
+	// unpack nested attributes from plan
+	var planSafeSearch safeSearchModel
+	*diags = plan.SafeSearch.As(ctx, &planSafeSearch, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return
+	}
+
+	client.SafeSearch.Enabled = planSafeSearch.Enabled.ValueBool()
+
+	if len(planSafeSearch.Services.Elements()) > 0 {
+		var safeSearchServicesEnabled []string
+		*diags = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
+		if diags.HasError() {
+			return
+		} // use reflection to set each safe search services value dynamically
+		v := reflect.ValueOf(&client.SafeSearch).Elem()
+		t := v.Type()
+		setSafeSearchServices(v, t, safeSearchServicesEnabled)
+	}
+
+	client.UseGlobalBlockedServices = plan.UseGlobalBlockedServices.ValueBool()
+
+	// unpack nested attributes from plan
+	var planBlockedServicesPauseScheduleClient scheduleModel
+	*diags = plan.BlockedServicesPauseSchedule.As(ctx, &planBlockedServicesPauseScheduleClient, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return
+	} // defer to common function to populate schedule
+	client.BlockedServicesSchedule = mapBlockedServicesPauseScheduleToAdgSchedule(ctx, planBlockedServicesPauseScheduleClient)
+
+	if len(plan.BlockedServices.Elements()) > 0 {
+		*diags = plan.BlockedServices.ElementsAs(ctx, &client.BlockedServices, false)
+		if diags.HasError() {
+			return
+		}
+	}
+	if len(plan.Upstreams.Elements()) > 0 {
+		*diags = plan.Upstreams.ElementsAs(ctx, &client.Upstreams, false)
+		if diags.HasError() {
+			return
+		}
+	}
+	if len(plan.Tags.Elements()) > 0 {
+		*diags = plan.Tags.ElementsAs(ctx, &client.Tags, false)
+		if diags.HasError() {
+			return
+		}
+	}
+	client.IgnoreQuerylog = plan.IgnoreQuerylog.ValueBool()
+	client.IgnoreStatistics = plan.IgnoreStatistics.ValueBool()
+
+	if create_operation {
+		// create new client using plan
+		_, err := r.adg.CreateClient(client)
+		if err != nil {
+			diags.AddError(
+				"Error Creating Client",
+				"Could not create client, unexpected error: "+err.Error(),
+			)
+			return
+		}
+	} else {
+		// instantiate specific empty update client for storing plan data
+		var updateClient adguard.ClientUpdate
+		updateClient.Name = plan.ID.ValueString()
+		// grab our client and place in object
+		updateClient.Data = client
+		// update existing client
+		_, err := r.adg.UpdateClient(updateClient)
+		if err != nil {
+			diags.AddError(
+				"Error Updating AdGuard Home Client",
+				"Could not update client, unexpected error: "+err.Error(),
+			)
+			return
+		}
+	}
 }
