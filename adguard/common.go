@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // safeSearchModel maps safe search schema data
@@ -311,8 +312,8 @@ func dayRangeResourceSchema(day string) schema.SingleNestedAttribute {
 	}
 }
 
-// mapBlockedServicesScheduleDays takes an ADG BlockedServicesSchedule object and maps the the days into a scheduleModel
-func mapBlockedServicesScheduleDays(ctx context.Context, adgBlockedServicesSchedule *adguard.Schedule) scheduleModel {
+// mapAdgScheduleToBlockedServicesPauseSchedule takes an ADG Schedule object and maps the the days into a scheduleModel
+func mapAdgScheduleToBlockedServicesPauseSchedule(ctx context.Context, adgBlockedServicesSchedule *adguard.Schedule) scheduleModel {
 	// instantiate empty intermediate object
 	var blockedServicesPauseSchedule scheduleModel
 
@@ -367,4 +368,50 @@ func mapBlockedServicesScheduleDays(ctx context.Context, adgBlockedServicesSched
 	blockedServicesPauseSchedule.Saturday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &satDayRangeConfig)
 
 	return blockedServicesPauseSchedule
+}
+
+// mapBlockedServicesPauseScheduleToAdgSchedule takes a scheduleModel from plan and maps into an ADG Schedule object
+func mapBlockedServicesPauseScheduleToAdgSchedule(ctx context.Context, schedule scheduleModel) adguard.Schedule {
+	// unpack nested attributes for each day from plan
+	var planSunDayRangeConfig dayRangeModel
+	_ = schedule.Sunday.As(ctx, &planSunDayRangeConfig, basetypes.ObjectAsOptions{})
+
+	var planMonDayRangeConfig dayRangeModel
+	_ = schedule.Monday.As(ctx, &planMonDayRangeConfig, basetypes.ObjectAsOptions{})
+
+	var planTueDayRangeConfig dayRangeModel
+	_ = schedule.Tuesday.As(ctx, &planTueDayRangeConfig, basetypes.ObjectAsOptions{})
+
+	var planWedDayRangeConfig dayRangeModel
+	_ = schedule.Wednesday.As(ctx, &planWedDayRangeConfig, basetypes.ObjectAsOptions{})
+
+	var planThuDayRangeConfig dayRangeModel
+	_ = schedule.Thursday.As(ctx, &planThuDayRangeConfig, basetypes.ObjectAsOptions{})
+
+	var planFriDayRangeConfig dayRangeModel
+	_ = schedule.Friday.As(ctx, &planFriDayRangeConfig, basetypes.ObjectAsOptions{})
+
+	var planSatDayRangeConfig dayRangeModel
+	_ = schedule.Saturday.As(ctx, &planSatDayRangeConfig, basetypes.ObjectAsOptions{})
+
+	// instantiate empty object for storing plan data
+	var blockedServicesSchedule adguard.Schedule
+	// populate blocked services schedule from plan
+	blockedServicesSchedule.TimeZone = schedule.TimeZone.ValueString()
+	blockedServicesSchedule.Sunday.Start = uint(convertHoursMinutesToMs(planSunDayRangeConfig.Start.ValueString()))
+	blockedServicesSchedule.Sunday.End = uint(convertHoursMinutesToMs(planSunDayRangeConfig.End.ValueString()))
+	blockedServicesSchedule.Monday.Start = uint(convertHoursMinutesToMs(planMonDayRangeConfig.Start.ValueString()))
+	blockedServicesSchedule.Monday.End = uint(convertHoursMinutesToMs(planMonDayRangeConfig.End.ValueString()))
+	blockedServicesSchedule.Tuesday.Start = uint(convertHoursMinutesToMs(planTueDayRangeConfig.Start.ValueString()))
+	blockedServicesSchedule.Tuesday.End = uint(convertHoursMinutesToMs(planTueDayRangeConfig.End.ValueString()))
+	blockedServicesSchedule.Wednesday.Start = uint(convertHoursMinutesToMs(planWedDayRangeConfig.Start.ValueString()))
+	blockedServicesSchedule.Wednesday.End = uint(convertHoursMinutesToMs(planWedDayRangeConfig.End.ValueString()))
+	blockedServicesSchedule.Thursday.Start = uint(convertHoursMinutesToMs(planThuDayRangeConfig.Start.ValueString()))
+	blockedServicesSchedule.Thursday.End = uint(convertHoursMinutesToMs(planThuDayRangeConfig.End.ValueString()))
+	blockedServicesSchedule.Friday.Start = uint(convertHoursMinutesToMs(planFriDayRangeConfig.Start.ValueString()))
+	blockedServicesSchedule.Friday.End = uint(convertHoursMinutesToMs(planFriDayRangeConfig.End.ValueString()))
+	blockedServicesSchedule.Saturday.Start = uint(convertHoursMinutesToMs(planSatDayRangeConfig.Start.ValueString()))
+	blockedServicesSchedule.Saturday.End = uint(convertHoursMinutesToMs(planSatDayRangeConfig.End.ValueString()))
+
+	return blockedServicesSchedule
 }

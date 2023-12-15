@@ -555,7 +555,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	}
 
 	// use common function to map blocked services pause schedules for each day
-	stateBlockedServicesPauseScheduleConfig := mapBlockedServicesScheduleDays(ctx, &blockedServicesPauseSchedule.Schedule)
+	stateBlockedServicesPauseScheduleConfig := mapAdgScheduleToBlockedServicesPauseSchedule(ctx, &blockedServicesPauseSchedule.Schedule)
 
 	// need special handling for timezone in resource due to inconsistent API response for `Local`
 	if rtype == "resource" {
@@ -996,63 +996,12 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	if diags.HasError() {
 		return
 	}
-
-	// unpack nested attributes for each day from plan
-	var planSunDayRangeConfig dayRangeModel
-	*diags = planBlockedServicesPauseScheduleConfig.Sunday.As(ctx, &planSunDayRangeConfig, basetypes.ObjectAsOptions{})
-	if diags.HasError() {
-		return
-	}
-	var planMonDayRangeConfig dayRangeModel
-	*diags = planBlockedServicesPauseScheduleConfig.Monday.As(ctx, &planMonDayRangeConfig, basetypes.ObjectAsOptions{})
-	if diags.HasError() {
-		return
-	}
-	var planTueDayRangeConfig dayRangeModel
-	*diags = planBlockedServicesPauseScheduleConfig.Tuesday.As(ctx, &planTueDayRangeConfig, basetypes.ObjectAsOptions{})
-	if diags.HasError() {
-		return
-	}
-	var planWedDayRangeConfig dayRangeModel
-	*diags = planBlockedServicesPauseScheduleConfig.Wednesday.As(ctx, &planWedDayRangeConfig, basetypes.ObjectAsOptions{})
-	if diags.HasError() {
-		return
-	}
-	var planThuDayRangeConfig dayRangeModel
-	*diags = planBlockedServicesPauseScheduleConfig.Thursday.As(ctx, &planThuDayRangeConfig, basetypes.ObjectAsOptions{})
-	if diags.HasError() {
-		return
-	}
-	var planFriDayRangeConfig dayRangeModel
-	*diags = planBlockedServicesPauseScheduleConfig.Friday.As(ctx, &planFriDayRangeConfig, basetypes.ObjectAsOptions{})
-	if diags.HasError() {
-		return
-	}
-	var planSatDayRangeConfig dayRangeModel
-	*diags = planBlockedServicesPauseScheduleConfig.Saturday.As(ctx, &planSatDayRangeConfig, basetypes.ObjectAsOptions{})
-	if diags.HasError() {
-		return
-	}
-
 	// instantiate empty object for storing plan data
 	var blockedServicesPauseScheduleConfig adguard.BlockedServicesSchedule
 	// populate blocked services schedule from plan
 	blockedServicesPauseScheduleConfig.Ids = blockedServices
-	blockedServicesPauseScheduleConfig.Schedule.TimeZone = planBlockedServicesPauseScheduleConfig.TimeZone.ValueString()
-	blockedServicesPauseScheduleConfig.Schedule.Sunday.Start = uint(convertHoursMinutesToMs(planSunDayRangeConfig.Start.ValueString()))
-	blockedServicesPauseScheduleConfig.Schedule.Sunday.End = uint(convertHoursMinutesToMs(planSunDayRangeConfig.End.ValueString()))
-	blockedServicesPauseScheduleConfig.Schedule.Monday.Start = uint(convertHoursMinutesToMs(planMonDayRangeConfig.Start.ValueString()))
-	blockedServicesPauseScheduleConfig.Schedule.Monday.End = uint(convertHoursMinutesToMs(planMonDayRangeConfig.End.ValueString()))
-	blockedServicesPauseScheduleConfig.Schedule.Tuesday.Start = uint(convertHoursMinutesToMs(planTueDayRangeConfig.Start.ValueString()))
-	blockedServicesPauseScheduleConfig.Schedule.Tuesday.End = uint(convertHoursMinutesToMs(planTueDayRangeConfig.End.ValueString()))
-	blockedServicesPauseScheduleConfig.Schedule.Wednesday.Start = uint(convertHoursMinutesToMs(planWedDayRangeConfig.Start.ValueString()))
-	blockedServicesPauseScheduleConfig.Schedule.Wednesday.End = uint(convertHoursMinutesToMs(planWedDayRangeConfig.End.ValueString()))
-	blockedServicesPauseScheduleConfig.Schedule.Thursday.Start = uint(convertHoursMinutesToMs(planThuDayRangeConfig.Start.ValueString()))
-	blockedServicesPauseScheduleConfig.Schedule.Thursday.End = uint(convertHoursMinutesToMs(planThuDayRangeConfig.End.ValueString()))
-	blockedServicesPauseScheduleConfig.Schedule.Friday.Start = uint(convertHoursMinutesToMs(planFriDayRangeConfig.Start.ValueString()))
-	blockedServicesPauseScheduleConfig.Schedule.Friday.End = uint(convertHoursMinutesToMs(planFriDayRangeConfig.End.ValueString()))
-	blockedServicesPauseScheduleConfig.Schedule.Saturday.Start = uint(convertHoursMinutesToMs(planSatDayRangeConfig.Start.ValueString()))
-	blockedServicesPauseScheduleConfig.Schedule.Saturday.End = uint(convertHoursMinutesToMs(planSatDayRangeConfig.End.ValueString()))
+	// defer to common function to populate schedule
+	blockedServicesPauseScheduleConfig.Schedule = mapBlockedServicesPauseScheduleToAdgSchedule(ctx, planBlockedServicesPauseScheduleConfig)
 
 	// set blocked services and schedule using plan
 	_, err = r.adg.SetBlockedServices(blockedServicesPauseScheduleConfig)
