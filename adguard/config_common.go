@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
-	"strings"
 
 	"github.com/gmichels/adguard-client-go"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -52,33 +51,6 @@ func (o filteringModel) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
 		"enabled":         types.BoolValue(CONFIG_FILTERING_ENABLED),
 		"update_interval": types.Int64Value(int64(CONFIG_FILTERING_UPDATE_INTERVAL)),
-	}
-}
-
-// safeSearchModel maps safe search schema data
-type safeSearchModel struct {
-	Enabled  types.Bool `tfsdk:"enabled"`
-	Services types.Set  `tfsdk:"services"`
-}
-
-// attrTypes - return attribute types for this model
-func (o safeSearchModel) attrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"enabled":  types.BoolType,
-		"services": types.SetType{ElemType: types.StringType},
-	}
-}
-
-// defaultObject - return default object for this model
-func (o safeSearchModel) defaultObject() map[string]attr.Value {
-	services := []attr.Value{}
-	for _, service := range CONFIG_SAFE_SEARCH_SERVICES_OPTIONS {
-		services = append(services, types.StringValue(service))
-	}
-
-	return map[string]attr.Value{
-		"enabled":  types.BoolValue(CONFIG_SAFE_SEARCH_ENABLED),
-		"services": types.SetValueMust(types.StringType, services),
 	}
 }
 
@@ -510,12 +482,8 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
-	// perform reflection of safe search object
-	v := reflect.ValueOf(safeSearchConfig).Elem()
-	// grab the type of the reflected object
-	t := v.Type()
-	// map the reflected object to a list
-	enabledSafeSearchServices := mapSafeSearchConfigServices(v, t)
+	// map safe search config object to a list of enabled services
+	enabledSafeSearchServices := mapSafeSearchServices(safeSearchConfig)
 	// map safe search to state
 	var stateSafeSearchConfig safeSearchModel
 	stateSafeSearchConfig.Enabled = types.BoolValue(safeSearchConfig.Enabled)
@@ -586,8 +554,8 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		return
 	}
 
-	// empty object for storing state
-	var stateBlockedServicesPauseScheduleConfig scheduleModel
+	// use common function to map blocked services pause schedules for each day
+	stateBlockedServicesPauseScheduleConfig := mapBlockedServicesScheduleDays(ctx, &blockedServicesPauseSchedule.Schedule)
 
 	// need special handling for timezone in resource due to inconsistent API response for `Local`
 	if rtype == "resource" {
@@ -614,56 +582,6 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		// used for datasource
 		stateBlockedServicesPauseScheduleConfig.TimeZone = types.StringValue(blockedServicesPauseSchedule.Schedule.TimeZone)
 	}
-
-	// go over each day and map to intermediate object
-	var sunDayRangeConfig dayRangeModel
-	if blockedServicesPauseSchedule.Schedule.Sunday.End > 0 {
-		sunDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Sunday.Start)))
-		sunDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Sunday.End)))
-	}
-	stateBlockedServicesPauseScheduleConfig.Sunday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &sunDayRangeConfig)
-
-	var monDayRangeConfig dayRangeModel
-	if blockedServicesPauseSchedule.Schedule.Monday.End > 0 {
-		monDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Monday.Start)))
-		monDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Monday.End)))
-	}
-	stateBlockedServicesPauseScheduleConfig.Monday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &monDayRangeConfig)
-
-	var tueDayRangeConfig dayRangeModel
-	if blockedServicesPauseSchedule.Schedule.Tuesday.End > 0 {
-		tueDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Tuesday.Start)))
-		tueDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Tuesday.End)))
-	}
-	stateBlockedServicesPauseScheduleConfig.Tuesday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &tueDayRangeConfig)
-
-	var wedDayRangeConfig dayRangeModel
-	if blockedServicesPauseSchedule.Schedule.Wednesday.End > 0 {
-		wedDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Wednesday.Start)))
-		wedDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Wednesday.End)))
-	}
-	stateBlockedServicesPauseScheduleConfig.Wednesday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &wedDayRangeConfig)
-
-	var thuDayRangeConfig dayRangeModel
-	if blockedServicesPauseSchedule.Schedule.Thursday.End > 0 {
-		thuDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Thursday.Start)))
-		thuDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Thursday.End)))
-	}
-	stateBlockedServicesPauseScheduleConfig.Thursday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &thuDayRangeConfig)
-
-	var friDayRangeConfig dayRangeModel
-	if blockedServicesPauseSchedule.Schedule.Friday.End > 0 {
-		friDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Friday.Start)))
-		friDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Friday.End)))
-	}
-	stateBlockedServicesPauseScheduleConfig.Friday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &friDayRangeConfig)
-
-	var satDayRangeConfig dayRangeModel
-	if blockedServicesPauseSchedule.Schedule.Saturday.End > 0 {
-		satDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Saturday.Start)))
-		satDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(blockedServicesPauseSchedule.Schedule.Saturday.End)))
-	}
-	stateBlockedServicesPauseScheduleConfig.Saturday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &satDayRangeConfig)
 
 	// add to config model
 	o.BlockedServices, *diags = types.SetValueFrom(ctx, types.StringType, blockedServicesPauseSchedule.Ids)
@@ -996,7 +914,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		// use reflection to set each safeSearchConfig service value dynamically
 		v := reflect.ValueOf(&safeSearchConfig).Elem()
 		t := v.Type()
-		setSafeSearchConfigServices(v, t, safeSearchServicesEnabled)
+		setSafeSearchServices(v, t, safeSearchServicesEnabled)
 	}
 	// set safe search config using plan
 	_, err = r.adg.SetSafeSearchConfig(safeSearchConfig)
@@ -1480,32 +1398,4 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	plan.Tls, _ = types.ObjectValueFrom(ctx, tlsConfigModel{}.attrTypes(), &planTlsConfig)
 
 	// if we got here, all went fine
-}
-
-// mapSafeSearchConfigFields - will return the list of safe search services that are enabled
-func mapSafeSearchConfigServices(v reflect.Value, t reflect.Type) []string {
-	// initalize output
-	var services []string
-
-	// loop over all safeSearchConfig fields
-	for i := 0; i < v.NumField(); i++ {
-		// skip the Enabled field
-		if t.Field(i).Name != "Enabled" {
-			// add service to list if its value is true
-			if v.Field(i).Interface().(bool) {
-				services = append(services, strings.ToLower(t.Field(i).Name))
-			}
-		}
-	}
-	return services
-}
-
-// setSafeSearchConfigServices - based on a list of enabled safe search services, will set the safeSearchConfig fields appropriately
-func setSafeSearchConfigServices(v reflect.Value, t reflect.Type, services []string) {
-	for i := 0; i < v.NumField(); i++ {
-		fieldName := strings.ToLower(t.Field(i).Name)
-		if contains(services, fieldName) {
-			v.Field(i).Set(reflect.ValueOf(true))
-		}
-	}
 }

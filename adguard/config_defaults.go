@@ -5,7 +5,6 @@ const CONFIG_FILTERING_ENABLED = true
 const CONFIG_FILTERING_UPDATE_INTERVAL uint = 24 // hours
 const CONFIG_SAFEBROWSING_ENABLED = false
 const CONFIG_PARENTAL_CONTROL_ENABLED = false
-const CONFIG_SAFE_SEARCH_ENABLED = false
 const CONFIG_QUERYLOG_ENABLED = true
 const CONFIG_QUERYLOG_INTERVAL uint64 = 2160 // hours
 const CONFIG_QUERYLOG_ANONYMIZE_CLIENT_IP = false
@@ -40,10 +39,14 @@ const CONFIG_TLS_PORT_DNS_OVER_QUIC = 853
 var CONFIG_DNS_BOOTSTRAP = []string{"9.9.9.10", "149.112.112.10", "2620:fe::10", "2620:fe::fe:10"}
 var CONFIG_DNS_UPSTREAM = []string{"https://dns10.quad9.net/dns-query"}
 var CONFIG_DNS_BLOCKED_HOSTS = []string{"version.bind", "id.server", "hostname.bind"}
-var CONFIG_SAFE_SEARCH_SERVICES_OPTIONS = []string{"bing", "duckduckgo", "google", "pixabay", "yandex", "youtube"}
-var CONFIG_GLOBAL_BLOCKED_SERVICES_OPTIONS = []string{"9gag", "amazon", "bilibili", "cloudflare", "crunchyroll", "dailymotion", "deezer",
-	"discord", "disneyplus", "douban", "ebay", "epic_games", "facebook", "gog", "hbomax", "hulu", "icloud_private_relay", "imgur",
-	"instagram", "iqiyi", "kakaotalk", "lazada", "leagueoflegends", "line", "mail_ru", "mastodon", "minecraft", "netflix", "ok",
-	"onlyfans", "origin", "pinterest", "playstation", "qq", "rakuten_viki", "reddit", "riot_games", "roblox", "shopee", "skype", "snapchat",
-	"soundcloud", "spotify", "steam", "telegram", "tiktok", "tinder", "twitch", "twitter", "valorant", "viber", "vimeo", "vk", "voot", "wechat",
-	"weibo", "whatsapp", "xboxlive", "youtube", "zhihu"}
+var CONFIG_GLOBAL_BLOCKED_SERVICES_OPTIONS = []string{"500px", "9gag", "activision_blizzard", "aliexpress", "amazon", "amino",
+	"apple_streaming", "battle_net", "betano", "betfair", "betway", "bigo_live", "bilibili", "blaze", "blizzard_entertainment",
+	"canais_globo", "claro", "cloudflare", "clubhouse", "coolapk", "crunchyroll", "dailymotion", "deezer", "directvgo", "discord",
+	"disneyplus", "douban", "ebay", "electronic_arts", "epic_games", "espn", "facebook", "fifa", "flickr", "gog", "hbomax", "hulu",
+	"icloud_private_relay", "iheartradio", "imgur", "instagram", "iqiyi", "kakaotalk", "kik", "lazada", "leagueoflegends", "line",
+	"linkedin", "lionsgateplus", "looke", "mail_ru", "mastodon", "mercado_libre", "minecraft", "netflix", "nintendo", "nvidia",
+	"ok", "olvid", "onlyfans", "origin", "paramountplus", "pinterest", "playstation", "plenty_of_fish", "plex", "pluto_tv",
+	"privacy", "qq", "rakuten_viki", "reddit", "riot_games", "roblox", "rockstar_games", "shein", "shopee", "signal", "skype",
+	"snapchat", "soundcloud", "spotify", "steam", "telegram", "temu", "tidal", "tiktok", "tinder", "tumblr", "twitch", "twitter",
+	"ubisoft", "valorant", "viber", "vimeo", "vk", "voot", "wargaming", "wechat", "weibo", "whatsapp", "wizz", "xboxlive",
+	"xiaohongshu", "youtube", "zhihu"}
