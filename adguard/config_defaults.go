@@ -39,14 +39,3 @@ const CONFIG_TLS_PORT_DNS_OVER_QUIC = 853
 var CONFIG_DNS_BOOTSTRAP = []string{"9.9.9.10", "149.112.112.10", "2620:fe::10", "2620:fe::fe:10"}
 var CONFIG_DNS_UPSTREAM = []string{"https://dns10.quad9.net/dns-query"}
 var CONFIG_DNS_BLOCKED_HOSTS = []string{"version.bind", "id.server", "hostname.bind"}
-var CONFIG_GLOBAL_BLOCKED_SERVICES_OPTIONS = []string{"500px", "9gag", "activision_blizzard", "aliexpress", "amazon", "amino",
-	"apple_streaming", "battle_net", "betano", "betfair", "betway", "bigo_live", "bilibili", "blaze", "blizzard_entertainment",
-	"canais_globo", "claro", "cloudflare", "clubhouse", "coolapk", "crunchyroll", "dailymotion", "deezer", "directvgo", "discord",
-	"disneyplus", "douban", "ebay", "electronic_arts", "epic_games", "espn", "facebook", "fifa", "flickr", "gog", "hbomax", "hulu",
-	"icloud_private_relay", "iheartradio", "imgur", "instagram", "iqiyi", "kakaotalk", "kik", "lazada", "leagueoflegends", "line",
-	"linkedin", "lionsgateplus", "looke", "mail_ru", "mastodon", "mercado_libre", "minecraft", "netflix", "nintendo", "nvidia",
-	"ok", "olvid", "onlyfans", "origin", "paramountplus", "pinterest", "playstation", "plenty_of_fish", "plex", "pluto_tv",
-	"privacy", "qq", "rakuten_viki", "reddit", "riot_games", "roblox", "rockstar_games", "shein", "shopee", "signal", "skype",
-	"snapchat", "soundcloud", "spotify", "steam", "telegram", "temu", "tidal", "tiktok", "tinder", "tumblr", "twitch", "twitter",
-	"ubisoft", "valorant", "viber", "vimeo", "vk", "voot", "wargaming", "wechat", "weibo", "whatsapp", "wizz", "xboxlive",
-	"xiaohongshu", "youtube", "zhihu"}

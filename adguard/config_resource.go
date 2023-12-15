@@ -189,7 +189,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Optional:    true,
 				Validators: []validator.Set{
 					setvalidator.SizeAtLeast(1),
-					setvalidator.ValueStringsAre(stringvalidator.OneOf(CONFIG_GLOBAL_BLOCKED_SERVICES_OPTIONS...)),
+					setvalidator.ValueStringsAre(stringvalidator.OneOf(BLOCKED_SERVICES_OPTIONS...)),
 				},
 				Default: setdefault.StaticValue(types.SetNull(types.StringType)),
 			},
