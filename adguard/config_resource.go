@@ -101,36 +101,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Optional:    true,
 				Default:     booldefault.StaticBool(CONFIG_PARENTAL_CONTROL_ENABLED),
 			},
-			"safesearch": schema.SingleNestedAttribute{
-				Computed: true,
-				Optional: true,
-				Default: objectdefault.StaticValue(types.ObjectValueMust(
-					safeSearchModel{}.attrTypes(), safeSearchModel{}.defaultObject()),
-				),
-				Attributes: map[string]schema.Attribute{
-					"enabled": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether Safe Search is enabled. Defaults to `%t`", CONFIG_SAFE_SEARCH_ENABLED),
-						Computed:    true,
-						Optional:    true,
-						Default:     booldefault.StaticBool(CONFIG_SAFE_SEARCH_ENABLED),
-					},
-					"services": schema.SetAttribute{
-						Description: "Services which SafeSearch is enabled.",
-						ElementType: types.StringType,
-						Computed:    true,
-						Optional:    true,
-						Validators: []validator.Set{
-							setvalidator.SizeAtLeast(1),
-							setvalidator.ValueStringsAre(
-								stringvalidator.OneOf(CONFIG_SAFE_SEARCH_SERVICES_OPTIONS...),
-							),
-						},
-						Default: setdefault.StaticValue(
-							types.SetValueMust(types.StringType, convertToAttr(CONFIG_SAFE_SEARCH_SERVICES_OPTIONS)),
-						),
-					},
-				},
-			},
+			"safesearch": safeSearchResourceSchema(),
 			"querylog": schema.SingleNestedAttribute{
 				Computed: true,
 				Optional: true,
@@ -912,7 +883,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	// populate safe search with default values
 	var safeSearchConfig adguard.SafeSearchConfig
-	safeSearchConfig.Enabled = CONFIG_SAFE_SEARCH_ENABLED
+	safeSearchConfig.Enabled = SAFE_SEARCH_ENABLED
 	safeSearchConfig.Bing = true
 	safeSearchConfig.Duckduckgo = true
 	safeSearchConfig.Google = true

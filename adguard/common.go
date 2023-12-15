@@ -1,17 +1,136 @@
 package adguard
 
 import (
+	"context"
 	"fmt"
+	"reflect"
 	"regexp"
+	"strings"
 
+	"github.com/gmichels/adguard-client-go"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+// safeSearchModel maps safe search schema data
+type safeSearchModel struct {
+	Enabled  types.Bool `tfsdk:"enabled"`
+	Services types.Set  `tfsdk:"services"`
+}
+
+// attrTypes - return attribute types for this model
+func (o safeSearchModel) attrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"enabled":  types.BoolType,
+		"services": types.SetType{ElemType: types.StringType},
+	}
+}
+
+// defaultObject - return default object for this model
+func (o safeSearchModel) defaultObject() map[string]attr.Value {
+	services := []attr.Value{}
+	for _, service := range SAFE_SEARCH_SERVICES_OPTIONS {
+		services = append(services, types.StringValue(service))
+	}
+
+	return map[string]attr.Value{
+		"enabled":  types.BoolValue(SAFE_SEARCH_ENABLED),
+		"services": types.SetValueMust(types.StringType, services),
+	}
+}
+
+// provides safe search schema for datasources
+func safeSearchDatasourceSchema() schema.SingleNestedAttribute {
+	return schema.SingleNestedAttribute{
+		Computed: true,
+		Attributes: map[string]schema.Attribute{
+			"enabled": schema.BoolAttribute{
+				Description: "Whether Safe Search is enabled",
+				Computed:    true,
+			},
+			"services": schema.SetAttribute{
+				Description: "Services which SafeSearch is enabled",
+				ElementType: types.StringType,
+				Computed:    true,
+			},
+		},
+	}
+}
+
+// provides safe search schema for resources
+func safeSearchResourceSchema() schema.SingleNestedAttribute {
+	return schema.SingleNestedAttribute{
+		Computed: true,
+		Optional: true,
+		Default: objectdefault.StaticValue(types.ObjectValueMust(
+			safeSearchModel{}.attrTypes(), safeSearchModel{}.defaultObject()),
+		),
+		Attributes: map[string]schema.Attribute{
+			"enabled": schema.BoolAttribute{
+				Description: fmt.Sprintf("Whether Safe Search is enabled. Defaults to `%t`", SAFE_SEARCH_ENABLED),
+				Computed:    true,
+				Optional:    true,
+				Default:     booldefault.StaticBool(SAFE_SEARCH_ENABLED),
+			},
+			"services": schema.SetAttribute{
+				Description: "Services which SafeSearch is enabled.",
+				ElementType: types.StringType,
+				Computed:    true,
+				Optional:    true,
+				Validators: []validator.Set{
+					setvalidator.SizeAtLeast(1),
+					setvalidator.ValueStringsAre(
+						stringvalidator.OneOf(SAFE_SEARCH_SERVICES_OPTIONS...),
+					),
+				},
+				Default: setdefault.StaticValue(
+					types.SetValueMust(types.StringType, convertToAttr(SAFE_SEARCH_SERVICES_OPTIONS)),
+				),
+			},
+		},
+	}
+}
+
+// mapSafeSearchConfigFields - will return the list of safe search services that are enabled
+func mapSafeSearchServices(adgSafeSearchConfig *adguard.SafeSearchConfig) []string {
+	// perform reflection of safe search object
+	v := reflect.ValueOf(adgSafeSearchConfig).Elem()
+	// grab the type of the reflected object
+	t := v.Type()
+
+	// initalize output
+	var services []string
+
+	// loop over all safeSearchConfig fields
+	for i := 0; i < v.NumField(); i++ {
+		// skip the Enabled field
+		if t.Field(i).Name != "Enabled" {
+			// add service to list if its value is true
+			if v.Field(i).Interface().(bool) {
+				services = append(services, strings.ToLower(t.Field(i).Name))
+			}
+		}
+	}
+	return services
+}
+
+// setSafeSearchServices - based on a list of enabled safe search services, will set the safeSearchConfig fields appropriately
+func setSafeSearchServices(v reflect.Value, t reflect.Type, services []string) {
+	for i := 0; i < v.NumField(); i++ {
+		fieldName := strings.ToLower(t.Field(i).Name)
+		if contains(services, fieldName) {
+			v.Field(i).Set(reflect.ValueOf(true))
+		}
+	}
+}
 
 // scheduleModel maps schedule configuration schema data
 type scheduleModel struct {
@@ -190,4 +309,62 @@ func dayRangeResourceSchema(day string) schema.SingleNestedAttribute {
 			},
 		},
 	}
+}
+
+// mapBlockedServicesScheduleDays takes an ADG BlockedServicesSchedule object and maps the the days into a scheduleModel
+func mapBlockedServicesScheduleDays(ctx context.Context, adgBlockedServicesSchedule *adguard.Schedule) scheduleModel {
+	// instantiate empty intermediate object
+	var blockedServicesPauseSchedule scheduleModel
+
+	// go over each day and map to intermediate object
+	var sunDayRangeConfig dayRangeModel
+	if adgBlockedServicesSchedule.Sunday.End > 0 {
+		sunDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Sunday.Start)))
+		sunDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Sunday.End)))
+	}
+	blockedServicesPauseSchedule.Sunday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &sunDayRangeConfig)
+
+	var monDayRangeConfig dayRangeModel
+	if adgBlockedServicesSchedule.Monday.End > 0 {
+		monDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Monday.Start)))
+		monDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Monday.End)))
+	}
+	blockedServicesPauseSchedule.Monday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &monDayRangeConfig)
+
+	var tueDayRangeConfig dayRangeModel
+	if adgBlockedServicesSchedule.Tuesday.End > 0 {
+		tueDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Tuesday.Start)))
+		tueDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Tuesday.End)))
+	}
+	blockedServicesPauseSchedule.Tuesday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &tueDayRangeConfig)
+
+	var wedDayRangeConfig dayRangeModel
+	if adgBlockedServicesSchedule.Wednesday.End > 0 {
+		wedDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Wednesday.Start)))
+		wedDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Wednesday.End)))
+	}
+	blockedServicesPauseSchedule.Wednesday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &wedDayRangeConfig)
+
+	var thuDayRangeConfig dayRangeModel
+	if adgBlockedServicesSchedule.Thursday.End > 0 {
+		thuDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Thursday.Start)))
+		thuDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Thursday.End)))
+	}
+	blockedServicesPauseSchedule.Thursday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &thuDayRangeConfig)
+
+	var friDayRangeConfig dayRangeModel
+	if adgBlockedServicesSchedule.Friday.End > 0 {
+		friDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Friday.Start)))
+		friDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Friday.End)))
+	}
+	blockedServicesPauseSchedule.Friday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &friDayRangeConfig)
+
+	var satDayRangeConfig dayRangeModel
+	if adgBlockedServicesSchedule.Saturday.End > 0 {
+		satDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Saturday.Start)))
+		satDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Saturday.End)))
+	}
+	blockedServicesPauseSchedule.Saturday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &satDayRangeConfig)
+
+	return blockedServicesPauseSchedule
 }
