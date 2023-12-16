@@ -23,6 +23,7 @@ data "adguard_config" "test" {}
 ### Read-Only
 
 - `blocked_services` (Set of String) Set of services that are blocked globally
+- `blocked_services_pause_schedule` (Attributes) Sets periods of inactivity for filtering blocked services. The schedule contains 7 days (Sunday to Saturday) and a time zone. (see [below for nested schema](#nestedatt--blocked_services_pause_schedule))
 - `dhcp` (Attributes) (see [below for nested schema](#nestedatt--dhcp))
 - `dns` (Attributes) (see [below for nested schema](#nestedatt--dns))
 - `filtering` (Attributes) (see [below for nested schema](#nestedatt--filtering))
@@ -34,6 +35,84 @@ data "adguard_config" "test" {}
 - `safesearch` (Attributes) (see [below for nested schema](#nestedatt--safesearch))
 - `stats` (Attributes) (see [below for nested schema](#nestedatt--stats))
 - `tls` (Attributes) (see [below for nested schema](#nestedatt--tls))
+
+<a id="nestedatt--blocked_services_pause_schedule"></a>
+### Nested Schema for `blocked_services_pause_schedule`
+
+Read-Only:
+
+- `fri` (Attributes) Paused service blocking interval for `Friday` (see [below for nested schema](#nestedatt--blocked_services_pause_schedule--fri))
+- `mon` (Attributes) Paused service blocking interval for `Monday` (see [below for nested schema](#nestedatt--blocked_services_pause_schedule--mon))
+- `sat` (Attributes) Paused service blocking interval for `Saturday` (see [below for nested schema](#nestedatt--blocked_services_pause_schedule--sat))
+- `sun` (Attributes) Paused service blocking interval for `Sunday` (see [below for nested schema](#nestedatt--blocked_services_pause_schedule--sun))
+- `thu` (Attributes) Paused service blocking interval for `Thursday` (see [below for nested schema](#nestedatt--blocked_services_pause_schedule--thu))
+- `time_zone` (String) Time zone name according to IANA time zone database. For example `America/New_York`. `Local` represents the system's local time zone.
+- `tue` (Attributes) Paused service blocking interval for `Tueday` (see [below for nested schema](#nestedatt--blocked_services_pause_schedule--tue))
+- `wed` (Attributes) Paused service blocking interval for `Wednesday` (see [below for nested schema](#nestedatt--blocked_services_pause_schedule--wed))
+
+<a id="nestedatt--blocked_services_pause_schedule--fri"></a>
+### Nested Schema for `blocked_services_pause_schedule.fri`
+
+Read-Only:
+
+- `end` (String) End of paused service blocking schedule, in HH:MM format
+- `start` (String) Start of paused service blocking schedule, in HH:MM format
+
+
+<a id="nestedatt--blocked_services_pause_schedule--mon"></a>
+### Nested Schema for `blocked_services_pause_schedule.mon`
+
+Read-Only:
+
+- `end` (String) End of paused service blocking schedule, in HH:MM format
+- `start` (String) Start of paused service blocking schedule, in HH:MM format
+
+
+<a id="nestedatt--blocked_services_pause_schedule--sat"></a>
+### Nested Schema for `blocked_services_pause_schedule.sat`
+
+Read-Only:
+
+- `end` (String) End of paused service blocking schedule, in HH:MM format
+- `start` (String) Start of paused service blocking schedule, in HH:MM format
+
+
+<a id="nestedatt--blocked_services_pause_schedule--sun"></a>
+### Nested Schema for `blocked_services_pause_schedule.sun`
+
+Read-Only:
+
+- `end` (String) End of paused service blocking schedule, in HH:MM format
+- `start` (String) Start of paused service blocking schedule, in HH:MM format
+
+
+<a id="nestedatt--blocked_services_pause_schedule--thu"></a>
+### Nested Schema for `blocked_services_pause_schedule.thu`
+
+Read-Only:
+
+- `end` (String) End of paused service blocking schedule, in HH:MM format
+- `start` (String) Start of paused service blocking schedule, in HH:MM format
+
+
+<a id="nestedatt--blocked_services_pause_schedule--tue"></a>
+### Nested Schema for `blocked_services_pause_schedule.tue`
+
+Read-Only:
+
+- `end` (String) End of paused service blocking schedule, in HH:MM format
+- `start` (String) Start of paused service blocking schedule, in HH:MM format
+
+
+<a id="nestedatt--blocked_services_pause_schedule--wed"></a>
+### Nested Schema for `blocked_services_pause_schedule.wed`
+
+Read-Only:
+
+- `end` (String) End of paused service blocking schedule, in HH:MM format
+- `start` (String) Start of paused service blocking schedule, in HH:MM format
+
+
 
 <a id="nestedatt--dhcp"></a>
 ### Nested Schema for `dhcp`
@@ -97,6 +176,7 @@ Read-Only:
 
 - `allowed_clients` (Set of String) The allowlist of clients: IP addresses, CIDRs, or ClientIDs
 - `blocked_hosts` (Set of String) Disallowed domains
+- `blocked_response_ttl` (Number) How many seconds the clients should cache a filtered response
 - `blocking_ipv4` (String) When `blocking_mode` is set to `custom_ip`, the IPv4 address to be returned for a blocked A request
 - `blocking_ipv6` (String) When `blocking_mode` is set to `custom_ip`, the IPv6 address to be returned for a blocked A request
 - `blocking_mode` (String) DNS response sent when request is blocked
@@ -108,9 +188,16 @@ Read-Only:
 - `disable_ipv6` (Boolean) Whether dropping of all IPv6 DNS queries is enabled
 - `disallowed_clients` (Set of String) The blocklist of clients: IP addresses, CIDRs, or ClientIDs
 - `dnssec_enabled` (Boolean) Whether outgoing DNSSEC is enabled
+- `edns_cs_custom_ip` (String) The custom IP being used for EDNS Client Subnet (ECS)
 - `edns_cs_enabled` (Boolean) Whether EDNS Client Subnet (ECS) is enabled
+- `edns_cs_use_custom` (Boolean) Whether EDNS Client Subnet (ECS) is using a custom IP
+- `fallback_dns` (List of String) Fallback DNS servers
 - `local_ptr_upstreams` (Set of String) Set of private reverse DNS servers
+- `protection_enabled` (Boolean) Whether protection is enabled
 - `rate_limit` (Number) The number of requests per second allowed per client
+- `rate_limit_subnet_len_ipv4` (Number) Subnet prefix length for IPv4 addresses used for rate limiting
+- `rate_limit_subnet_len_ipv6` (Number) Subnet prefix length for IPv6 addresses used for rate limiting
+- `rate_limit_whitelist` (List of String) IP addresses excluded from rate limiting
 - `resolve_clients` (Boolean) Whether reverse DNS resolution of clients' IP addresses is enabled
 - `upstream_dns` (List of String) Upstream DNS servers
 - `upstream_mode` (String) Upstream DNS resolvers usage strategy
