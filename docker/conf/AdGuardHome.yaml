@@ -187,30 +187,41 @@ clients:
     hosts: true
   persistent:
     - safe_search:
-        enabled: false
+        enabled: true
         bing: false
         duckduckgo: false
-        google: false
+        google: true
         pixabay: false
         yandex: false
-        youtube: false
+        youtube: true
       blocked_services:
         schedule:
-          time_zone: UTC
-        ids: []
+          time_zone: America/Los_Angeles
+          mon:
+            start: 8h
+            end: 17h45m
+          thu:
+            start: 8h
+            end: 17h45m
+        ids:
+          - facebook
+          - instagram
+          - reddit
       name: Test Client Data Source
       ids:
         - 192.168.100.100
       tags:
         - device_other
       upstreams: []
-      use_global_settings: true
+      upstreams_cache_size: 10000
+      upstreams_cache_enabled: false
+      use_global_settings: false
       filtering_enabled: false
       parental_enabled: false
       safebrowsing_enabled: false
-      use_global_blocked_services: true
+      use_global_blocked_services: false
       ignore_querylog: false
-      ignore_statistics: false
+      ignore_statistics: true
 log:
   file: ""
   max_backups: 0
