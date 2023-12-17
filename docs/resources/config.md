@@ -96,6 +96,7 @@ resource "adguard_config" "test" {
 ### Optional
 
 - `blocked_services` (Set of String) Set of services to be blocked globally
+- `blocked_services_pause_schedule` (Attributes) Sets periods of inactivity for filtering blocked services. The schedule contains 7 days (Sunday to Saturday) and a time zone. (see [below for nested schema](#nestedatt--blocked_services_pause_schedule))
 - `dhcp` (Attributes) (see [below for nested schema](#nestedatt--dhcp))
 - `dns` (Attributes) (see [below for nested schema](#nestedatt--dns))
 - `filtering` (Attributes) (see [below for nested schema](#nestedatt--filtering))
@@ -110,6 +111,84 @@ resource "adguard_config" "test" {
 
 - `id` (String) Internal identifier for this config
 - `last_updated` (String) Timestamp of the last Terraform update of the config
+
+<a id="nestedatt--blocked_services_pause_schedule"></a>
+### Nested Schema for `blocked_services_pause_schedule`
+
+Optional:
+
+- `fri` (Attributes) Paused service blocking interval for `Friday` (see [below for nested schema](#nestedatt--blocked_services_pause_schedule--fri))
+- `mon` (Attributes) Paused service blocking interval for `Monday` (see [below for nested schema](#nestedatt--blocked_services_pause_schedule--mon))
+- `sat` (Attributes) Paused service blocking interval for `Saturday` (see [below for nested schema](#nestedatt--blocked_services_pause_schedule--sat))
+- `sun` (Attributes) Paused service blocking interval for `Sunday` (see [below for nested schema](#nestedatt--blocked_services_pause_schedule--sun))
+- `thu` (Attributes) Paused service blocking interval for `Thursday` (see [below for nested schema](#nestedatt--blocked_services_pause_schedule--thu))
+- `time_zone` (String) Time zone name according to IANA time zone database. For example `America/New_York`. `Local` represents the system's local time zone.
+- `tue` (Attributes) Paused service blocking interval for `Tueday` (see [below for nested schema](#nestedatt--blocked_services_pause_schedule--tue))
+- `wed` (Attributes) Paused service blocking interval for `Wednesday` (see [below for nested schema](#nestedatt--blocked_services_pause_schedule--wed))
+
+<a id="nestedatt--blocked_services_pause_schedule--fri"></a>
+### Nested Schema for `blocked_services_pause_schedule.fri`
+
+Optional:
+
+- `end` (String) End of paused service blocking schedule, in HH:MM format
+- `start` (String) Start of paused service blocking schedule, in HH:MM format
+
+
+<a id="nestedatt--blocked_services_pause_schedule--mon"></a>
+### Nested Schema for `blocked_services_pause_schedule.mon`
+
+Optional:
+
+- `end` (String) End of paused service blocking schedule, in HH:MM format
+- `start` (String) Start of paused service blocking schedule, in HH:MM format
+
+
+<a id="nestedatt--blocked_services_pause_schedule--sat"></a>
+### Nested Schema for `blocked_services_pause_schedule.sat`
+
+Optional:
+
+- `end` (String) End of paused service blocking schedule, in HH:MM format
+- `start` (String) Start of paused service blocking schedule, in HH:MM format
+
+
+<a id="nestedatt--blocked_services_pause_schedule--sun"></a>
+### Nested Schema for `blocked_services_pause_schedule.sun`
+
+Optional:
+
+- `end` (String) End of paused service blocking schedule, in HH:MM format
+- `start` (String) Start of paused service blocking schedule, in HH:MM format
+
+
+<a id="nestedatt--blocked_services_pause_schedule--thu"></a>
+### Nested Schema for `blocked_services_pause_schedule.thu`
+
+Optional:
+
+- `end` (String) End of paused service blocking schedule, in HH:MM format
+- `start` (String) Start of paused service blocking schedule, in HH:MM format
+
+
+<a id="nestedatt--blocked_services_pause_schedule--tue"></a>
+### Nested Schema for `blocked_services_pause_schedule.tue`
+
+Optional:
+
+- `end` (String) End of paused service blocking schedule, in HH:MM format
+- `start` (String) Start of paused service blocking schedule, in HH:MM format
+
+
+<a id="nestedatt--blocked_services_pause_schedule--wed"></a>
+### Nested Schema for `blocked_services_pause_schedule.wed`
+
+Optional:
+
+- `end` (String) End of paused service blocking schedule, in HH:MM format
+- `start` (String) Start of paused service blocking schedule, in HH:MM format
+
+
 
 <a id="nestedatt--dhcp"></a>
 ### Nested Schema for `dhcp`
@@ -170,6 +249,7 @@ Optional:
 
 - `allowed_clients` (Set of String) The allowlist of clients: IP addresses, CIDRs, or ClientIDs
 - `blocked_hosts` (Set of String) Disallowed domains. Defaults to the ones supplied by the default AdGuard Home configuration
+- `blocked_response_ttl` (Number) How many seconds the clients should cache a filtered response. Defaults to `10`
 - `blocking_ipv4` (String) When `blocking_mode` is set to `custom_ip`, the IPv4 address to be returned for a blocked A request
 - `blocking_ipv6` (String) When `blocking_mode` is set to `custom_ip`, the IPv6 address to be returned for a blocked A request
 - `blocking_mode` (String) DNS response sent when request is blocked. Valid values are `default` (the default), `refused`, `nxdomain`, `null_ip` or `custom_ip`
@@ -181,9 +261,16 @@ Optional:
 - `disable_ipv6` (Boolean) Whether dropping of all IPv6 DNS queries is enabled. Defaults to `false`
 - `disallowed_clients` (Set of String) The blocklist of clients: IP addresses, CIDRs, or ClientIDs
 - `dnssec_enabled` (Boolean) Whether outgoing DNSSEC is enabled. Defaults to `false`
+- `edns_cs_custom_ip` (String) The custom IP for EDNS Client Subnet (ECS)
 - `edns_cs_enabled` (Boolean) Whether EDNS Client Subnet (ECS) is enabled. Defaults to `false`
+- `edns_cs_use_custom` (Boolean) Whether EDNS Client Subnet (ECS) is using a custom IP. Defaults to `false`
+- `fallback_dns` (List of String) Fallback DNS servers
 - `local_ptr_upstreams` (Set of String) Set of private reverse DNS servers
+- `protection_enabled` (Boolean) Whether protection is enabled. Defaults to `true`
 - `rate_limit` (Number) The number of requests per second allowed per client. Defaults to `20`
+- `rate_limit_subnet_len_ipv4` (Number) Subnet prefix length for IPv4 addresses used for rate limiting. Defaults to `24`
+- `rate_limit_subnet_len_ipv6` (Number) Subnet prefix length for IPv6 addresses used for rate limiting. Defaults to `56`
+- `rate_limit_whitelist` (List of String) IP addresses excluded from rate limiting
 - `resolve_clients` (Boolean) Whether reverse DNS resolution of clients' IP addresses is enabled. Defaults to `true`
 - `upstream_dns` (List of String) Upstream DNS servers. Defaults to the ones supplied by the default AdGuard Home configuration
 - `upstream_mode` (String) Upstream DNS resolvers usage strategy. Valid values are `load_balance` (default), `parallel` and `fastest_addr`

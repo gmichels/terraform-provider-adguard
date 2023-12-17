@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gmichels/adguard-client-go"
+	"github.com/hashicorp/terraform-plugin-framework-validators/boolvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
@@ -100,36 +101,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Optional:    true,
 				Default:     booldefault.StaticBool(CONFIG_PARENTAL_CONTROL_ENABLED),
 			},
-			"safesearch": schema.SingleNestedAttribute{
-				Computed: true,
-				Optional: true,
-				Default: objectdefault.StaticValue(types.ObjectValueMust(
-					safeSearchModel{}.attrTypes(), safeSearchModel{}.defaultObject()),
-				),
-				Attributes: map[string]schema.Attribute{
-					"enabled": schema.BoolAttribute{
-						Description: fmt.Sprintf("Whether Safe Search is enabled. Defaults to `%t`", CONFIG_SAFE_SEARCH_ENABLED),
-						Computed:    true,
-						Optional:    true,
-						Default:     booldefault.StaticBool(CONFIG_SAFE_SEARCH_ENABLED),
-					},
-					"services": schema.SetAttribute{
-						Description: "Services which SafeSearch is enabled.",
-						ElementType: types.StringType,
-						Computed:    true,
-						Optional:    true,
-						Validators: []validator.Set{
-							setvalidator.SizeAtLeast(1),
-							setvalidator.ValueStringsAre(
-								stringvalidator.OneOf(CONFIG_SAFE_SEARCH_SERVICES_OPTIONS...),
-							),
-						},
-						Default: setdefault.StaticValue(
-							types.SetValueMust(types.StringType, convertToAttr(CONFIG_SAFE_SEARCH_SERVICES_OPTIONS)),
-						),
-					},
-				},
-			},
+			"safesearch": safeSearchResourceSchema(),
 			"querylog": schema.SingleNestedAttribute{
 				Computed: true,
 				Optional: true,
@@ -217,10 +189,11 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Optional:    true,
 				Validators: []validator.Set{
 					setvalidator.SizeAtLeast(1),
-					setvalidator.ValueStringsAre(stringvalidator.OneOf(CONFIG_GLOBAL_BLOCKED_SERVICES_OPTIONS...)),
+					setvalidator.ValueStringsAre(stringvalidator.OneOf(BLOCKED_SERVICES_OPTIONS...)),
 				},
 				Default: setdefault.StaticValue(types.SetNull(types.StringType)),
 			},
+			"blocked_services_pause_schedule": scheduleResourceSchema(),
 			"dns": schema.SingleNestedAttribute{
 				Computed: true,
 				Optional: true,
@@ -248,11 +221,49 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 							types.ListValueMust(types.StringType, convertToAttr(CONFIG_DNS_UPSTREAM)),
 						),
 					},
+					"fallback_dns": schema.ListAttribute{
+						Description: "Fallback DNS servers",
+						ElementType: types.StringType,
+						Optional:    true,
+						Computed:    true,
+						Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
+						Default: listdefault.StaticValue(
+							types.ListNull(types.StringType),
+						),
+					},
+					"protection_enabled": schema.BoolAttribute{
+						Description: fmt.Sprintf("Whether protection is enabled. Defaults to `%t`", CONFIG_DNS_PROTECTION_ENABLED),
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(CONFIG_DNS_PROTECTION_ENABLED),
+					},
 					"rate_limit": schema.Int64Attribute{
 						Description: fmt.Sprintf("The number of requests per second allowed per client. Defaults to `%d`", CONFIG_DNS_RATE_LIMIT),
 						Computed:    true,
 						Optional:    true,
 						Default:     int64default.StaticInt64(CONFIG_DNS_RATE_LIMIT),
+					},
+					"rate_limit_subnet_len_ipv4": schema.Int64Attribute{
+						Description: fmt.Sprintf("Subnet prefix length for IPv4 addresses used for rate limiting. Defaults to `%d`", CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV4),
+						Computed:    true,
+						Optional:    true,
+						Default:     int64default.StaticInt64(CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV4),
+					},
+					"rate_limit_subnet_len_ipv6": schema.Int64Attribute{
+						Description: fmt.Sprintf("Subnet prefix length for IPv6 addresses used for rate limiting. Defaults to `%d`", CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV6),
+						Computed:    true,
+						Optional:    true,
+						Default:     int64default.StaticInt64(CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV6),
+					},
+					"rate_limit_whitelist": schema.ListAttribute{
+						Description: "IP addresses excluded from rate limiting",
+						ElementType: types.StringType,
+						Optional:    true,
+						Computed:    true,
+						Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
+						Default: listdefault.StaticValue(
+							types.ListNull(types.StringType),
+						),
 					},
 					"blocking_mode": schema.StringAttribute{
 						Description: "DNS response sent when request is blocked. Valid values are `default` (the default), `refused`, `nxdomain`, `null_ip` or `custom_ip`",
@@ -301,11 +312,45 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 							),
 						},
 					},
+					"blocked_response_ttl": schema.Int64Attribute{
+						Description: fmt.Sprintf("How many seconds the clients should cache a filtered response. Defaults to `%d`", CONFIG_DNS_BLOCKED_RESPONSE_TTL),
+						Computed:    true,
+						Optional:    true,
+						Default:     int64default.StaticInt64(CONFIG_DNS_BLOCKED_RESPONSE_TTL),
+					},
 					"edns_cs_enabled": schema.BoolAttribute{
 						Description: fmt.Sprintf("Whether EDNS Client Subnet (ECS) is enabled. Defaults to `%t`", CONFIG_DNS_EDNS_CS_ENABLED),
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(CONFIG_DNS_EDNS_CS_ENABLED),
+					},
+					"edns_cs_use_custom": schema.BoolAttribute{
+						Description: fmt.Sprintf("Whether EDNS Client Subnet (ECS) is using a custom IP. Defaults to `%t`", CONFIG_DNS_EDNS_CS_USE_CUSTOM),
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(CONFIG_DNS_EDNS_CS_USE_CUSTOM),
+						Validators: []validator.Bool{
+							boolvalidator.AlsoRequires(path.Expressions{
+								path.MatchRelative().AtParent().AtName("edns_cs_enabled"),
+							}...),
+						},
+					},
+					"edns_cs_custom_ip": schema.StringAttribute{
+						Description: "The custom IP for EDNS Client Subnet (ECS)",
+						Computed:    true,
+						Optional:    true,
+						Default:     stringdefault.StaticString(""),
+						Validators: []validator.String{
+							stringvalidator.All(
+								stringvalidator.RegexMatches(
+									regexp.MustCompile(`^((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$|^(([a-fA-F]|[a-fA-F][a-fA-F0-9\-]*[a-fA-F0-9])\.)*([A-Fa-f]|[A-Fa-f][A-Fa-f0-9\-]*[A-Fa-f0-9])$|^(?:(?:(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):){6})(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):(?:(?:[0-9a-fA-F]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:::(?:(?:(?:[0-9a-fA-F]{1,4})):){5})(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):(?:(?:[0-9a-fA-F]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})))?::(?:(?:(?:[0-9a-fA-F]{1,4})):){4})(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):(?:(?:[0-9a-fA-F]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):){0,1}(?:(?:[0-9a-fA-F]{1,4})))?::(?:(?:(?:[0-9a-fA-F]{1,4})):){3})(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):(?:(?:[0-9a-fA-F]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):){0,2}(?:(?:[0-9a-fA-F]{1,4})))?::(?:(?:(?:[0-9a-fA-F]{1,4})):){2})(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):(?:(?:[0-9a-fA-F]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):){0,3}(?:(?:[0-9a-fA-F]{1,4})))?::(?:(?:[0-9a-fA-F]{1,4})):)(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):(?:(?:[0-9a-fA-F]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):){0,4}(?:(?:[0-9a-fA-F]{1,4})))?::)(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):(?:(?:[0-9a-fA-F]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):){0,5}(?:(?:[0-9a-fA-F]{1,4})))?::)(?:(?:[0-9a-fA-F]{1,4})))|(?:(?:(?:(?:(?:(?:[0-9a-fA-F]{1,4})):){0,6}(?:(?:[0-9a-fA-F]{1,4})))?::)))))$`),
+									"must be a valid IPv4 or IPv6 address",
+								),
+								stringvalidator.AlsoRequires(path.Expressions{
+									path.MatchRelative().AtParent().AtName("edns_cs_use_custom"),
+								}...),
+							),
+						},
 					},
 					"disable_ipv6": schema.BoolAttribute{
 						Description: fmt.Sprintf("Whether dropping of all IPv6 DNS queries is enabled. Defaults to `%t`", CONFIG_DNS_DISABLE_IPV6),
@@ -743,7 +788,7 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 	// use common model for state
 	var newState configCommonModel
 	// use common Read function
-	newState.Read(ctx, *r.adg, &resp.Diagnostics, "resource")
+	newState.Read(ctx, *r.adg, &state, &resp.Diagnostics, "resource")
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
@@ -838,7 +883,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	// populate safe search with default values
 	var safeSearchConfig adguard.SafeSearchConfig
-	safeSearchConfig.Enabled = CONFIG_SAFE_SEARCH_ENABLED
+	safeSearchConfig.Enabled = SAFE_SEARCH_ENABLED
 	safeSearchConfig.Bing = true
 	safeSearchConfig.Duckduckgo = true
 	safeSearchConfig.Google = true
@@ -889,8 +934,27 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
+	// populate blocked services and schedules with default values
+	var blockedServicesPauseScheduleConfig adguard.BlockedServicesSchedule
+	blockedServicesPauseScheduleConfig.Ids = make([]string, 0)
+	blockedServicesPauseScheduleConfig.Schedule.TimeZone = BLOCKED_SERVICES_PAUSE_SCHEDULE_TIMEZONE
+	blockedServicesPauseScheduleConfig.Schedule.Sunday.Start = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Sunday.End = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Monday.Start = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Monday.End = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Tuesday.Start = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Tuesday.End = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Wednesday.Start = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Wednesday.End = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Thursday.Start = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Thursday.End = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Friday.Start = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Friday.End = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Saturday.Start = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+	blockedServicesPauseScheduleConfig.Schedule.Saturday.End = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
+
 	// set blocked services to defaults
-	_, err = r.adg.SetBlockedServices(make([]string, 0))
+	_, err = r.adg.SetBlockedServices(blockedServicesPauseScheduleConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
@@ -905,12 +969,20 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	// populate DNS config with default values
 	dnsConfig.BootstrapDns = CONFIG_DNS_BOOTSTRAP
 	dnsConfig.UpstreamDns = CONFIG_DNS_UPSTREAM
+	dnsConfig.FallbackDns = []string{}
+	dnsConfig.ProtectionEnabled = CONFIG_DNS_PROTECTION_ENABLED
 	dnsConfig.UpstreamDnsFile = ""
 	dnsConfig.RateLimit = CONFIG_DNS_RATE_LIMIT
+	dnsConfig.RateLimitSubnetSubnetLenIpv4 = CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV4
+	dnsConfig.RateLimitSubnetSubnetLenIpv6 = CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV6
+	dnsConfig.RateLimitWhitelist = []string{}
 	dnsConfig.BlockingMode = CONFIG_DNS_BLOCKING_MODE
 	dnsConfig.BlockingIpv4 = ""
 	dnsConfig.BlockingIpv6 = ""
+	dnsConfig.BlockedResponseTtl = CONFIG_DNS_BLOCKED_RESPONSE_TTL
 	dnsConfig.EDnsCsEnabled = CONFIG_DNS_EDNS_CS_ENABLED
+	dnsConfig.EDnsCsUseCustom = CONFIG_DNS_EDNS_CS_USE_CUSTOM
+	dnsConfig.EDnsCsCustomIp = ""
 	dnsConfig.DisableIpv6 = CONFIG_DNS_DISABLE_IPV6
 	dnsConfig.DnsSecEnabled = CONFIG_DNS_DNSSEC_ENABLED
 	dnsConfig.CacheSize = CONFIG_DNS_CACHE_SIZE
