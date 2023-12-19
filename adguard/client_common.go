@@ -90,7 +90,7 @@ func (o *clientCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	// need special handling for timezone in resource due to inconsistent API response for `Local`
 	if rtype == "resource" {
 		// last updated will exist on create operation, null on import operation
-		if !currState.LastUpdated.IsNull() {
+		if !currState.LastUpdated.IsNull() && !currState.BlockedServicesPauseSchedule.IsNull() {
 			// unpack current state
 			var currStateBlockedServicesPauseScheduleClient scheduleModel
 			*diags = currState.BlockedServicesPauseSchedule.As(ctx, &currStateBlockedServicesPauseScheduleClient, basetypes.ObjectAsOptions{})
