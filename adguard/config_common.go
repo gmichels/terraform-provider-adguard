@@ -186,7 +186,7 @@ func (o dnsConfigModel) defaultObject() map[string]attr.Value {
 		"protection_enabled":         types.BoolValue(CONFIG_DNS_PROTECTION_ENABLED),
 		"rate_limit":                 types.Int64Value(CONFIG_DNS_RATE_LIMIT),
 		"rate_limit_subnet_len_ipv4": types.Int64Value(CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV4),
-		"rate_limit_subnet_len_ipv6": types.Int64Value(CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV4),
+		"rate_limit_subnet_len_ipv6": types.Int64Value(CONFIG_DNS_RATE_LIMIT_SUBNET_LEN_IPV6),
 		"rate_limit_whitelist":       types.ListNull(types.StringType),
 		"blocking_mode":              types.StringValue(CONFIG_DNS_BLOCKING_MODE),
 		"blocking_ipv4":              types.StringValue(""),
