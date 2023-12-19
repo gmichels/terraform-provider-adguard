@@ -558,7 +558,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	stateBlockedServicesPauseScheduleConfig := mapAdgScheduleToBlockedServicesPauseSchedule(ctx, &blockedServicesPauseSchedule.Schedule)
 
 	// need special handling for timezone in resource due to inconsistent API response for `Local`
-	if rtype == "resource" {
+	if rtype == "resource" && !currState.BlockedServicesPauseSchedule.IsNull() {
 		// last updated will exist on create operation, null on import operation
 		if !currState.LastUpdated.IsNull() {
 			// unpack current state
