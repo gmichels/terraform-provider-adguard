@@ -38,4 +38,3 @@ testacc:
 	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 10m
 	docker compose -f ./docker/docker-compose.yaml down
 	git checkout HEAD -- ./docker/conf/AdGuardHome.yaml
-	git clean -f ./docker/data
