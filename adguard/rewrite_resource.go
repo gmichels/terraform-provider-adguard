@@ -2,6 +2,7 @@ package adguard
 
 import (
 	"context"
+	"encoding/json"
 	"regexp"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // ensure the implementation satisfies the expected interfaces
@@ -147,7 +149,22 @@ func (r *rewriteResource) Read(ctx context.Context, req resource.ReadRequest, re
 			"Could not read AdGuard Home DNS rewrite rule with ID "+state.ID.ValueString()+": "+err.Error(),
 		)
 		return
-	} else if rewrite == nil {
+	}
+	// convert to JSON for response logging
+	rewriteJson, err := json.Marshal(rewrite)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Rewrite Rule",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "rewrite",
+		"body":   string(rewriteJson),
+	})
+	if rewrite == nil {
 		resp.Diagnostics.AddError(
 			"Error Reading AdGuard Home DNS Rewrite Rule",
 			"No such AdGuard Home DNS rewrite rule with ID "+state.ID.ValueString(),
