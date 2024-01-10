@@ -217,8 +217,7 @@ func (r *clientResource) Read(ctx context.Context, req resource.ReadRequest, res
 	var newState clientCommonModel
 	// use common Read function
 	newState.Read(ctx, *r.adg, &state, &resp.Diagnostics, "resource")
-	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -246,8 +245,7 @@ func (r *clientResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 	// defer to common function to create or update the resource
 	r.CreateOrUpdate(ctx, &plan, &resp.Diagnostics, false)
-	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

@@ -2,15 +2,18 @@ package adguard
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
+	"strconv"
 
 	"github.com/gmichels/adguard-client-go"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // common config model to be used for working with both resource and data source
@@ -429,6 +432,9 @@ func (o tlsConfigModel) defaultObject() map[string]attr.Value {
 
 // common `Read` function for both data source and resource
 func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState *configCommonModel, diags *diag.Diagnostics, rtype string) {
+	// initialize empty diags variable
+	var d diag.Diagnostics
+
 	// FILTERING CONFIG
 	// get refreshed filtering config value from AdGuard Home
 	filteringConfig, err := adg.GetAllFilters()
@@ -439,12 +445,30 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// convert to JSON for response logging
+	filteringConfigJson, err := json.Marshal(filteringConfig)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "filteringConfig",
+		"body":   string(filteringConfigJson),
+	})
 	// map filter config to state
 	var stateFilteringConfig filteringModel
 	stateFilteringConfig.Enabled = types.BoolValue(filteringConfig.Enabled)
 	stateFilteringConfig.UpdateInterval = types.Int64Value(int64(filteringConfig.Interval))
 	// add to config model
-	o.Filtering, _ = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)
+	o.Filtering, d = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
 
 	// SAFE BROWSING
 	// get refreshed safe browsing status from AdGuard Home
@@ -456,6 +480,11 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "safeBrowsingStatus",
+		"body":   strconv.FormatBool(*safeBrowsingStatus),
+	})
 	// add to config model
 	o.SafeBrowsing = types.BoolValue(*safeBrowsingStatus)
 
@@ -469,6 +498,10 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "parentalStatus",
+		"body":   strconv.FormatBool(*parentalStatus),
+	})
 	// add to config model
 	o.ParentalControl = types.BoolValue(*parentalStatus)
 
@@ -482,17 +515,36 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// convert to JSON for response logging
+	safeSearchConfigJson, err := json.Marshal(safeSearchConfig)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "safeSearchConfig",
+		"body":   string(safeSearchConfigJson),
+	})
 	// map safe search config object to a list of enabled services
 	enabledSafeSearchServices := mapSafeSearchServices(safeSearchConfig)
 	// map safe search to state
 	var stateSafeSearchConfig safeSearchModel
 	stateSafeSearchConfig.Enabled = types.BoolValue(safeSearchConfig.Enabled)
-	stateSafeSearchConfig.Services, *diags = types.SetValueFrom(ctx, types.StringType, enabledSafeSearchServices)
+	stateSafeSearchConfig.Services, d = types.SetValueFrom(ctx, types.StringType, enabledSafeSearchServices)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
 	// add to config model
-	o.SafeSearch, _ = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchConfig)
+	o.SafeSearch, d = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
 
 	// QUERY LOG
 	// retrieve query log config info
@@ -504,12 +556,27 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// convert to JSON for response logging
+	queryLogConfigJson, err := json.Marshal(queryLogConfig)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "queryLogConfig",
+		"body":   string(queryLogConfigJson),
+	})
 	var stateQueryLogConfig queryLogConfigModel
 	stateQueryLogConfig.Enabled = types.BoolValue(queryLogConfig.Enabled)
 	stateQueryLogConfig.Interval = types.Int64Value(int64(queryLogConfig.Interval / 1000 / 3600))
 	stateQueryLogConfig.AnonymizeClientIp = types.BoolValue(queryLogConfig.AnonymizeClientIp)
 	if len(queryLogConfig.Ignored) > 0 {
-		stateQueryLogConfig.Ignored, *diags = types.SetValueFrom(ctx, types.StringType, queryLogConfig.Ignored)
+		stateQueryLogConfig.Ignored, d = types.SetValueFrom(ctx, types.StringType, queryLogConfig.Ignored)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
@@ -517,7 +584,11 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		stateQueryLogConfig.Ignored = types.SetValueMust(types.StringType, []attr.Value{})
 	}
 	// add to config model
-	o.QueryLog, _ = types.ObjectValueFrom(ctx, queryLogConfigModel{}.attrTypes(), &stateQueryLogConfig)
+	o.QueryLog, d = types.ObjectValueFrom(ctx, queryLogConfigModel{}.attrTypes(), &stateQueryLogConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
 
 	// STATS
 	// retrieve server statistics config info
@@ -529,11 +600,26 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// convert to JSON for response logging
+	statsConfigJson, err := json.Marshal(statsConfig)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "statsConfig",
+		"body":   string(statsConfigJson),
+	})
 	var stateStatsConfig statsConfigModel
 	stateStatsConfig.Enabled = types.BoolValue(statsConfig.Enabled)
 	stateStatsConfig.Interval = types.Int64Value(int64(statsConfig.Interval / 3600 / 1000))
 	if len(statsConfig.Ignored) > 0 {
-		stateStatsConfig.Ignored, *diags = types.SetValueFrom(ctx, types.StringType, statsConfig.Ignored)
+		stateStatsConfig.Ignored, d = types.SetValueFrom(ctx, types.StringType, statsConfig.Ignored)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
@@ -541,7 +627,11 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		stateStatsConfig.Ignored = types.SetValueMust(types.StringType, []attr.Value{})
 	}
 	// add to config model
-	o.Stats, _ = types.ObjectValueFrom(ctx, statsConfigModel{}.attrTypes(), &stateStatsConfig)
+	o.Stats, d = types.ObjectValueFrom(ctx, statsConfigModel{}.attrTypes(), &stateStatsConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
 
 	// BLOCKED SERVICES
 	// get refreshed blocked services from AdGuard Home
@@ -553,9 +643,26 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// convert to JSON for response logging
+	blockedServicesPauseScheduleJson, err := json.Marshal(blockedServicesPauseSchedule)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "blockedServicesPauseSchedule",
+		"body":   string(blockedServicesPauseScheduleJson),
+	})
 
 	// use common function to map blocked services pause schedules for each day
-	stateBlockedServicesPauseScheduleConfig := mapAdgScheduleToBlockedServicesPauseSchedule(ctx, &blockedServicesPauseSchedule.Schedule)
+	stateBlockedServicesPauseScheduleConfig := mapAdgScheduleToBlockedServicesPauseSchedule(ctx, &blockedServicesPauseSchedule.Schedule, diags)
+	if diags.HasError() {
+		return
+	}
 
 	// need special handling for timezone in resource due to inconsistent API response for `Local`
 	if rtype == "resource" && !currState.BlockedServicesPauseSchedule.IsNull() {
@@ -563,7 +670,8 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		if !currState.LastUpdated.IsNull() {
 			// unpack current state
 			var currStateBlockedServicesPauseScheduleConfig scheduleModel
-			*diags = currState.BlockedServicesPauseSchedule.As(ctx, &currStateBlockedServicesPauseScheduleConfig, basetypes.ObjectAsOptions{})
+			d = currState.BlockedServicesPauseSchedule.As(ctx, &currStateBlockedServicesPauseScheduleConfig, basetypes.ObjectAsOptions{})
+			diags.Append(d...)
 			if diags.HasError() {
 				return
 			}
@@ -584,11 +692,13 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	}
 
 	// add to config model
-	o.BlockedServices, *diags = types.SetValueFrom(ctx, types.StringType, blockedServicesPauseSchedule.Ids)
+	o.BlockedServices, d = types.SetValueFrom(ctx, types.StringType, blockedServicesPauseSchedule.Ids)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
-	o.BlockedServicesPauseSchedule, *diags = types.ObjectValueFrom(ctx, scheduleModel{}.attrTypes(), &stateBlockedServicesPauseScheduleConfig)
+	o.BlockedServicesPauseSchedule, d = types.ObjectValueFrom(ctx, scheduleModel{}.attrTypes(), &stateBlockedServicesPauseScheduleConfig)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
@@ -602,20 +712,37 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// convert to JSON for response logging
+	dnsConfigJson, err := json.Marshal(dnsConfig)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "dnsConfig",
+		"body":   string(dnsConfigJson),
+	})
 	// retrieve dns config info
 	var stateDnsConfig dnsConfigModel
-	stateDnsConfig.BootstrapDns, *diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.BootstrapDns)
+	stateDnsConfig.BootstrapDns, d = types.ListValueFrom(ctx, types.StringType, dnsConfig.BootstrapDns)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
-	stateDnsConfig.UpstreamDns, *diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.UpstreamDns)
+	stateDnsConfig.UpstreamDns, d = types.ListValueFrom(ctx, types.StringType, dnsConfig.UpstreamDns)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
 	if len(dnsConfig.FallbackDns) == 0 && rtype == "resource" {
 		stateDnsConfig.FallbackDns = types.ListNull(types.StringType)
 	} else {
-		stateDnsConfig.FallbackDns, *diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.FallbackDns)
+		stateDnsConfig.FallbackDns, d = types.ListValueFrom(ctx, types.StringType, dnsConfig.FallbackDns)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
@@ -627,7 +754,8 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	if len(dnsConfig.RateLimitWhitelist) == 0 && rtype == "resource" {
 		stateDnsConfig.RateLimitWhitelist = types.ListNull(types.StringType)
 	} else {
-		stateDnsConfig.RateLimitWhitelist, *diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.RateLimitWhitelist)
+		stateDnsConfig.RateLimitWhitelist, d = types.ListValueFrom(ctx, types.StringType, dnsConfig.RateLimitWhitelist)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
@@ -665,7 +793,8 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	}
 	stateDnsConfig.UsePrivatePtrResolvers = types.BoolValue(dnsConfig.UsePrivatePtrResolvers)
 	stateDnsConfig.ResolveClients = types.BoolValue(dnsConfig.ResolveClients)
-	stateDnsConfig.LocalPtrUpstreams, *diags = types.SetValueFrom(ctx, types.StringType, dnsConfig.LocalPtrUpstreams)
+	stateDnsConfig.LocalPtrUpstreams, d = types.SetValueFrom(ctx, types.StringType, dnsConfig.LocalPtrUpstreams)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
@@ -680,20 +809,41 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
-	stateDnsConfig.AllowedClients, *diags = types.SetValueFrom(ctx, types.StringType, dnsAccess.AllowedClients)
+	// convert to JSON for response logging
+	dnsAccessJson, err := json.Marshal(dnsAccess)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "dnsAccess",
+		"body":   string(dnsAccessJson),
+	})
+	stateDnsConfig.AllowedClients, d = types.SetValueFrom(ctx, types.StringType, dnsAccess.AllowedClients)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
-	stateDnsConfig.DisallowedClients, *diags = types.SetValueFrom(ctx, types.StringType, dnsAccess.DisallowedClients)
+	stateDnsConfig.DisallowedClients, d = types.SetValueFrom(ctx, types.StringType, dnsAccess.DisallowedClients)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
-	stateDnsConfig.BlockedHosts, *diags = types.SetValueFrom(ctx, types.StringType, dnsAccess.BlockedHosts)
+	stateDnsConfig.BlockedHosts, d = types.SetValueFrom(ctx, types.StringType, dnsAccess.BlockedHosts)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
 	// add to config model
-	o.Dns, _ = types.ObjectValueFrom(ctx, dnsConfigModel{}.attrTypes(), &stateDnsConfig)
+	o.Dns, d = types.ObjectValueFrom(ctx, dnsConfigModel{}.attrTypes(), &stateDnsConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
 
 	// DHCP
 	// retrieve dhcp info
@@ -705,6 +855,20 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// convert to JSON for response logging
+	dhcpStatusJson, err := json.Marshal(dhcpStatus)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "dhcpStatus",
+		"body":   string(dhcpStatusJson),
+	})
 	// parse double-nested attributes first
 	var stateDhcpIpv4Config dhcpIpv4Model
 	stateDhcpIpv4Config.GatewayIp = types.StringValue(dhcpStatus.V4.GatewayIp)
@@ -723,11 +887,13 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	stateDhcpConfig.Interface = types.StringValue(dhcpStatus.InterfaceName)
 
 	// add double-nested to top nested
-	stateDhcpConfig.Ipv4Settings, *diags = types.ObjectValueFrom(ctx, dhcpIpv4Model{}.attrTypes(), &stateDhcpIpv4Config)
+	stateDhcpConfig.Ipv4Settings, d = types.ObjectValueFrom(ctx, dhcpIpv4Model{}.attrTypes(), &stateDhcpIpv4Config)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
-	stateDhcpConfig.Ipv6Settings, *diags = types.ObjectValueFrom(ctx, dhcpIpv6Model{}.attrTypes(), &stateDhcpIpv6Config)
+	stateDhcpConfig.Ipv6Settings, d = types.ObjectValueFrom(ctx, dhcpIpv6Model{}.attrTypes(), &stateDhcpIpv6Config)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
@@ -742,7 +908,8 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 			dhcpStaticLeases = append(dhcpStaticLeases, stateDhcpConfigStaticLease)
 		}
 		// convert to a set
-		stateDhcpConfig.StaticLeases, *diags = types.SetValueFrom(ctx, types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()}, dhcpStaticLeases)
+		stateDhcpConfig.StaticLeases, d = types.SetValueFrom(ctx, types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()}, dhcpStaticLeases)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
@@ -753,7 +920,8 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 
 	if rtype == "resource" {
 		// no need to do anything else, just add to config model
-		o.Dhcp, *diags = types.ObjectValueFrom(ctx, dhcpConfigModel{}.attrTypes(), &stateDhcpConfig)
+		o.Dhcp, d = types.ObjectValueFrom(ctx, dhcpConfigModel{}.attrTypes(), &stateDhcpConfig)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
@@ -766,12 +934,14 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		stateDhcpStatus.Ipv6Settings = stateDhcpConfig.Ipv6Settings
 		stateDhcpStatus.StaticLeases = stateDhcpConfig.StaticLeases
 		// add the extra attributes for the data source
-		stateDhcpStatus.Leases, *diags = types.SetValueFrom(ctx, types.ObjectType{AttrTypes: dhcpLeasesModel{}.attrTypes()}, dhcpStatus.Leases)
+		stateDhcpStatus.Leases, d = types.SetValueFrom(ctx, types.ObjectType{AttrTypes: dhcpLeasesModel{}.attrTypes()}, dhcpStatus.Leases)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
 		// add to config model
-		o.Dhcp, *diags = types.ObjectValueFrom(ctx, dhcpStatusModel{}.attrTypes(), &stateDhcpStatus)
+		o.Dhcp, d = types.ObjectValueFrom(ctx, dhcpStatusModel{}.attrTypes(), &stateDhcpStatus)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
@@ -787,6 +957,20 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// convert to JSON for response logging
+	tlsConfigJson, err := json.Marshal(tlsConfig)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "tlsConfig",
+		"body":   string(tlsConfigJson),
+	})
 	// map filter config to state
 	var stateTlsConfig tlsConfigModel
 	stateTlsConfig.Enabled = types.BoolValue(tlsConfig.Enabled)
@@ -829,7 +1013,8 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		stateTlsConfig.NotAfter = types.StringValue("")
 	}
 	if len(tlsConfig.DnsNames) > 0 {
-		stateTlsConfig.DnsNames, *diags = types.ListValueFrom(ctx, types.StringType, tlsConfig.DnsNames)
+		stateTlsConfig.DnsNames, d = types.ListValueFrom(ctx, types.StringType, tlsConfig.DnsNames)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
@@ -842,17 +1027,25 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	stateTlsConfig.ValidPair = types.BoolValue(tlsConfig.ValidPair)
 
 	// add to config model
-	o.Tls, _ = types.ObjectValueFrom(ctx, tlsConfigModel{}.attrTypes(), &stateTlsConfig)
+	o.Tls, d = types.ObjectValueFrom(ctx, tlsConfigModel{}.attrTypes(), &stateTlsConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
 
 	// if we got here, all went fine
 }
 
 // common `Create` and `Update` function for the resource
 func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonModel, state *configCommonModel, diags *diag.Diagnostics) {
+	// initialize empty diags variable
+	var d diag.Diagnostics
+
 	// FILTERING CONFIG
 	// unpack nested attributes from plan
 	var planFiltering filteringModel
-	*diags = plan.Filtering.As(ctx, &planFiltering, basetypes.ObjectAsOptions{})
+	d = plan.Filtering.As(ctx, &planFiltering, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
@@ -897,7 +1090,8 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	// SAFE SEARCH
 	// unpack nested attributes from plan
 	var planSafeSearch safeSearchModel
-	*diags = plan.SafeSearch.As(ctx, &planSafeSearch, basetypes.ObjectAsOptions{})
+	d = plan.SafeSearch.As(ctx, &planSafeSearch, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
@@ -907,7 +1101,8 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	safeSearchConfig.Enabled = planSafeSearch.Enabled.ValueBool()
 	if len(planSafeSearch.Services.Elements()) > 0 {
 		var safeSearchServicesEnabled []string
-		*diags = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
+		d = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
@@ -929,7 +1124,8 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	// QUERY LOG
 	// unpack nested attributes from plan
 	var planQueryLogConfig queryLogConfigModel
-	*diags = plan.QueryLog.As(ctx, &planQueryLogConfig, basetypes.ObjectAsOptions{})
+	d = plan.QueryLog.As(ctx, &planQueryLogConfig, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
@@ -939,7 +1135,8 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	queryLogConfig.Enabled = planQueryLogConfig.Enabled.ValueBool()
 	queryLogConfig.Interval = uint64(planQueryLogConfig.Interval.ValueInt64() * 3600 * 1000)
 	queryLogConfig.AnonymizeClientIp = planQueryLogConfig.AnonymizeClientIp.ValueBool()
-	*diags = planQueryLogConfig.Ignored.ElementsAs(ctx, &queryLogConfig.Ignored, false)
+	d = planQueryLogConfig.Ignored.ElementsAs(ctx, &queryLogConfig.Ignored, false)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
@@ -957,7 +1154,8 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	// STATS
 	// unpack nested attributes from plan
 	var planStatsConfig statsConfigModel
-	*diags = plan.Stats.As(ctx, &planStatsConfig, basetypes.ObjectAsOptions{})
+	d = plan.Stats.As(ctx, &planStatsConfig, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
@@ -966,7 +1164,8 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	// populate stats from plan
 	statsConfig.Enabled = planStatsConfig.Enabled.ValueBool()
 	statsConfig.Interval = uint64(planStatsConfig.Interval.ValueInt64() * 3600 * 1000)
-	*diags = planStatsConfig.Ignored.ElementsAs(ctx, &statsConfig.Ignored, false)
+	d = planStatsConfig.Ignored.ElementsAs(ctx, &statsConfig.Ignored, false)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
@@ -985,14 +1184,16 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	var blockedServices []string
 	// populate blocked services from plan
 	if len(plan.BlockedServices.Elements()) > 0 {
-		*diags = plan.BlockedServices.ElementsAs(ctx, &blockedServices, false)
+		d = plan.BlockedServices.ElementsAs(ctx, &blockedServices, false)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
 	}
 	// unpack nested attributes from plan
 	var planBlockedServicesPauseScheduleConfig scheduleModel
-	*diags = plan.BlockedServicesPauseSchedule.As(ctx, &planBlockedServicesPauseScheduleConfig, basetypes.ObjectAsOptions{})
+	d = plan.BlockedServicesPauseSchedule.As(ctx, &planBlockedServicesPauseScheduleConfig, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
@@ -1001,7 +1202,10 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	// populate blocked services schedule from plan
 	blockedServicesPauseScheduleConfig.Ids = blockedServices
 	// defer to common function to populate schedule
-	blockedServicesPauseScheduleConfig.Schedule = mapBlockedServicesPauseScheduleToAdgSchedule(ctx, planBlockedServicesPauseScheduleConfig)
+	blockedServicesPauseScheduleConfig.Schedule = mapBlockedServicesPauseScheduleToAdgSchedule(ctx, planBlockedServicesPauseScheduleConfig, diags)
+	if diags.HasError() {
+		return
+	}
 
 	// set blocked services and schedule using plan
 	_, err = r.adg.SetBlockedServices(blockedServicesPauseScheduleConfig)
@@ -1016,7 +1220,8 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	// DNS CONFIG
 	// unpack nested attributes from plan
 	var planDnsConfig dnsConfigModel
-	*diags = plan.Dns.As(ctx, &planDnsConfig, basetypes.ObjectAsOptions{})
+	d = plan.Dns.As(ctx, &planDnsConfig, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
@@ -1024,19 +1229,22 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	var dnsConfig adguard.DNSConfig
 	// populate DNS config from plan
 	if len(planDnsConfig.BootstrapDns.Elements()) > 0 {
-		*diags = planDnsConfig.BootstrapDns.ElementsAs(ctx, &dnsConfig.BootstrapDns, false)
+		d = planDnsConfig.BootstrapDns.ElementsAs(ctx, &dnsConfig.BootstrapDns, false)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
 	}
 	if len(planDnsConfig.UpstreamDns.Elements()) > 0 {
-		*diags = planDnsConfig.UpstreamDns.ElementsAs(ctx, &dnsConfig.UpstreamDns, false)
+		d = planDnsConfig.UpstreamDns.ElementsAs(ctx, &dnsConfig.UpstreamDns, false)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
 	}
 	if len(planDnsConfig.FallbackDns.Elements()) > 0 {
-		*diags = planDnsConfig.FallbackDns.ElementsAs(ctx, &dnsConfig.FallbackDns, false)
+		d = planDnsConfig.FallbackDns.ElementsAs(ctx, &dnsConfig.FallbackDns, false)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
@@ -1048,7 +1256,8 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	dnsConfig.RateLimitSubnetSubnetLenIpv4 = uint(planDnsConfig.RateLimitSubnetLenIpv4.ValueInt64())
 	dnsConfig.RateLimitSubnetSubnetLenIpv6 = uint(planDnsConfig.RateLimitSubnetLenIpv6.ValueInt64())
 	if len(planDnsConfig.RateLimitWhitelist.Elements()) > 0 {
-		*diags = planDnsConfig.RateLimitWhitelist.ElementsAs(ctx, &dnsConfig.RateLimitWhitelist, false)
+		d = planDnsConfig.RateLimitWhitelist.ElementsAs(ctx, &dnsConfig.RateLimitWhitelist, false)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
@@ -1076,7 +1285,8 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	dnsConfig.UsePrivatePtrResolvers = planDnsConfig.UsePrivatePtrResolvers.ValueBool()
 	dnsConfig.ResolveClients = planDnsConfig.ResolveClients.ValueBool()
 	if len(planDnsConfig.LocalPtrUpstreams.Elements()) > 0 {
-		*diags = planDnsConfig.LocalPtrUpstreams.ElementsAs(ctx, &dnsConfig.LocalPtrUpstreams, false)
+		d = planDnsConfig.LocalPtrUpstreams.ElementsAs(ctx, &dnsConfig.LocalPtrUpstreams, false)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
@@ -1097,19 +1307,22 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	var dnsAccess adguard.AccessList
 	// populate dns access list from plan
 	if len(planDnsConfig.AllowedClients.Elements()) > 0 {
-		*diags = planDnsConfig.AllowedClients.ElementsAs(ctx, &dnsAccess.AllowedClients, false)
+		d = planDnsConfig.AllowedClients.ElementsAs(ctx, &dnsAccess.AllowedClients, false)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
 	}
 	if len(planDnsConfig.DisallowedClients.Elements()) > 0 {
-		*diags = planDnsConfig.DisallowedClients.ElementsAs(ctx, &dnsAccess.DisallowedClients, false)
+		d = planDnsConfig.DisallowedClients.ElementsAs(ctx, &dnsAccess.DisallowedClients, false)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
 	}
 	if len(planDnsConfig.BlockedHosts.Elements()) > 0 {
-		*diags = planDnsConfig.BlockedHosts.ElementsAs(ctx, &dnsAccess.BlockedHosts, false)
+		d = planDnsConfig.BlockedHosts.ElementsAs(ctx, &dnsAccess.BlockedHosts, false)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
@@ -1127,27 +1340,31 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	// DHCP
 	// unpack nested attributes from plan
 	var planDhcpConfig dhcpConfigModel
-	*diags = plan.Dhcp.As(ctx, &planDhcpConfig, basetypes.ObjectAsOptions{})
+	d = plan.Dhcp.As(ctx, &planDhcpConfig, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
 	var planDhcpIpv4Settings dhcpIpv4Model
 	if !planDhcpConfig.Ipv4Settings.IsNull() {
-		*diags = planDhcpConfig.Ipv4Settings.As(ctx, &planDhcpIpv4Settings, basetypes.ObjectAsOptions{})
+		d = planDhcpConfig.Ipv4Settings.As(ctx, &planDhcpIpv4Settings, basetypes.ObjectAsOptions{})
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
 	}
 	var planDhcpIpv6Settings dhcpIpv6Model
 	if !planDhcpConfig.Ipv6Settings.IsNull() {
-		*diags = planDhcpConfig.Ipv6Settings.As(ctx, &planDhcpIpv6Settings, basetypes.ObjectAsOptions{})
+		d = planDhcpConfig.Ipv6Settings.As(ctx, &planDhcpIpv6Settings, basetypes.ObjectAsOptions{})
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
 	}
 	var planDhcpStaticLeases []dhcpStaticLeasesModel
 	if !planDhcpConfig.StaticLeases.IsNull() {
-		*diags = planDhcpConfig.StaticLeases.ElementsAs(ctx, &planDhcpStaticLeases, false)
+		d = planDhcpConfig.StaticLeases.ElementsAs(ctx, &planDhcpStaticLeases, false)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
@@ -1196,12 +1413,14 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 			}
 		}
 
-		*diags = state.Dhcp.As(ctx, &stateDhcpConfig, basetypes.ObjectAsOptions{})
+		d = state.Dhcp.As(ctx, &stateDhcpConfig, basetypes.ObjectAsOptions{})
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
 		if !stateDhcpConfig.StaticLeases.IsNull() {
-			*diags = stateDhcpConfig.StaticLeases.ElementsAs(ctx, &stateDhcpStaticLeases, false)
+			d = stateDhcpConfig.StaticLeases.ElementsAs(ctx, &stateDhcpStaticLeases, false)
+			diags.Append(d...)
 			if diags.HasError() {
 				return
 			}
@@ -1281,7 +1500,8 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	// TLS CONFIG
 	// unpack nested attributes from plan
 	var planTlsConfig tlsConfigModel
-	*diags = plan.Tls.As(ctx, &planTlsConfig, basetypes.ObjectAsOptions{})
+	d = plan.Tls.As(ctx, &planTlsConfig, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
@@ -1337,14 +1557,19 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	planTlsConfig.Issuer = types.StringValue(tlsConfigResponse.Issuer)
 	planTlsConfig.NotBefore = types.StringValue(tlsConfigResponse.NotBefore)
 	planTlsConfig.NotAfter = types.StringValue(tlsConfigResponse.NotAfter)
-	planTlsConfig.DnsNames, *diags = types.ListValueFrom(ctx, types.StringType, tlsConfig.DnsNames)
+	planTlsConfig.DnsNames, d = types.ListValueFrom(ctx, types.StringType, tlsConfig.DnsNames)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
 	planTlsConfig.WarningValidation = types.StringValue(tlsConfigResponse.WarningValidation)
 
 	// overwrite plan with computed values
-	plan.Tls, _ = types.ObjectValueFrom(ctx, tlsConfigModel{}.attrTypes(), &planTlsConfig)
+	plan.Tls, d = types.ObjectValueFrom(ctx, tlsConfigModel{}.attrTypes(), &planTlsConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
 
 	// if we got here, all went fine
 }

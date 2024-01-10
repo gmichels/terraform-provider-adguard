@@ -2,6 +2,7 @@ package adguard
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/gmichels/adguard-client-go"
@@ -11,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // ensure the implementation satisfies the expected interfaces
@@ -139,6 +141,20 @@ func (r *userRulesResource) Read(ctx context.Context, req resource.ReadRequest, 
 		)
 		return
 	}
+	// convert to JSON for response logging
+	userRulesJson, err := json.Marshal(userRules)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home User Rules",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "userRules",
+		"body":   string(userRulesJson),
+	})
 
 	// overwrite user rules with refreshed state
 	state.Rules, diags = types.ListValueFrom(ctx, types.StringType, userRules)

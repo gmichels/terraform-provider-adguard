@@ -2,11 +2,13 @@ package adguard
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/gmichels/adguard-client-go"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // ensure the implementation satisfies the expected interfaces
@@ -93,6 +95,20 @@ func (d *listFilterDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		)
 		return
 	}
+	// convert to JSON for response logging
+	listFilterJson, err := json.Marshal(listFilter)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home List Filter",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "listFilter",
+		"body":   string(listFilterJson),
+	})
 	if listFilter == nil {
 		resp.Diagnostics.AddError(
 			"Unable to Locate AdGuard Home List Filter",

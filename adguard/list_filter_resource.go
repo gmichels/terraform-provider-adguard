@@ -2,6 +2,7 @@ package adguard
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // ensure the implementation satisfies the expected interfaces
@@ -195,7 +197,22 @@ func (r *listFilterResource) Read(ctx context.Context, req resource.ReadRequest,
 			"Could not read list filter with id "+state.ID.ValueString()+": "+err.Error(),
 		)
 		return
-	} else if listFilter == nil {
+	}
+	// convert to JSON for response logging
+	listFilterJson, err := json.Marshal(listFilter)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home List Filter",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "listFilter",
+		"body":   string(listFilterJson),
+	})
+	if listFilter == nil {
 		resp.Diagnostics.AddError(
 			"Error Reading AdGuard Home List Filter",
 			"No such list filter with id "+state.ID.ValueString(),
@@ -247,6 +264,20 @@ func (r *listFilterResource) Update(ctx context.Context, req resource.UpdateRequ
 		)
 		return
 	}
+	// convert to JSON for response logging
+	currentListFilterJson, err := json.Marshal(currentListFilter)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home List Filter",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "currentListFilter",
+		"body":   string(currentListFilterJson),
+	})
 
 	// generate API request body from plan
 	var updateListFilterData adguard.FilterSetUrlData
