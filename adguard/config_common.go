@@ -2,15 +2,18 @@ package adguard
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
+	"strconv"
 
 	"github.com/gmichels/adguard-client-go"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // common config model to be used for working with both resource and data source
@@ -429,6 +432,9 @@ func (o tlsConfigModel) defaultObject() map[string]attr.Value {
 
 // common `Read` function for both data source and resource
 func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState *configCommonModel, diags *diag.Diagnostics, rtype string) {
+	// initialize empty diags variable
+	var d diag.Diagnostics
+
 	// FILTERING CONFIG
 	// get refreshed filtering config value from AdGuard Home
 	filteringConfig, err := adg.GetAllFilters()
@@ -439,12 +445,30 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// convert to JSON for response logging
+	filteringConfigJson, err := json.Marshal(filteringConfig)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "filteringConfig",
+		"body":   string(filteringConfigJson),
+	})
 	// map filter config to state
 	var stateFilteringConfig filteringModel
 	stateFilteringConfig.Enabled = types.BoolValue(filteringConfig.Enabled)
 	stateFilteringConfig.UpdateInterval = types.Int64Value(int64(filteringConfig.Interval))
 	// add to config model
-	o.Filtering, _ = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)
+	o.Filtering, d = types.ObjectValueFrom(ctx, filteringModel{}.attrTypes(), &stateFilteringConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
 
 	// SAFE BROWSING
 	// get refreshed safe browsing status from AdGuard Home
@@ -456,6 +480,11 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "safeBrowsingStatus",
+		"body":   strconv.FormatBool(*safeBrowsingStatus),
+	})
 	// add to config model
 	o.SafeBrowsing = types.BoolValue(*safeBrowsingStatus)
 
@@ -469,6 +498,10 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "parentalStatus",
+		"body":   strconv.FormatBool(*parentalStatus),
+	})
 	// add to config model
 	o.ParentalControl = types.BoolValue(*parentalStatus)
 
@@ -482,6 +515,20 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// convert to JSON for response logging
+	safeSearchConfigJson, err := json.Marshal(safeSearchConfig)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "safeSearchConfig",
+		"body":   string(safeSearchConfigJson),
+	})
 	// map safe search config object to a list of enabled services
 	enabledSafeSearchServices := mapSafeSearchServices(safeSearchConfig)
 	// map safe search to state
@@ -492,7 +539,11 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		return
 	}
 	// add to config model
-	o.SafeSearch, _ = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchConfig)
+	o.SafeSearch, d = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
 
 	// QUERY LOG
 	// retrieve query log config info
@@ -504,6 +555,20 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// convert to JSON for response logging
+	queryLogConfigJson, err := json.Marshal(queryLogConfig)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "queryLogConfig",
+		"body":   string(queryLogConfigJson),
+	})
 	var stateQueryLogConfig queryLogConfigModel
 	stateQueryLogConfig.Enabled = types.BoolValue(queryLogConfig.Enabled)
 	stateQueryLogConfig.Interval = types.Int64Value(int64(queryLogConfig.Interval / 1000 / 3600))
@@ -517,7 +582,11 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		stateQueryLogConfig.Ignored = types.SetValueMust(types.StringType, []attr.Value{})
 	}
 	// add to config model
-	o.QueryLog, _ = types.ObjectValueFrom(ctx, queryLogConfigModel{}.attrTypes(), &stateQueryLogConfig)
+	o.QueryLog, d = types.ObjectValueFrom(ctx, queryLogConfigModel{}.attrTypes(), &stateQueryLogConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
 
 	// STATS
 	// retrieve server statistics config info
@@ -529,6 +598,20 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// convert to JSON for response logging
+	statsConfigJson, err := json.Marshal(statsConfig)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "statsConfig",
+		"body":   string(statsConfigJson),
+	})
 	var stateStatsConfig statsConfigModel
 	stateStatsConfig.Enabled = types.BoolValue(statsConfig.Enabled)
 	stateStatsConfig.Interval = types.Int64Value(int64(statsConfig.Interval / 3600 / 1000))
@@ -541,7 +624,11 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		stateStatsConfig.Ignored = types.SetValueMust(types.StringType, []attr.Value{})
 	}
 	// add to config model
-	o.Stats, _ = types.ObjectValueFrom(ctx, statsConfigModel{}.attrTypes(), &stateStatsConfig)
+	o.Stats, d = types.ObjectValueFrom(ctx, statsConfigModel{}.attrTypes(), &stateStatsConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
 
 	// BLOCKED SERVICES
 	// get refreshed blocked services from AdGuard Home
@@ -553,6 +640,20 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// convert to JSON for response logging
+	blockedServicesPauseScheduleJson, err := json.Marshal(blockedServicesPauseSchedule)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "blockedServicesPauseSchedule",
+		"body":   string(blockedServicesPauseScheduleJson),
+	})
 
 	// use common function to map blocked services pause schedules for each day
 	stateBlockedServicesPauseScheduleConfig := mapAdgScheduleToBlockedServicesPauseSchedule(ctx, &blockedServicesPauseSchedule.Schedule)
@@ -602,6 +703,20 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// convert to JSON for response logging
+	dnsConfigJson, err := json.Marshal(dnsConfig)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "dnsConfig",
+		"body":   string(dnsConfigJson),
+	})
 	// retrieve dns config info
 	var stateDnsConfig dnsConfigModel
 	stateDnsConfig.BootstrapDns, *diags = types.ListValueFrom(ctx, types.StringType, dnsConfig.BootstrapDns)
@@ -680,6 +795,20 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// convert to JSON for response logging
+	dnsAccessJson, err := json.Marshal(dnsAccess)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "dnsAccess",
+		"body":   string(dnsAccessJson),
+	})
 	stateDnsConfig.AllowedClients, *diags = types.SetValueFrom(ctx, types.StringType, dnsAccess.AllowedClients)
 	if diags.HasError() {
 		return
@@ -693,7 +822,11 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		return
 	}
 	// add to config model
-	o.Dns, _ = types.ObjectValueFrom(ctx, dnsConfigModel{}.attrTypes(), &stateDnsConfig)
+	o.Dns, d = types.ObjectValueFrom(ctx, dnsConfigModel{}.attrTypes(), &stateDnsConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
 
 	// DHCP
 	// retrieve dhcp info
@@ -705,6 +838,20 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// convert to JSON for response logging
+	dhcpStatusJson, err := json.Marshal(dhcpStatus)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "dhcpStatus",
+		"body":   string(dhcpStatusJson),
+	})
 	// parse double-nested attributes first
 	var stateDhcpIpv4Config dhcpIpv4Model
 	stateDhcpIpv4Config.GatewayIp = types.StringValue(dhcpStatus.V4.GatewayIp)
@@ -787,6 +934,20 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// convert to JSON for response logging
+	tlsConfigJson, err := json.Marshal(tlsConfig)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "tlsConfig",
+		"body":   string(tlsConfigJson),
+	})
 	// map filter config to state
 	var stateTlsConfig tlsConfigModel
 	stateTlsConfig.Enabled = types.BoolValue(tlsConfig.Enabled)
@@ -842,7 +1003,11 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	stateTlsConfig.ValidPair = types.BoolValue(tlsConfig.ValidPair)
 
 	// add to config model
-	o.Tls, _ = types.ObjectValueFrom(ctx, tlsConfigModel{}.attrTypes(), &stateTlsConfig)
+	o.Tls, d = types.ObjectValueFrom(ctx, tlsConfigModel{}.attrTypes(), &stateTlsConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
 
 	// if we got here, all went fine
 }
@@ -1344,7 +1509,12 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	planTlsConfig.WarningValidation = types.StringValue(tlsConfigResponse.WarningValidation)
 
 	// overwrite plan with computed values
-	plan.Tls, _ = types.ObjectValueFrom(ctx, tlsConfigModel{}.attrTypes(), &planTlsConfig)
+	var d diag.Diagnostics
+	plan.Tls, d = types.ObjectValueFrom(ctx, tlsConfigModel{}.attrTypes(), &planTlsConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
 
 	// if we got here, all went fine
 }
