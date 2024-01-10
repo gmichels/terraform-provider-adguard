@@ -123,7 +123,7 @@ Read-Only:
 - `interface` (String) The interface to use for the DHCP server
 - `ipv4_settings` (Attributes) (see [below for nested schema](#nestedatt--dhcp--ipv4_settings))
 - `ipv6_settings` (Attributes) (see [below for nested schema](#nestedatt--dhcp--ipv6_settings))
-- `leases` (Attributes Set) Current leases in the DHCP server (see [below for nested schema](#nestedatt--dhcp--leases))
+- `leases` (Attributes List) Current leases in the DHCP server (see [below for nested schema](#nestedatt--dhcp--leases))
 - `static_leases` (Attributes Set) Current static leases in the DHCP server (see [below for nested schema](#nestedatt--dhcp--static_leases))
 
 <a id="nestedatt--dhcp--ipv4_settings"></a>
@@ -152,7 +152,7 @@ Read-Only:
 
 Read-Only:
 
-- `expiration` (String) Expiration timestamp for the lease
+- `expires` (String) Expiration timestamp for the lease
 - `hostname` (String) Hostname associated with the lease
 - `ip` (String) IP address associated with the lease
 - `mac` (String) MAC address associated with the lease
