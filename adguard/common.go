@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -313,7 +314,10 @@ func dayRangeResourceSchema(day string) schema.SingleNestedAttribute {
 }
 
 // mapAdgScheduleToBlockedServicesPauseSchedule takes an ADG Schedule object and maps the the days into a scheduleModel
-func mapAdgScheduleToBlockedServicesPauseSchedule(ctx context.Context, adgBlockedServicesSchedule *adguard.Schedule) scheduleModel {
+func mapAdgScheduleToBlockedServicesPauseSchedule(ctx context.Context, adgBlockedServicesSchedule *adguard.Schedule, diags *diag.Diagnostics) scheduleModel {
+	// initialize empty diags variable
+	var d diag.Diagnostics
+
 	// instantiate empty intermediate object
 	var blockedServicesPauseSchedule scheduleModel
 
@@ -323,79 +327,139 @@ func mapAdgScheduleToBlockedServicesPauseSchedule(ctx context.Context, adgBlocke
 		sunDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Sunday.Start)))
 		sunDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Sunday.End)))
 	}
-	blockedServicesPauseSchedule.Sunday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &sunDayRangeConfig)
+	blockedServicesPauseSchedule.Sunday, d = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &sunDayRangeConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return blockedServicesPauseSchedule
+	}
 
 	var monDayRangeConfig dayRangeModel
 	if adgBlockedServicesSchedule.Monday.End > 0 {
 		monDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Monday.Start)))
 		monDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Monday.End)))
 	}
-	blockedServicesPauseSchedule.Monday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &monDayRangeConfig)
+	blockedServicesPauseSchedule.Monday, d = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &monDayRangeConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return blockedServicesPauseSchedule
+	}
 
 	var tueDayRangeConfig dayRangeModel
 	if adgBlockedServicesSchedule.Tuesday.End > 0 {
 		tueDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Tuesday.Start)))
 		tueDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Tuesday.End)))
 	}
-	blockedServicesPauseSchedule.Tuesday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &tueDayRangeConfig)
+	blockedServicesPauseSchedule.Tuesday, d = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &tueDayRangeConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return blockedServicesPauseSchedule
+	}
 
 	var wedDayRangeConfig dayRangeModel
 	if adgBlockedServicesSchedule.Wednesday.End > 0 {
 		wedDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Wednesday.Start)))
 		wedDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Wednesday.End)))
 	}
-	blockedServicesPauseSchedule.Wednesday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &wedDayRangeConfig)
+	blockedServicesPauseSchedule.Wednesday, d = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &wedDayRangeConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return blockedServicesPauseSchedule
+	}
 
 	var thuDayRangeConfig dayRangeModel
 	if adgBlockedServicesSchedule.Thursday.End > 0 {
 		thuDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Thursday.Start)))
 		thuDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Thursday.End)))
 	}
-	blockedServicesPauseSchedule.Thursday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &thuDayRangeConfig)
+	blockedServicesPauseSchedule.Thursday, d = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &thuDayRangeConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return blockedServicesPauseSchedule
+	}
 
 	var friDayRangeConfig dayRangeModel
 	if adgBlockedServicesSchedule.Friday.End > 0 {
 		friDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Friday.Start)))
 		friDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Friday.End)))
 	}
-	blockedServicesPauseSchedule.Friday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &friDayRangeConfig)
+	blockedServicesPauseSchedule.Friday, d = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &friDayRangeConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return blockedServicesPauseSchedule
+	}
 
 	var satDayRangeConfig dayRangeModel
 	if adgBlockedServicesSchedule.Saturday.End > 0 {
 		satDayRangeConfig.Start = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Saturday.Start)))
 		satDayRangeConfig.End = types.StringValue(convertMsToHourMinutes(int64(adgBlockedServicesSchedule.Saturday.End)))
 	}
-	blockedServicesPauseSchedule.Saturday, _ = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &satDayRangeConfig)
+	blockedServicesPauseSchedule.Saturday, d = types.ObjectValueFrom(ctx, dayRangeModel{}.attrTypes(), &satDayRangeConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return blockedServicesPauseSchedule
+	}
 
 	return blockedServicesPauseSchedule
 }
 
 // mapBlockedServicesPauseScheduleToAdgSchedule takes a scheduleModel from plan and maps into an ADG Schedule object
-func mapBlockedServicesPauseScheduleToAdgSchedule(ctx context.Context, schedule scheduleModel) adguard.Schedule {
-	// unpack nested attributes for each day from plan
-	var planSunDayRangeConfig dayRangeModel
-	_ = schedule.Sunday.As(ctx, &planSunDayRangeConfig, basetypes.ObjectAsOptions{})
-
-	var planMonDayRangeConfig dayRangeModel
-	_ = schedule.Monday.As(ctx, &planMonDayRangeConfig, basetypes.ObjectAsOptions{})
-
-	var planTueDayRangeConfig dayRangeModel
-	_ = schedule.Tuesday.As(ctx, &planTueDayRangeConfig, basetypes.ObjectAsOptions{})
-
-	var planWedDayRangeConfig dayRangeModel
-	_ = schedule.Wednesday.As(ctx, &planWedDayRangeConfig, basetypes.ObjectAsOptions{})
-
-	var planThuDayRangeConfig dayRangeModel
-	_ = schedule.Thursday.As(ctx, &planThuDayRangeConfig, basetypes.ObjectAsOptions{})
-
-	var planFriDayRangeConfig dayRangeModel
-	_ = schedule.Friday.As(ctx, &planFriDayRangeConfig, basetypes.ObjectAsOptions{})
-
-	var planSatDayRangeConfig dayRangeModel
-	_ = schedule.Saturday.As(ctx, &planSatDayRangeConfig, basetypes.ObjectAsOptions{})
+func mapBlockedServicesPauseScheduleToAdgSchedule(ctx context.Context, schedule scheduleModel, diags *diag.Diagnostics) adguard.Schedule {
+	// initialize empty diags variable
+	var d diag.Diagnostics
 
 	// instantiate empty object for storing plan data
 	var blockedServicesSchedule adguard.Schedule
+
+	// unpack nested attributes for each day from plan
+	var planSunDayRangeConfig dayRangeModel
+	d = schedule.Sunday.As(ctx, &planSunDayRangeConfig, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
+	if diags.HasError() {
+		return blockedServicesSchedule
+	}
+
+	var planMonDayRangeConfig dayRangeModel
+	d = schedule.Monday.As(ctx, &planMonDayRangeConfig, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
+	if diags.HasError() {
+		return blockedServicesSchedule
+	}
+
+	var planTueDayRangeConfig dayRangeModel
+	d = schedule.Tuesday.As(ctx, &planTueDayRangeConfig, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
+	if diags.HasError() {
+		return blockedServicesSchedule
+	}
+
+	var planWedDayRangeConfig dayRangeModel
+	d = schedule.Wednesday.As(ctx, &planWedDayRangeConfig, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
+	if diags.HasError() {
+		return blockedServicesSchedule
+	}
+
+	var planThuDayRangeConfig dayRangeModel
+	d = schedule.Thursday.As(ctx, &planThuDayRangeConfig, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
+	if diags.HasError() {
+		return blockedServicesSchedule
+	}
+
+	var planFriDayRangeConfig dayRangeModel
+	d = schedule.Friday.As(ctx, &planFriDayRangeConfig, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
+	if diags.HasError() {
+		return blockedServicesSchedule
+	}
+
+	var planSatDayRangeConfig dayRangeModel
+	d = schedule.Saturday.As(ctx, &planSatDayRangeConfig, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
+	if diags.HasError() {
+		return blockedServicesSchedule
+	}
+
 	// populate blocked services schedule from plan
 	blockedServicesSchedule.TimeZone = schedule.TimeZone.ValueString()
 	blockedServicesSchedule.Sunday.Start = uint(convertHoursMinutesToMs(planSunDayRangeConfig.Start.ValueString()))

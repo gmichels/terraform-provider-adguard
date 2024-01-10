@@ -2,12 +2,14 @@ package adguard
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 
 	"github.com/gmichels/adguard-client-go"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // common client model to be used for working with both resource and data source
@@ -34,6 +36,9 @@ type clientCommonModel struct {
 
 // common `Read` function for both data source and resource
 func (o *clientCommonModel) Read(ctx context.Context, adg adguard.ADG, currState *clientCommonModel, diags *diag.Diagnostics, rtype string) {
+	// initialize empty diags variable
+	var d diag.Diagnostics
+
 	// need to define client name based whether it's an import operation
 	var clientName string
 	if !currState.Name.IsNull() {
@@ -52,6 +57,20 @@ func (o *clientCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		)
 		return
 	}
+	// convert to JSON for response logging
+	clientJson, err := json.Marshal(client)
+	if err != nil {
+		diags.AddError(
+			"Unable to Parse AdGuard Home Client",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "client",
+		"body":   string(clientJson),
+	})
 	if client == nil {
 		diags.AddError(
 			"Unable to Locate AdGuard Home Client",
@@ -62,7 +81,8 @@ func (o *clientCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 
 	// map response body to model
 	o.Name = types.StringValue(client.Name)
-	o.Ids, *diags = types.ListValueFrom(ctx, types.StringType, client.Ids)
+	o.Ids, d = types.ListValueFrom(ctx, types.StringType, client.Ids)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
@@ -75,17 +95,25 @@ func (o *clientCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	stateSafeSearchClient.Enabled = types.BoolValue(client.SafeSearch.Enabled)
 	// map safe search config object to a list of enabled services
 	enabledSafeSearchServices := mapSafeSearchServices(&client.SafeSearch)
-	stateSafeSearchClient.Services, *diags = types.SetValueFrom(ctx, types.StringType, enabledSafeSearchServices)
+	stateSafeSearchClient.Services, d = types.SetValueFrom(ctx, types.StringType, enabledSafeSearchServices)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
 	// add to config model
-	o.SafeSearch, _ = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchClient)
+	o.SafeSearch, d = types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &stateSafeSearchClient)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
 
 	o.UseGlobalBlockedServices = types.BoolValue(client.UseGlobalBlockedServices)
 
 	// use common function to map blocked services pause schedules for each day
-	stateBlockedServicesPauseScheduleClient := mapAdgScheduleToBlockedServicesPauseSchedule(ctx, &client.BlockedServicesSchedule)
+	stateBlockedServicesPauseScheduleClient := mapAdgScheduleToBlockedServicesPauseSchedule(ctx, &client.BlockedServicesSchedule, diags)
+	if diags.HasError() {
+		return
+	}
 
 	// need special handling for timezone in resource due to inconsistent API response for `Local`
 	if rtype == "resource" {
@@ -93,7 +121,8 @@ func (o *clientCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		if !currState.LastUpdated.IsNull() && !currState.BlockedServicesPauseSchedule.IsNull() {
 			// unpack current state
 			var currStateBlockedServicesPauseScheduleClient scheduleModel
-			*diags = currState.BlockedServicesPauseSchedule.As(ctx, &currStateBlockedServicesPauseScheduleClient, basetypes.ObjectAsOptions{})
+			d = currState.BlockedServicesPauseSchedule.As(ctx, &currStateBlockedServicesPauseScheduleClient, basetypes.ObjectAsOptions{})
+			diags.Append(d...)
 			if diags.HasError() {
 				return
 			}
@@ -113,19 +142,23 @@ func (o *clientCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		stateBlockedServicesPauseScheduleClient.TimeZone = types.StringValue(client.BlockedServicesSchedule.TimeZone)
 	}
 
-	o.BlockedServices, *diags = types.SetValueFrom(ctx, types.StringType, client.BlockedServices)
+	o.BlockedServices, d = types.SetValueFrom(ctx, types.StringType, client.BlockedServices)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
-	o.BlockedServicesPauseSchedule, *diags = types.ObjectValueFrom(ctx, scheduleModel{}.attrTypes(), &stateBlockedServicesPauseScheduleClient)
+	o.BlockedServicesPauseSchedule, d = types.ObjectValueFrom(ctx, scheduleModel{}.attrTypes(), &stateBlockedServicesPauseScheduleClient)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
-	o.Upstreams, *diags = types.ListValueFrom(ctx, types.StringType, client.Upstreams)
+	o.Upstreams, d = types.ListValueFrom(ctx, types.StringType, client.Upstreams)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
-	o.Tags, *diags = types.SetValueFrom(ctx, types.StringType, client.Tags)
+	o.Tags, d = types.SetValueFrom(ctx, types.StringType, client.Tags)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
@@ -139,12 +172,16 @@ func (o *clientCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 
 // common `Create` and `Update` function for the resource
 func (r *clientResource) CreateOrUpdate(ctx context.Context, plan *clientCommonModel, diags *diag.Diagnostics, create_operation bool) {
+	// initialize empty diags variable
+	var d diag.Diagnostics
+
 	// instantiate empty client for storing plan data
 	var client adguard.Client
 
 	// populate client from plan
 	client.Name = plan.Name.ValueString()
-	*diags = plan.Ids.ElementsAs(ctx, &client.Ids, false)
+	d = plan.Ids.ElementsAs(ctx, &client.Ids, false)
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
@@ -155,7 +192,8 @@ func (r *clientResource) CreateOrUpdate(ctx context.Context, plan *clientCommonM
 
 	// unpack nested attributes from plan
 	var planSafeSearch safeSearchModel
-	*diags = plan.SafeSearch.As(ctx, &planSafeSearch, basetypes.ObjectAsOptions{})
+	d = plan.SafeSearch.As(ctx, &planSafeSearch, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
@@ -164,10 +202,12 @@ func (r *clientResource) CreateOrUpdate(ctx context.Context, plan *clientCommonM
 
 	if len(planSafeSearch.Services.Elements()) > 0 {
 		var safeSearchServicesEnabled []string
-		*diags = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
+		d = planSafeSearch.Services.ElementsAs(ctx, &safeSearchServicesEnabled, false)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
-		} // use reflection to set each safe search services value dynamically
+		}
+		// use reflection to set each safe search services value dynamically
 		v := reflect.ValueOf(&client.SafeSearch).Elem()
 		t := v.Type()
 		setSafeSearchServices(v, t, safeSearchServicesEnabled)
@@ -177,26 +217,34 @@ func (r *clientResource) CreateOrUpdate(ctx context.Context, plan *clientCommonM
 
 	// unpack nested attributes from plan
 	var planBlockedServicesPauseScheduleClient scheduleModel
-	*diags = plan.BlockedServicesPauseSchedule.As(ctx, &planBlockedServicesPauseScheduleClient, basetypes.ObjectAsOptions{})
+	d = plan.BlockedServicesPauseSchedule.As(ctx, &planBlockedServicesPauseScheduleClient, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
 	if diags.HasError() {
 		return
-	} // defer to common function to populate schedule
-	client.BlockedServicesSchedule = mapBlockedServicesPauseScheduleToAdgSchedule(ctx, planBlockedServicesPauseScheduleClient)
+	}
+	// defer to common function to populate schedule
+	client.BlockedServicesSchedule = mapBlockedServicesPauseScheduleToAdgSchedule(ctx, planBlockedServicesPauseScheduleClient, diags)
+	if diags.HasError() {
+		return
+	}
 
 	if len(plan.BlockedServices.Elements()) > 0 {
-		*diags = plan.BlockedServices.ElementsAs(ctx, &client.BlockedServices, false)
+		d = plan.BlockedServices.ElementsAs(ctx, &client.BlockedServices, false)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
 	}
 	if len(plan.Upstreams.Elements()) > 0 {
-		*diags = plan.Upstreams.ElementsAs(ctx, &client.Upstreams, false)
+		d = plan.Upstreams.ElementsAs(ctx, &client.Upstreams, false)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
 	}
 	if len(plan.Tags.Elements()) > 0 {
-		*diags = plan.Tags.ElementsAs(ctx, &client.Tags, false)
+		d = plan.Tags.ElementsAs(ctx, &client.Tags, false)
+		diags.Append(d...)
 		if diags.HasError() {
 			return
 		}
