@@ -285,7 +285,7 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 							},
 						},
 					},
-					"leases": schema.SetNestedAttribute{
+					"leases": schema.ListNestedAttribute{
 						Description: "Current leases in the DHCP server",
 						Computed:    true,
 						NestedObject: schema.NestedAttributeObject{
@@ -302,7 +302,7 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 									Description: "Hostname associated with the lease",
 									Computed:    true,
 								},
-								"expiration": schema.StringAttribute{
+								"expires": schema.StringAttribute{
 									Description: "Expiration timestamp for the lease",
 									Computed:    true,
 								},
