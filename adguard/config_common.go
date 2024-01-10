@@ -220,7 +220,7 @@ type dhcpStatusModel struct {
 	Interface    types.String `tfsdk:"interface"`
 	Ipv4Settings types.Object `tfsdk:"ipv4_settings"`
 	Ipv6Settings types.Object `tfsdk:"ipv6_settings"`
-	Leases       types.Set    `tfsdk:"leases"`
+	Leases       types.List   `tfsdk:"leases"`
 	StaticLeases types.Set    `tfsdk:"static_leases"`
 }
 
@@ -231,7 +231,7 @@ func (o dhcpStatusModel) attrTypes() map[string]attr.Type {
 		"interface":     types.StringType,
 		"ipv4_settings": types.ObjectType{AttrTypes: dhcpIpv4Model{}.attrTypes()},
 		"ipv6_settings": types.ObjectType{AttrTypes: dhcpIpv6Model{}.attrTypes()},
-		"leases":        types.SetType{ElemType: types.ObjectType{AttrTypes: dhcpLeasesModel{}.attrTypes()}},
+		"leases":        types.ListType{ElemType: types.ObjectType{AttrTypes: dhcpLeasesModel{}.attrTypes()}},
 		"static_leases": types.SetType{ElemType: types.ObjectType{AttrTypes: dhcpStaticLeasesModel{}.attrTypes()}},
 	}
 }
@@ -322,19 +322,19 @@ func (o dhcpIpv6Model) defaultObject() map[string]attr.Value {
 
 // dhcpLeasesModel maps DHCP leases schema data
 type dhcpLeasesModel struct {
-	Mac        types.String `tfsdk:"mac"`
-	Ip         types.String `tfsdk:"ip"`
-	Hostname   types.String `tfsdk:"hostname"`
-	Expiration types.String `tfsdk:"expiration"`
+	Mac      types.String `tfsdk:"mac"`
+	Ip       types.String `tfsdk:"ip"`
+	Hostname types.String `tfsdk:"hostname"`
+	Expires  types.String `tfsdk:"expires"`
 }
 
 // attrTypes - return attribute types for this model
 func (o dhcpLeasesModel) attrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"mac":        types.StringType,
-		"ip":         types.StringType,
-		"hostname":   types.StringType,
-		"expiration": types.StringType,
+		"mac":      types.StringType,
+		"ip":       types.StringType,
+		"hostname": types.StringType,
+		"expires":  types.StringType,
 	}
 }
 
@@ -933,11 +933,26 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		stateDhcpStatus.Ipv4Settings = stateDhcpConfig.Ipv4Settings
 		stateDhcpStatus.Ipv6Settings = stateDhcpConfig.Ipv6Settings
 		stateDhcpStatus.StaticLeases = stateDhcpConfig.StaticLeases
-		// add the extra attributes for the data source
-		stateDhcpStatus.Leases, d = types.SetValueFrom(ctx, types.ObjectType{AttrTypes: dhcpLeasesModel{}.attrTypes()}, dhcpStatus.Leases)
-		diags.Append(d...)
-		if diags.HasError() {
-			return
+		if len(dhcpStatus.Leases) > 0 {
+			// need to go through all entries to create a slice
+			var dhcpLeases []dhcpLeasesModel
+			var stateDhcpConfigLease dhcpLeasesModel
+			for _, dhcpLease := range dhcpStatus.Leases {
+				stateDhcpConfigLease.Mac = types.StringValue(dhcpLease.Mac)
+				stateDhcpConfigLease.Ip = types.StringValue(dhcpLease.Ip)
+				stateDhcpConfigLease.Hostname = types.StringValue(dhcpLease.Hostname)
+				stateDhcpConfigLease.Expires = types.StringValue(dhcpLease.Expires)
+				dhcpLeases = append(dhcpLeases, stateDhcpConfigLease)
+			}
+			// convert to a set
+			stateDhcpStatus.Leases, d = types.ListValueFrom(ctx, types.ObjectType{AttrTypes: dhcpLeasesModel{}.attrTypes()}, dhcpLeases)
+			diags.Append(d...)
+			if diags.HasError() {
+				return
+			}
+		} else {
+			// use a null set
+			stateDhcpStatus.Leases = types.ListNull(types.ObjectType{AttrTypes: dhcpLeasesModel{}.attrTypes()})
 		}
 		// add to config model
 		o.Dhcp, d = types.ObjectValueFrom(ctx, dhcpStatusModel{}.attrTypes(), &stateDhcpStatus)

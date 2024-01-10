@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "leases": [
+    {
+      "mac": "00:aa:bb:cc:dd:ee",
+      "expires": "2034-01-10T20:30:16Z",
+      "hostname": "dynamic-lease-1",
+      "ip": "192.168.200.32",
+      "static": false
+    },
+    {
+      "mac": "ff:ee:dd:cc:bb:aa",
+      "expires": "2034-01-11T20:01:14Z",
+      "hostname": "dynamic-lease-2",
+      "ip": "192.168.200.34",
+      "static": false
+    },
+    {
+      "mac": "ab:cd:ef:01:23:45",
+      "expires": "2034-01-10T20:31:40Z",
+      "hostname": "dynamic-lease-3",
+      "ip": "192.168.200.44",
+      "static": false
+    }
+  ]
+}
