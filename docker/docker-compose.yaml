@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     volumes:
       - "./conf:/opt/adguardhome/conf"
-      - "./conf/leases.json:/opt/adguardhome/work/data/leases.json"
+      - "./data:/opt/adguardhome/work/data"
       - "./ssl:/opt/adguardhome/ssl"
     ports:
       - "8080:8080/tcp"
