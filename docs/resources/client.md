@@ -25,7 +25,7 @@ resource "adguard_client" "test" {
 
 ### Required
 
-- `ids` (List of String) List of identifiers for this client (IP, CIDR, MAC, or ClientID)
+- `ids` (Set of String) Set of identifiers for this client (IP, CIDR, MAC, or ClientID)
 - `name` (String) Name of the client
 
 ### Optional

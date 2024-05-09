@@ -376,6 +376,7 @@ type tlsConfigModel struct {
 	KeyType           types.String `tfsdk:"key_type"`
 	WarningValidation types.String `tfsdk:"warning_validation"`
 	ValidPair         types.Bool   `tfsdk:"valid_pair"`
+	ServePlainDns     types.Bool   `tfsdk:"serve_plain_dns"`
 }
 
 // attrTypes - return attribute types for this model
@@ -401,6 +402,7 @@ func (o tlsConfigModel) attrTypes() map[string]attr.Type {
 		"key_type":           types.StringType,
 		"warning_validation": types.StringType,
 		"valid_pair":         types.BoolType,
+		"serve_plain_dns":    types.BoolType,
 	}
 }
 
@@ -427,6 +429,7 @@ func (o tlsConfigModel) defaultObject() map[string]attr.Value {
 		"not_after":          types.StringValue(""),
 		"dns_names":          types.ListValueMust(types.StringType, []attr.Value{}),
 		"warning_validation": types.StringValue(""),
+		"serve_plain_dns":    types.BoolValue(CONFIG_TLS_SERVE_PLAIN_DNS),
 	}
 }
 
@@ -1040,6 +1043,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	stateTlsConfig.KeyType = types.StringValue(tlsConfig.KeyType)
 	stateTlsConfig.WarningValidation = types.StringValue(tlsConfig.WarningValidation)
 	stateTlsConfig.ValidPair = types.BoolValue(tlsConfig.ValidPair)
+	stateTlsConfig.ServePlainDns = types.BoolValue(tlsConfig.ServePlainDns)
 
 	// add to config model
 	o.Tls, d = types.ObjectValueFrom(ctx, tlsConfigModel{}.attrTypes(), &stateTlsConfig)
@@ -1529,6 +1533,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	tlsConfig.PortHttps = uint16(planTlsConfig.PortHttps.ValueInt64())
 	tlsConfig.PortDnsOverTls = uint16(planTlsConfig.PortDnsOverTls.ValueInt64())
 	tlsConfig.PortDnsOverQuic = uint16(planTlsConfig.PortDnsOverQuic.ValueInt64())
+	tlsConfig.ServePlainDns = planTlsConfig.ServePlainDns.ValueBool()
 
 	// regex to match a file path
 	var filePathIdentifier = regexp.MustCompile(`^/\w|\w:`)

@@ -56,6 +56,7 @@ resource "adguard_config" "test" {
 		blocking_mode              = "custom_ip"
 		blocking_ipv4              = "1.2.3.4"
 		blocking_ipv6              = "fe80::"
+		use_private_ptr_resolvers  = true
 		local_ptr_upstreams        = ["192.168.0.1", "192.168.0.2"]
 		allowed_clients            = ["allowed-client", "192.168.200.200"]
 	}
@@ -83,6 +84,7 @@ resource "adguard_config" "test" {
 	}
 	tls = {
 		enabled           = true
+		serve_plain_dns   = false
 		server_name       = "Test AdGuard Home"
 		certificate_chain = "/opt/adguardhome/ssl/server.crt"
 		private_key       = "/opt/adguardhome/ssl/server.key"
@@ -133,6 +135,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_ttl_min", "600"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_ttl_max", "86400"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_optimistic", "true"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.use_private_ptr_resolvers", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.local_ptr_upstreams.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.1", "allowed-client"),
@@ -146,6 +149,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.server_name", "Test AdGuard Home"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.issuer", ""),
+					resource.TestCheckResourceAttr("adguard_config.test", "tls.serve_plain_dns", "false"),
 					// Verify dynamic values have any value set in the state.
 					resource.TestCheckResourceAttrSet("adguard_config.test", "id"),
 					resource.TestCheckResourceAttrSet("adguard_config.test", "last_updated"),
@@ -295,6 +299,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.3.hostname", "test-lease-4"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.server_name", "Test AdGuard Home Modified"),
+					resource.TestCheckResourceAttr("adguard_config.test", "tls.serve_plain_dns", "true"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

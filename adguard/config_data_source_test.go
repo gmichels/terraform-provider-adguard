@@ -63,7 +63,7 @@ func TestAccConfigDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.cache_ttl_max", "0"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.cache_optimistic", "false"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.upstream_mode", "load_balance"),
-					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.use_private_ptr_resolvers", "true"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.use_private_ptr_resolvers", "false"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.resolve_clients", "true"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.local_ptr_upstreams.#", "0"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.allowed_clients.#", "0"),
@@ -85,6 +85,7 @@ func TestAccConfigDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr("data.adguard_config.test", "tls.port_https", "443"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "tls.port_dns_over_tls", "853"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "tls.certificate_chain", "/opt/adguardhome/ssl/server.crt"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "tls.serve_plain_dns", "true"),
 					// Verify internal attributes
 					resource.TestCheckResourceAttr("data.adguard_config.test", "id", "placeholder"),
 					resource.TestCheckResourceAttrSet("data.adguard_config.test", "last_updated"),

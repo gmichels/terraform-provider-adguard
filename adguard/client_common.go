@@ -17,7 +17,7 @@ type clientCommonModel struct {
 	ID                           types.String `tfsdk:"id"`
 	LastUpdated                  types.String `tfsdk:"last_updated"`
 	Name                         types.String `tfsdk:"name"`
-	Ids                          types.List   `tfsdk:"ids"`
+	Ids                          types.Set    `tfsdk:"ids"` // technically upstream accepts a list with duplicate values, but it doesn't make sense
 	UseGlobalSettings            types.Bool   `tfsdk:"use_global_settings"`
 	FilteringEnabled             types.Bool   `tfsdk:"filtering_enabled"`
 	ParentalEnabled              types.Bool   `tfsdk:"parental_enabled"`
@@ -81,7 +81,7 @@ func (o *clientCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 
 	// map response body to model
 	o.Name = types.StringValue(client.Name)
-	o.Ids, d = types.ListValueFrom(ctx, types.StringType, client.Ids)
+	o.Ids, d = types.SetValueFrom(ctx, types.StringType, client.Ids)
 	diags.Append(d...)
 	if diags.HasError() {
 		return

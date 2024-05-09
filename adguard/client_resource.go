@@ -66,12 +66,12 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"ids": schema.ListAttribute{
-				Description: "List of identifiers for this client (IP, CIDR, MAC, or ClientID)",
+			"ids": schema.SetAttribute{
+				Description: "Set of identifiers for this client (IP, CIDR, MAC, or ClientID)",
 				ElementType: types.StringType,
 				Required:    true,
-				Validators: []validator.List{
-					listvalidator.ValueStringsAre(
+				Validators: []validator.Set{
+					setvalidator.ValueStringsAre(
 						stringvalidator.RegexMatches(
 							regexp.MustCompile(`^[a-z0-9/.:-]+$`),
 							"must be an IP address/CIDR, MAC address, or only contain numbers, lowercase letters, and hyphens",
