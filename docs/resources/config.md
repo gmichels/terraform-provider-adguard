@@ -274,7 +274,7 @@ Optional:
 - `resolve_clients` (Boolean) Whether reverse DNS resolution of clients' IP addresses is enabled. Defaults to `true`
 - `upstream_dns` (List of String) Upstream DNS servers. Defaults to the ones supplied by the default AdGuard Home configuration
 - `upstream_mode` (String) Upstream DNS resolvers usage strategy. Valid values are `load_balance` (default), `parallel` and `fastest_addr`
-- `use_private_ptr_resolvers` (Boolean) Whether to use private reverse DNS resolvers. Defaults to `true`
+- `use_private_ptr_resolvers` (Boolean) Whether to use private reverse DNS resolvers. Defaults to `false`
 
 
 <a id="nestedatt--filtering"></a>
@@ -332,6 +332,7 @@ Optional:
 - `port_dns_over_quic` (Number) The DNS-over-Quic (DoQ) port. Set to `0` to disable. Defaults to `853`
 - `port_dns_over_tls` (Number) The DNS-over-TLS (DoT) port. Set to `0` to disable. Defaults to `853`
 - `port_https` (Number) The HTTPS port. Set to `0` to disable. Defaults to `443`
+- `serve_plain_dns` (Boolean) When `true`, plain DNS is allowed for incoming requests. Defaults to `true`
 
 Read-Only:
 
