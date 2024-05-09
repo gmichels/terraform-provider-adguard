@@ -261,6 +261,7 @@ Read-Only:
 - `port_https` (Number) The HTTPS port
 - `private_key` (String) The private key, either the path to a file or a base64 encoded string of the private key in PEM format
 - `private_key_saved` (Boolean) Whether the user has previously saved a private key
+- `serve_plain_dns` (Boolean) When `true`, plain DNS is allowed for incoming requests
 - `server_name` (String) The hostname of the TLS/HTTPS server
 - `subject` (String) The subject of the first certificate in the chain
 - `valid_cert` (Boolean) Whether the specified certificates chain is a valid chain of X.509 certificates

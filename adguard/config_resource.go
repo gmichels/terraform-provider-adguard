@@ -402,6 +402,9 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(CONFIG_DNS_USE_PRIVATE_PTR_RESOLVERS),
+						Validators: []validator.Bool{
+							checkLocalPtrUpstreams(),
+						},
 					},
 					"resolve_clients": schema.BoolAttribute{
 						Description: fmt.Sprintf("Whether reverse DNS resolution of clients' IP addresses is enabled. Defaults to `%t`", CONFIG_DNS_RESOLVE_CLIENTS),
@@ -726,6 +729,15 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					"warning_validation": schema.StringAttribute{
 						Description: "The validation warning message with the issue description",
 						Computed:    true,
+					},
+					"serve_plain_dns": schema.BoolAttribute{
+						Description: fmt.Sprintf("When `true`, plain DNS is allowed for incoming requests. Defaults to `%t`", CONFIG_TLS_SERVE_PLAIN_DNS),
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(CONFIG_TLS_SERVE_PLAIN_DNS),
+						Validators: []validator.Bool{
+							checkDnsEncryption(),
+						},
 					},
 				},
 			},
