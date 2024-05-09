@@ -56,6 +56,7 @@ resource "adguard_config" "test" {
 		blocking_mode              = "custom_ip"
 		blocking_ipv4              = "1.2.3.4"
 		blocking_ipv6              = "fe80::"
+		use_private_ptr_resolvers  = true
 		local_ptr_upstreams        = ["192.168.0.1", "192.168.0.2"]
 		allowed_clients            = ["allowed-client", "192.168.200.200"]
 	}
@@ -133,6 +134,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_ttl_min", "600"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_ttl_max", "86400"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_optimistic", "true"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.use_private_ptr_resolvers", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.local_ptr_upstreams.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.1", "allowed-client"),

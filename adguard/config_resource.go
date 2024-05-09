@@ -402,6 +402,9 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Computed:    true,
 						Optional:    true,
 						Default:     booldefault.StaticBool(CONFIG_DNS_USE_PRIVATE_PTR_RESOLVERS),
+						Validators: []validator.Bool{
+							checkLocalPtrUpstreams(),
+						},
 					},
 					"resolve_clients": schema.BoolAttribute{
 						Description: fmt.Sprintf("Whether reverse DNS resolution of clients' IP addresses is enabled. Defaults to `%t`", CONFIG_DNS_RESOLVE_CLIENTS),
