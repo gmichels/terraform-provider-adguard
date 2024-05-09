@@ -71,7 +71,7 @@ resource "adguard_client" "test" {
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("adguard_client.test", "ids.#", "3"),
-					resource.TestCheckResourceAttr("adguard_client.test", "ids.2", "another-test-client"),
+					resource.TestCheckResourceAttr("adguard_client.test", "ids.1", "another-test-client"),
 					resource.TestCheckResourceAttr("adguard_client.test", "safesearch.enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_client.test", "safesearch.services.#", "1"),
 					resource.TestCheckResourceAttr("adguard_client.test", "safesearch.services.0", "bing"),
@@ -98,7 +98,7 @@ resource "adguard_client" "test" {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("adguard_client.test", "name", "Test Client Name Updated"),
 					resource.TestCheckResourceAttr("adguard_client.test", "ids.#", "3"),
-					resource.TestCheckResourceAttr("adguard_client.test", "ids.2", "another-test-client"),
+					resource.TestCheckResourceAttr("adguard_client.test", "ids.1", "another-test-client"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
