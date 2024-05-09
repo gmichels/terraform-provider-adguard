@@ -84,6 +84,7 @@ resource "adguard_config" "test" {
 	}
 	tls = {
 		enabled           = true
+		serve_plain_dns   = false
 		server_name       = "Test AdGuard Home"
 		certificate_chain = "/opt/adguardhome/ssl/server.crt"
 		private_key       = "/opt/adguardhome/ssl/server.key"
@@ -148,6 +149,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.server_name", "Test AdGuard Home"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.issuer", ""),
+					resource.TestCheckResourceAttr("adguard_config.test", "tls.serve_plain_dns", "false"),
 					// Verify dynamic values have any value set in the state.
 					resource.TestCheckResourceAttrSet("adguard_config.test", "id"),
 					resource.TestCheckResourceAttrSet("adguard_config.test", "last_updated"),
@@ -297,6 +299,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.3.hostname", "test-lease-4"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.server_name", "Test AdGuard Home Modified"),
+					resource.TestCheckResourceAttr("adguard_config.test", "tls.serve_plain_dns", "true"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

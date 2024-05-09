@@ -11,8 +11,6 @@ import (
 var _ validator.Bool = checkLocalPtrUpstreamsValidator{}
 
 type checkLocalPtrUpstreamsValidator struct {
-	// enabled bool
-	// expressions path.Expressions
 }
 
 func (v checkLocalPtrUpstreamsValidator) Description(_ context.Context) string {
