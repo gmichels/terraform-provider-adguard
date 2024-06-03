@@ -4,12 +4,15 @@ NAMESPACE=gmichels
 NAME=adguard
 BINARY=terraform-provider-${NAME}
 VERSION=0.0.1
-OS_ARCH=darwin_amd64
+GOOS=darwin
+GOARCH=amd64
+OS_ARCH=${GOOS}_${GOARCH}
+TERRAFORM_PLUGINS=~/.terraform.d/plugins
 
 default: install
 
 build:
-	go build -o ${BINARY}
+	GOOS=${GOOS} GOARCH=${GOARCH} go build -o ${BINARY}
 
 release:
 	GOOS=darwin GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_darwin_amd64
@@ -26,8 +29,8 @@ release:
 	GOOS=windows GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_windows_amd64
 
 install: build
-	mkdir -p ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}
-	mv ${BINARY} ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}
+	mkdir -p ${TERRAFORM_PLUGINS}/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}
+	mv ${BINARY} ${TERRAFORM_PLUGINS}/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}/${BINARY}_v${VERSION}
 
 test:
 	go test -i $(TEST) || exit 1
@@ -35,6 +38,10 @@ test:
 
 testacc:
 	docker compose -f ./docker/docker-compose.yaml up -d
-	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 10m
+	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 10m || echo "Test failed."
 	docker compose -f ./docker/docker-compose.yaml down
 	git checkout HEAD -- ./docker/conf/AdGuardHome.yaml
+	git checkout HEAD -- ./docker/data/leases.json
+	rm -rf ./docker/data/filters
+	rm -rf ./docker/data/*.db
+

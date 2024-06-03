@@ -41,11 +41,13 @@ resource "adguard_list_filter" "test_blacklist" {
 resource "adguard_list_filter" "test_blacklist" {
   name = "Test Blacklist Filter Updated"
   url  = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_5.txt"
+  enabled   = false
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "name", "Test Blacklist Filter Updated"),
 					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "url", "https://adguardteam.github.io/HostlistsRegistry/assets/filter_5.txt"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "enabled", "false"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
