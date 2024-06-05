@@ -214,10 +214,10 @@ func (r *listFilterResource) Read(ctx context.Context, req resource.ReadRequest,
 	})
 	if listFilter == nil {
 		resp.Diagnostics.AddWarning(
-			"Warning Reading AdGuard Home List Filter",
-			"No such list filter with id "+state.ID.ValueString()+
-				". Somebody deleted it before.",
+			"AdGuard Home List Filter was deleted outside of Terraform",
+			"No such list filter with id "+state.ID.ValueString(),
 		)
+		// remove from state
 		resp.State.RemoveResource(ctx)
 		return
 	}
