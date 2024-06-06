@@ -165,10 +165,12 @@ func (r *rewriteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		"body":   string(rewriteJson),
 	})
 	if rewrite == nil {
-		resp.Diagnostics.AddError(
-			"Error Reading AdGuard Home DNS Rewrite Rule",
-			"No such AdGuard Home DNS rewrite rule with ID "+state.ID.ValueString(),
+		resp.Diagnostics.AddWarning(
+			"AdGuard Home DNS Rewrite Rule was deleted outside of Terraform",
+			"No such rewrite rule with id "+state.ID.ValueString(),
 		)
+		// remove from state
+		resp.State.RemoveResource(ctx)
 		return
 	}
 

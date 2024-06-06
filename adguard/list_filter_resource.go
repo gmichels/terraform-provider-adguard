@@ -213,10 +213,12 @@ func (r *listFilterResource) Read(ctx context.Context, req resource.ReadRequest,
 		"body":   string(listFilterJson),
 	})
 	if listFilter == nil {
-		resp.Diagnostics.AddError(
-			"Error Reading AdGuard Home List Filter",
+		resp.Diagnostics.AddWarning(
+			"AdGuard Home List Filter was deleted outside of Terraform",
 			"No such list filter with id "+state.ID.ValueString(),
 		)
+		// remove from state
+		resp.State.RemoveResource(ctx)
 		return
 	}
 

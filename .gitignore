@@ -17,3 +17,6 @@
 # Terraform
 .terraform*
 terraform.tfstate*
+
+# IDE
+.idea
