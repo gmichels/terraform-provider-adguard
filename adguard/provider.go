@@ -276,6 +276,27 @@ func (p *adguardProvider) Configure(ctx context.Context, req provider.ConfigureR
 	resp.DataSourceData = client
 	resp.ResourceData = client
 
+	// retrieve and cache valid values for resource attribute validations
+	// blocked services
+	_, err = getBlockedServices(*client)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Fetching Valid Values for Blocked Services",
+			"Could not fetch valid values from AdGuard Home",
+		)
+		return
+	}
+
+	// safe search services
+	_, err = getSafeSearchServices(*client)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Fetching Valid Values for Safe Search Config",
+			"Could not fetch valid values from AdGuard Home",
+		)
+		return
+	}
+
 	tflog.Info(ctx, "Configured AdGuardHome client", map[string]any{"success": true})
 }
 
