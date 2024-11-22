@@ -3,11 +3,34 @@ package adguard
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+// define a cache for static results from ADG
+var apiCache = struct {
+	mu     sync.Mutex
+	values map[string][]string
+}{
+	values: make(map[string][]string),
+}
+
+// retrieve an entry from the cache based on a key
+func getFromCache(key string) []string {
+	// ensure we are thread-safe
+	apiCache.mu.Lock()
+	defer apiCache.mu.Unlock()
+
+	// return cached values, if there
+	if cached, exists := apiCache.values[key]; exists {
+		return cached
+	}
+
+	return nil
+}
 
 // check if a slice contains a string
 func contains(elems []string, v string) bool {

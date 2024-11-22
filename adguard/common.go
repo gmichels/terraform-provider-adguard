@@ -16,7 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -39,7 +38,11 @@ func (o safeSearchModel) attrTypes() map[string]attr.Type {
 // defaultObject - return default object for this model
 func (o safeSearchModel) defaultObject() map[string]attr.Value {
 	services := []attr.Value{}
-	for _, service := range SAFE_SEARCH_SERVICES_OPTIONS {
+	// the very first schema execution doesn't return anything from cache
+	// and the values are populated in the ModifyPlan function of the resource,
+	// but subsequent phase executions will retrieve from cache
+	allSafeSearchServices := getFromCache("safesearch")
+	for _, service := range allSafeSearchServices {
 		services = append(services, types.StringValue(service))
 	}
 
@@ -89,16 +92,55 @@ func safeSearchResourceSchema() schema.SingleNestedAttribute {
 				Optional:    true,
 				Validators: []validator.Set{
 					setvalidator.SizeAtLeast(1),
-					setvalidator.ValueStringsAre(
-						stringvalidator.OneOf(SAFE_SEARCH_SERVICES_OPTIONS...),
-					),
+					// validation for provided values happens at ModifyPlan
 				},
-				Default: setdefault.StaticValue(
-					types.SetValueMust(types.StringType, convertToAttr(SAFE_SEARCH_SERVICES_OPTIONS)),
-				),
+				// default definition happens at ModifyPlan
 			},
 		},
 	}
+}
+
+// getBlockedServices - will retrieve all blocked services from ADG and add to the cache
+func getBlockedServices(adg adguard.ADG) ([]string, error) {
+	// try to get the list of available blocked services from cache
+	allBlockedServices := getFromCache("blocked_services")
+	if len(allBlockedServices) == 0 {
+		// nothing in cache, fetch from ADG
+		blockedServicesList, err := adg.GetBlockedServicesList()
+		if err != nil {
+			return nil, err
+		}
+
+		// convert all blocked services to a list with their IDs
+		for _, service := range blockedServicesList.BlockedServices {
+			allBlockedServices = append(allBlockedServices, service.Id)
+		}
+
+		// cache the result
+		apiCache.values["blocked_services"] = allBlockedServices
+	}
+
+	return allBlockedServices, nil
+}
+
+// getSafeSearchServices - will retrieve all safe search services from ADG and add to the cache
+func getSafeSearchServices(adg adguard.ADG) ([]string, error) {
+	// try to get the list of available safe search services from cache
+	allSafeSearchServices := getFromCache("safesearch")
+	if len(allSafeSearchServices) == 0 {
+		// nothing in cache, fetch from ADG
+		safeSearchConfig, err := adg.GetSafeSearchConfig()
+		if err != nil {
+			return nil, err
+		}
+		// convert the safeSearchConfig object to a list
+		allSafeSearchServices = mapSafeSearchServices(safeSearchConfig)
+
+		// cache the result
+		apiCache.values["safesearch"] = allSafeSearchServices
+	}
+
+	return allSafeSearchServices, nil
 }
 
 // mapSafeSearchConfigFields - will return the list of safe search services that are enabled
