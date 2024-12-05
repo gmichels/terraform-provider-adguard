@@ -1066,9 +1066,11 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	tlsConfig.PrivateKey = ""
 	tlsConfig.CertificatePath = ""
 	tlsConfig.PrivateKeyPath = ""
+	// plain DNS is required in case encryption protocols are disabled
+	tlsConfig.ServePlainDns = true
 
-	// set dns access list to defaults
-	_, err = r.adg.SetAccess(dnsAccess)
+	// set tls config to defaults
+	_, err = r.adg.SetTlsConfig(tlsConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
