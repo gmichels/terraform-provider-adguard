@@ -4,6 +4,9 @@ on:
   pull_request:
     types: ["opened", "synchronize"]
 
+permissions:
+  contents: write
+
 env:
   GOPROXY: https://proxy.golang.org,direct
   DEBIAN_FRONTEND: noninteractive
