@@ -13,21 +13,21 @@ on:
 env:
   GOPROXY: https://proxy.golang.org,direct
   DEBIAN_FRONTEND: noninteractive
-  GO_VERSION: "1.21"
+  GO_VERSION: "1.23"
 
 jobs:
   testacc:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
       matrix:
-        terraform_version: ["~1.4.0", "~1.5.0", "~1.6.0"]
+        terraform_version: ["~1.4.0", "~1.5.0", "~1.6.0", "~1.7.0", "~1.8.0", "~1.9.0", "~1.10.0"]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-      - uses: hashicorp/setup-terraform@v2
+      - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ matrix.terraform_version }}
           terraform_wrapper: false
