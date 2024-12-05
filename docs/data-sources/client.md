@@ -32,7 +32,7 @@ data "adguard_client" "test" {
 - `blocked_services_pause_schedule` (Attributes) Sets periods of inactivity for filtering blocked services. The schedule contains 7 days (Sunday to Saturday) and a time zone. (see [below for nested schema](#nestedatt--blocked_services_pause_schedule))
 - `filtering_enabled` (Boolean) Whether to have filtering enabled on this client
 - `id` (String) Placeholder identifier attribute
-- `ids` (Set of String) Set of identifiers for this client (IP, CIDR, MAC, or ClientID) TESTING UPDATE
+- `ids` (Set of String) Set of identifiers for this client (IP, CIDR, MAC, or ClientID)
 - `ignore_querylog` (Boolean) Whether to this client writes to the query log
 - `ignore_statistics` (Boolean) Whether to this client is included in the statistics
 - `last_updated` (String) Timestamp of the last Terraform refresh
