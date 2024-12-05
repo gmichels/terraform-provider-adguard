@@ -16,7 +16,7 @@ provider "adguard" {
   username = "admin"
   password = "SecretP@ssw0rd"
   scheme   = "http"
-  timeout  = 5
+  timeout  = 10
 }
 `
 )
