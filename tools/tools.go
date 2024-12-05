@@ -1,8 +1,13 @@
-//go:build tools
+//go:build generate
 
 package tools
 
 import (
-	// Ensure documentation generator is not removed from go.mod.
 	_ "github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs"
 )
+
+// format terraform code for use in documentation
+//go:generate terraform fmt -recursive ../examples/
+
+// generate documentation
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-dir .. -provider-name adguard
