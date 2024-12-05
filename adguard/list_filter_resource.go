@@ -130,6 +130,11 @@ func (r *listFilterResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
+	// update plan with computed attributes
+	plan.ID = types.StringValue(strconv.FormatInt(newListFilter.Id, 10))
+	plan.LastUpdated = types.StringValue(newListFilter.LastUpdated)
+	plan.RulesCount = types.Int64Value(int64(newListFilter.RulesCount))
+
 	// if list filter is expected to be disabled, need to update it after creation
 	// as the create endpoint does not have control over it
 	if !plan.Enabled.ValueBool() {
@@ -154,12 +159,10 @@ func (r *listFilterResource) Create(ctx context.Context, req resource.CreateRequ
 			)
 			return
 		}
-	}
 
-	// update plan with computed attributes
-	plan.ID = types.StringValue(strconv.FormatInt(newListFilter.Id, 10))
-	plan.LastUpdated = types.StringValue(newListFilter.LastUpdated)
-	plan.RulesCount = types.Int64Value(int64(newListFilter.RulesCount))
+		// rules count gets set to 0 when the list filter is disabled
+		plan.RulesCount = types.Int64Value(0)
+	}
 
 	// set state to fully populated data
 	diags = resp.State.Set(ctx, plan)
