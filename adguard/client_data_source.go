@@ -48,7 +48,7 @@ func (d *clientDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 				Required:    true,
 			},
 			"ids": schema.SetAttribute{
-				Description: "Set of identifiers for this client (IP, CIDR, MAC, or ClientID)",
+				Description: "Set of identifiers for this client (IP, CIDR, MAC, or ClientID) TESTING UPDATE",
 				ElementType: types.StringType,
 				Computed:    true,
 			},
