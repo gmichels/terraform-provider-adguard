@@ -1,0 +1,54 @@
+name: Generate terraform docs
+
+on:
+  pull_request:
+    types: ["opened", "synchronize"]
+
+permissions:
+  contents: write
+
+env:
+  GOPROXY: https://proxy.golang.org,direct
+  DEBIAN_FRONTEND: noninteractive
+  GO_VERSION: "1.23"
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+      - name: Format and generate docs
+        run: go generate ./...
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if [[ -n "$(git diff --exit-code)" ]]; then
+            echo "Changes detected."
+            echo "::set-output name=has_changes::true"
+          else
+            echo "No changes detected."
+            echo "::set-output name=has_changes::false"
+          fi
+      - name: Commit and push Changes
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          # configure user
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "github-actions@github.com"
+
+          # stage any file changes to be committed
+          git add .
+
+          # make commit with staged changes
+          git commit -m 'Terraform format/docs changes'
+
+          # push the commit back up to source GitHub repository
+          git push
