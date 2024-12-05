@@ -148,7 +148,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.1.ip", "192.168.250.30"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.server_name", "Test AdGuard Home"),
-					resource.TestCheckResourceAttr("adguard_config.test", "tls.issuer", ""),
+					resource.TestCheckResourceAttr("adguard_config.test", "tls.issuer", "CN=TestRootCA,O=AdGuard Home,L=Dallas,ST=Texas,C=US"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.serve_plain_dns", "false"),
 					// Verify dynamic values have any value set in the state.
 					resource.TestCheckResourceAttrSet("adguard_config.test", "id"),
