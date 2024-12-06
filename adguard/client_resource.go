@@ -117,7 +117,7 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Optional:    true,
 				Validators: []validator.Set{
 					setvalidator.SizeAtLeast(1),
-					setvalidator.ValueStringsAre(stringvalidator.OneOf(BLOCKED_SERVICES_OPTIONS...)),
+					// validation for provided values happens at ModifyPlan
 				},
 			},
 			"upstreams": schema.ListAttribute{
@@ -160,6 +160,50 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				},
 			},
 		},
+	}
+}
+
+// ModifyPlan allows for validating plan values with dynamic options
+func (r *clientResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	// if plan is null, then there is no plan to work with
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	// retrieve plan
+	var plan clientCommonModel
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// BLOCKED SERVICES
+	// validate the provided blocked services in the plan
+	validateBlockedServices(ctx, plan.BlockedServices, resp)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// SAFE SEARCH
+	// validate the provided safe search services in the plan or set defaults if none provided
+	safeSearchServices := validateSafeSearchServices(ctx, plan.SafeSearch, resp)
+
+	// set updated SafeSearch attribute for plan
+	modifiedSafeSearch, diags := types.ObjectValueFrom(ctx, safeSearchModel{}.attrTypes(), &safeSearchServices)
+	diags.Append(diags...)
+	if diags.HasError() {
+		return
+	}
+
+	// update only the SafeSearch attribute in the plan
+	plan.SafeSearch = modifiedSafeSearch
+
+	// set the modified plan
+	diags = resp.Plan.Set(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if diags.HasError() {
+		return
 	}
 }
 
