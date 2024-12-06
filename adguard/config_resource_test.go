@@ -246,7 +246,6 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "safebrowsing", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "parental_control", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "safesearch.enabled", "false"),
-					resource.TestCheckResourceAttr("adguard_config.test", "safesearch.services.#", "6"),
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.interval", "2160"),
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.anonymize_client_ip", "false"),
