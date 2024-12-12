@@ -1,0 +1,20 @@
+!
+! Title: Test List 1
+! Description: Test list 1
+! Version: 0.1.1
+! Homepage: https://someonewhocares.org/
+! Last modified: 2024-12-05T05:06:50.211Z
+!
+0.0.0.0 goatse.cx       # More information on sites such as
+0.0.0.0 www.goatse.cx   # these can be found in this article
+0.0.0.0 oralse.cx       # en.wikipedia.org/wiki/List_of_shock_sites
+0.0.0.0 www.oralse.cx
+0.0.0.0 goatse.ca
+0.0.0.0 www.goatse.ca
+0.0.0.0 oralse.ca
+0.0.0.0 www.oralse.ca
+0.0.0.0 goat.cx
+0.0.0.0 www.goat.cx
+0.0.0.0 shafou.com
+0.0.0.0 www.shafou.com
+0.0.0.0 1girl1pitcher.com

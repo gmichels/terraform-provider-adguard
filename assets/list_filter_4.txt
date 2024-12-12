@@ -1,0 +1,16 @@
+!
+! Title: Test List 4
+! Description: Test list 4
+! Version: 0.1.4
+! Homepage: https://someonewhocares.org/
+! Last modified: 2024-12-05T05:06:50.211Z
+!
+||smartclip.com^
+||smartclip.net^
+
+||myhomescreen.tv^
+@@||mhc-ajax-eu.myhomescreen.tv^
+@@||mhc-ajax-eu-s2.myhomescreen.tv^
+@@||mhc-xpana-eu.myhomescreen.tv^
+@@||mhc-xpana-eu-s2.myhomescreen.tv^
+||vindicosuite.com^
