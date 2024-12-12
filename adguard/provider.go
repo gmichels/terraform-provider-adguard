@@ -76,6 +76,10 @@ func (p *adguardProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 					int64validator.Between(1, int64(MAX_TIMEOUT)),
 				},
 			},
+			"insecure": schema.BoolAttribute{
+				Description: "When `true`, will disable any TLS certificate checks. Defaults to `false`",
+				Optional:    true,
+			},
 		},
 	}
 }
@@ -87,6 +91,7 @@ type adguardProviderModel struct {
 	Password types.String `tfsdk:"password"`
 	Scheme   types.String `tfsdk:"scheme"`
 	Timeout  types.Int64  `tfsdk:"timeout"`
+	Insecure types.Bool   `tfsdk:"insecure"`
 }
 
 // Configure prepares an AdGuard API client for data sources and resources
@@ -148,6 +153,15 @@ func (p *adguardProvider) Configure(ctx context.Context, req provider.ConfigureR
 		)
 	}
 
+	if config.Insecure.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("insecure"),
+			"Unknown AdGuard Home Insecure Value",
+			"The provider cannot create the AdGuard Home client as there is an unknown configuration value for the AdGuard Home insecure attribute. "+
+				"Either target apply the source of the value first, set the value statically in the configuration, or use the ADGUARD_INSECURE environment variable.",
+		)
+	}
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -186,6 +200,23 @@ func (p *adguardProvider) Configure(ctx context.Context, req provider.ConfigureR
 		}
 	}
 
+	// set default for insecure
+	insecure := false
+
+	insecure_env := os.Getenv("ADGUARD_INSECURE")
+	// sanity check for insecure when provided via env variable
+	if insecure_env != "" {
+		var err error
+		insecure, err = strconv.ParseBool(insecure_env)
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("insecure"),
+				"Unable to parse AdGuard Home Insecure value",
+				"The provider cannot create the AdGuard Home client as it was unable to parse the provided value for ADGUARD_INSECURE.")
+			return
+		}
+	}
+
 	if !config.Host.IsNull() {
 		host = config.Host.ValueString()
 	}
@@ -204,6 +235,10 @@ func (p *adguardProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 	if !config.Timeout.IsNull() {
 		timeout = int(config.Timeout.ValueInt64())
+	}
+
+	if !config.Insecure.IsNull() {
+		insecure = config.Insecure.ValueBool()
 	}
 
 	// if any of the expected configurations are missing, return errors with provider-specific guidance
@@ -257,11 +292,12 @@ func (p *adguardProvider) Configure(ctx context.Context, req provider.ConfigureR
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "adguard_password")
 	ctx = tflog.SetField(ctx, "adguard_scheme", scheme)
 	ctx = tflog.SetField(ctx, "adguard_timeout", timeout)
+	ctx = tflog.SetField(ctx, "adguard_insecure", insecure)
 
 	tflog.Debug(ctx, "Creating AdGuard Home client")
 
 	// create a new AdGuard Home client using the configuration values
-	client, err := adguard.NewClient(&host, &username, &password, &scheme, &timeout)
+	client, err := adguard.NewClient(&host, &username, &password, &scheme, &timeout, &insecure)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Create AdGuard Home Client",

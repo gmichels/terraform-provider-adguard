@@ -19,6 +19,17 @@ provider "adguard" {
   timeout  = 30
 }
 `
+	// use for testing connecting to an insecure server
+	providerConfigInsecure = `
+provider "adguard" {
+  host     = "localhost:8443"
+  username = "admin"
+  password = "SecretP@ssw0rd"
+  scheme   = "https"
+  timeout  = 30
+  insecure = true
+}
+`
 )
 
 var (
