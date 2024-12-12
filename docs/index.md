@@ -20,6 +20,7 @@ provider "adguard" {
   password = "SecretP@ssw0rd"
   scheme   = "http" # defaults to https
   timeout  = 5      # in seconds, defaults to 10
+  insecure = false  # when `true` will skip TLS validation
 }
 ```
 
@@ -29,6 +30,7 @@ provider "adguard" {
 ### Optional
 
 - `host` (String) The hostname of the AdGuard Home instance. Include the port if not on a standard HTTP/HTTPS port
+- `insecure` (Boolean) When `true`, will disable any TLS certificate checks. Defaults to `false`
 - `password` (String, Sensitive) The password of the AdGuard Home instance
 - `scheme` (String) The HTTP scheme of the AdGuard Home instance. Can be either `http` or `https` (default)
 - `timeout` (Number) The timeout (in seconds) for making requests to AdGuard Home. Defaults to **10**
