@@ -281,8 +281,9 @@ func (p *adguardProvider) Configure(ctx context.Context, req provider.ConfigureR
 	_, err = getBlockedServices(*client)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error Fetching Valid Values for Blocked Services",
-			"Could not fetch valid values from AdGuard Home",
+			"Unable to Create AdGuard Home Client",
+			"Error fetching valid values for Blocked Services from AdGuard Home.\n\n"+
+				"AdGuard Home client error: "+err.Error(),
 		)
 		return
 	}
@@ -291,8 +292,9 @@ func (p *adguardProvider) Configure(ctx context.Context, req provider.ConfigureR
 	_, err = getSafeSearchServices(*client)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error Fetching Valid Values for Safe Search Config",
-			"Could not fetch valid values from AdGuard Home",
+			"Unable to Create AdGuard Home Client",
+			"Error fetching valid values for Safe Search Config from AdGuard Home.\n\n"+
+				"AdGuard Home client error: "+err.Error(),
 		)
 		return
 	}
