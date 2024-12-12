@@ -94,3 +94,16 @@ func TestAccConfigDataSource(t *testing.T) {
 		},
 	})
 }
+
+// piggy-backing this data source to test the provider in insecure configuration
+func TestAccProviderInsecure(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: providerConfigInsecure + `data "adguard_config" "test" {}`,
+				// there is no need to perform checks as the test will fail if unable to connect
+			},
+		},
+	})
+}
