@@ -103,8 +103,8 @@ statistics:
   enabled: true
 filters:
   - enabled: true
-    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt
-    name: AdGuard DNS filter
+    url: https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_1.txt
+    name: Test Blocklist Datasource
     id: 1
   - enabled: false
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt
@@ -112,8 +112,8 @@ filters:
     id: 2
 whitelist_filters:
   - enabled: false
-    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_3.txt
-    name: Test Allow List
+    url: https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_2.txt
+    name: Test Whitelist Datasource
     id: 3
 user_rules:
   - '# block access to blocked.org and all its subdomains'
