@@ -14,29 +14,29 @@ func TestAccListFilterDataSource(t *testing.T) {
 			{
 				Config: providerConfig + `
 data "adguard_list_filter" "test_blacklist" {
-  name = "AdGuard DNS filter"
+  name = "Test Blocklist Datasource"
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.adguard_list_filter.test_blacklist", "url", "https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt"),
+					resource.TestCheckResourceAttr("data.adguard_list_filter.test_blacklist", "url", "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_1.txt"),
 					resource.TestCheckResourceAttr("data.adguard_list_filter.test_blacklist", "enabled", "true"),
 					resource.TestCheckResourceAttr("data.adguard_list_filter.test_blacklist", "whitelist", "false"),
-					resource.TestCheckResourceAttrSet("data.adguard_list_filter.test_blacklist", "rules_count"),
+					resource.TestCheckResourceAttr("data.adguard_list_filter.test_blacklist", "rules_count", "13"),
 					resource.TestCheckResourceAttr("data.adguard_list_filter.test_blacklist", "id", "1"),
 				),
 			},
 			{
 				Config: providerConfig + `
 data "adguard_list_filter" "test_whitelist" {
-  name      = "Test Allow List"
+  name      = "Test Whitelist Datasource"
   whitelist = true
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.adguard_list_filter.test_whitelist", "url", "https://adguardteam.github.io/HostlistsRegistry/assets/filter_3.txt"),
+					resource.TestCheckResourceAttr("data.adguard_list_filter.test_whitelist", "url", "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_2.txt"),
 					resource.TestCheckResourceAttr("data.adguard_list_filter.test_whitelist", "enabled", "false"),
 					resource.TestCheckResourceAttr("data.adguard_list_filter.test_whitelist", "whitelist", "true"),
-					resource.TestCheckResourceAttrSet("data.adguard_list_filter.test_whitelist", "rules_count"),
+					resource.TestCheckResourceAttr("data.adguard_list_filter.test_whitelist", "rules_count", "0"),
 					resource.TestCheckResourceAttr("data.adguard_list_filter.test_whitelist", "id", "3"),
 				),
 			},

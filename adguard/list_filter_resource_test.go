@@ -15,16 +15,16 @@ func TestAccListFilterResource(t *testing.T) {
 			{
 				Config: providerConfig + `
 resource "adguard_list_filter" "test_blacklist" {
-  name = "Test Blacklist Filter"
-  url  = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_4.txt"
+  name = "Test Blacklist Filter Resource"
+  url  = "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_3.txt"
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "name", "Test Blacklist Filter"),
-					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "url", "https://adguardteam.github.io/HostlistsRegistry/assets/filter_4.txt"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "name", "Test Blacklist Filter Resource"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "url", "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_3.txt"),
 					resource.TestCheckResourceAttrSet("adguard_list_filter.test_blacklist", "last_updated"),
 					resource.TestCheckResourceAttrSet("adguard_list_filter.test_blacklist", "id"),
-					resource.TestCheckResourceAttrSet("adguard_list_filter.test_blacklist", "rules_count"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "rules_count", "5"),
 					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "whitelist", "false"),
 				),
@@ -39,13 +39,14 @@ resource "adguard_list_filter" "test_blacklist" {
 			{
 				Config: providerConfig + `
 resource "adguard_list_filter" "test_blacklist" {
-  name = "Test Blacklist Filter Updated"
-  url  = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_5.txt"
+  name = "Test Blacklist Filter Resource Updated"
+  url  = "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_4.txt"
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "name", "Test Blacklist Filter Updated"),
-					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "url", "https://adguardteam.github.io/HostlistsRegistry/assets/filter_5.txt"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "name", "Test Blacklist Filter Resource Updated"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "url", "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_4.txt"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "rules_count", "8"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -55,19 +56,18 @@ resource "adguard_list_filter" "test_blacklist" {
 			{
 				Config: providerConfig + `
 resource "adguard_list_filter" "test_whitelist" {
-  name      = "Test Whitelist Filter"
-  url       = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_6.txt"
-  enabled   = false
+  name      = "Test Whitelist Filter Resource"
+  url       = "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_5.txt"
   whitelist = true
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "name", "Test Whitelist Filter"),
-					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "url", "https://adguardteam.github.io/HostlistsRegistry/assets/filter_6.txt"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "name", "Test Whitelist Filter Resource"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "url", "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_5.txt"),
 					resource.TestCheckResourceAttrSet("adguard_list_filter.test_whitelist", "last_updated"),
 					resource.TestCheckResourceAttrSet("adguard_list_filter.test_whitelist", "id"),
-					resource.TestCheckResourceAttrSet("adguard_list_filter.test_whitelist", "rules_count"),
-					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "enabled", "false"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "rules_count", "9"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "whitelist", "true"),
 				),
 			},
@@ -81,15 +81,18 @@ resource "adguard_list_filter" "test_whitelist" {
 			{
 				Config: providerConfig + `
 resource "adguard_list_filter" "test_whitelist" {
-  name      = "Test Whitelist Filter Updated"
-  url       = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_7.txt"
+  name      = "Test Whitelist Filter Resource Updated"
+  url       = "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_6.txt"
   enabled   = false
   whitelist = true
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "name", "Test Whitelist Filter Updated"),
-					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "url", "https://adguardteam.github.io/HostlistsRegistry/assets/filter_7.txt"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "name", "Test Whitelist Filter Resource Updated"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "url", "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_6.txt"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "rules_count", "0"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "enabled", "false"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "whitelist", "true"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
