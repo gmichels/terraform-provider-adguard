@@ -142,26 +142,41 @@ func (o *clientCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		stateBlockedServicesPauseScheduleClient.TimeZone = types.StringValue(client.BlockedServicesSchedule.TimeZone)
 	}
 
-	o.BlockedServices, d = types.SetValueFrom(ctx, types.StringType, client.BlockedServices)
-	diags.Append(d...)
-	if diags.HasError() {
-		return
+	if len(client.BlockedServices) > 0 {
+		o.BlockedServices, d = types.SetValueFrom(ctx, types.StringType, client.BlockedServices)
+		diags.Append(d...)
+		if diags.HasError() {
+			return
+		}
+	} else {
+		o.BlockedServices = types.SetNull(types.StringType)
 	}
 	o.BlockedServicesPauseSchedule, d = types.ObjectValueFrom(ctx, scheduleModel{}.attrTypes(), &stateBlockedServicesPauseScheduleClient)
 	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
-	o.Upstreams, d = types.ListValueFrom(ctx, types.StringType, client.Upstreams)
-	diags.Append(d...)
-	if diags.HasError() {
-		return
+
+	if len(client.Upstreams) > 0 {
+		o.Upstreams, d = types.ListValueFrom(ctx, types.StringType, client.Upstreams)
+		diags.Append(d...)
+		if diags.HasError() {
+			return
+		}
+	} else {
+		o.Upstreams = types.ListNull(types.StringType)
 	}
-	o.Tags, d = types.SetValueFrom(ctx, types.StringType, client.Tags)
-	diags.Append(d...)
-	if diags.HasError() {
-		return
+
+	if len(client.Tags) > 0 {
+		o.Tags, d = types.SetValueFrom(ctx, types.StringType, client.Tags)
+		diags.Append(d...)
+		if diags.HasError() {
+			return
+		}
+	} else {
+		o.Tags = types.SetNull(types.StringType)
 	}
+
 	o.IgnoreQuerylog = types.BoolValue(client.IgnoreQuerylog)
 	o.IgnoreStatistics = types.BoolValue(client.IgnoreStatistics)
 	o.UpstreamsCacheEnabled = types.BoolValue(client.UpstreamsCacheEnabled)
