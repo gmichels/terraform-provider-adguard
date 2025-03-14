@@ -1,6 +1,7 @@
 module github.com/gmichels/terraform-provider-adguard
 
-go 1.23
+go 1.23.0
+
 // for local development
 // replace github.com/gmichels/adguard-client-go => /path/to/adguard-client-go
 
