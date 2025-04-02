@@ -134,12 +134,6 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Optional:    true,
 						Validators: []validator.Set{
 							setvalidator.SizeAtLeast(1),
-							setvalidator.ValueStringsAre(
-								stringvalidator.RegexMatches(
-									regexp.MustCompile(`^[a-z0-9-._]+$`),
-									"must be a valid domain name",
-								),
-							),
 						},
 						Default: setdefault.StaticValue(types.SetValueMust(types.StringType, []attr.Value{})),
 					},
@@ -171,12 +165,6 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Optional:    true,
 						Validators: []validator.Set{
 							setvalidator.SizeAtLeast(1),
-							setvalidator.ValueStringsAre(
-								stringvalidator.RegexMatches(
-									regexp.MustCompile(`^[a-z0-9-._]+$`),
-									"must be a valid domain name",
-								),
-							),
 						},
 						Default: setdefault.StaticValue(types.SetValueMust(types.StringType, []attr.Value{})),
 					},
