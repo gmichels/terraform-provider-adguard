@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gmichels/adguard-client-go"
+	adgmodels "github.com/gmichels/adguard-client-go/models"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -88,7 +89,7 @@ func (r *userRulesResource) Create(ctx context.Context, req resource.CreateReque
 	}
 
 	// instantiate empty client for storing plan data
-	var userRules adguard.SetRulesRequest
+	var userRules adgmodels.SetRulesRequest
 
 	// populate user rules from plan
 	if len(plan.Rules.Elements()) > 0 {
@@ -100,7 +101,7 @@ func (r *userRulesResource) Create(ctx context.Context, req resource.CreateReque
 	}
 
 	// create user rules using plan
-	_, err := r.adg.UpdateUserRules(userRules)
+	err := r.adg.FilteringSetRules(userRules)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Creating AdGuard Home User Rules",
@@ -132,8 +133,8 @@ func (r *userRulesResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	// retrieve user rules info
-	userRules, err := r.adg.GetUserRules()
+	// retrieve user rules info from all filters
+	allFilters, err := r.adg.FilteringStatus()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read AdGuard Home User Rules",
@@ -142,7 +143,7 @@ func (r *userRulesResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 	// convert to JSON for response logging
-	userRulesJson, err := json.Marshal(userRules)
+	userRulesJson, err := json.Marshal(allFilters.UserRules)
 	if err != nil {
 		diags.AddError(
 			"Unable to Parse AdGuard Home User Rules",
@@ -157,7 +158,7 @@ func (r *userRulesResource) Read(ctx context.Context, req resource.ReadRequest, 
 	})
 
 	// overwrite user rules with refreshed state
-	state.Rules, diags = types.ListValueFrom(ctx, types.StringType, userRules)
+	state.Rules, diags = types.ListValueFrom(ctx, types.StringType, allFilters.UserRules)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -182,7 +183,7 @@ func (r *userRulesResource) Update(ctx context.Context, req resource.UpdateReque
 	}
 
 	// instantiate empty client for storing plan data
-	var userRules adguard.SetRulesRequest
+	var userRules adgmodels.SetRulesRequest
 
 	// populate user rules from plan
 	if len(plan.Rules.Elements()) > 0 {
@@ -194,7 +195,7 @@ func (r *userRulesResource) Update(ctx context.Context, req resource.UpdateReque
 	}
 
 	// update user rules using plan
-	_, err := r.adg.UpdateUserRules(userRules)
+	err := r.adg.FilteringSetRules(userRules)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Updating AdGuard Home User Rules",
@@ -225,10 +226,10 @@ func (r *userRulesResource) Delete(ctx context.Context, req resource.DeleteReque
 	}
 
 	// empty variable
-	var userRules adguard.SetRulesRequest
+	var userRules adgmodels.SetRulesRequest
 
 	// delete existing user rules
-	_, err := r.adg.UpdateUserRules(userRules)
+	err := r.adg.FilteringSetRules(userRules)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home User Rules",

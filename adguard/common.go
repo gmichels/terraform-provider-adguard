@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gmichels/adguard-client-go"
+	adgmodels "github.com/gmichels/adguard-client-go/models"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -106,7 +107,7 @@ func getBlockedServices(adg adguard.ADG) ([]string, error) {
 	allBlockedServices := getFromCache("blocked_services")
 	if len(allBlockedServices) == 0 {
 		// nothing in cache, fetch from ADG
-		blockedServicesList, err := adg.GetBlockedServicesList()
+		blockedServicesList, err := adg.BlockedServicesAll()
 		if err != nil {
 			return nil, err
 		}
@@ -129,7 +130,7 @@ func getSafeSearchServices(adg adguard.ADG) ([]string, error) {
 	allSafeSearchServices := getFromCache("safesearch")
 	if len(allSafeSearchServices) == 0 {
 		// nothing in cache, fetch from ADG
-		safeSearchConfig, err := adg.GetSafeSearchConfig()
+		safeSearchConfig, err := adg.SafeSearchStatus()
 		if err != nil {
 			return nil, err
 		}
@@ -144,7 +145,7 @@ func getSafeSearchServices(adg adguard.ADG) ([]string, error) {
 }
 
 // mapSafeSearchConfigFields - will return the list of safe search services that are enabled
-func mapSafeSearchServices(adgSafeSearchConfig *adguard.SafeSearchConfig) []string {
+func mapSafeSearchServices(adgSafeSearchConfig *adgmodels.SafeSearchConfig) []string {
 	// perform reflection of safe search object
 	v := reflect.ValueOf(adgSafeSearchConfig).Elem()
 	// grab the type of the reflected object
@@ -356,7 +357,7 @@ func dayRangeResourceSchema(day string) schema.SingleNestedAttribute {
 }
 
 // mapAdgScheduleToBlockedServicesPauseSchedule takes an ADG Schedule object and maps the the days into a scheduleModel
-func mapAdgScheduleToBlockedServicesPauseSchedule(ctx context.Context, adgBlockedServicesSchedule *adguard.Schedule, diags *diag.Diagnostics) scheduleModel {
+func mapAdgScheduleToBlockedServicesPauseSchedule(ctx context.Context, adgBlockedServicesSchedule *adgmodels.Schedule, diags *diag.Diagnostics) scheduleModel {
 	// initialize empty diags variable
 	var d diag.Diagnostics
 
@@ -445,12 +446,12 @@ func mapAdgScheduleToBlockedServicesPauseSchedule(ctx context.Context, adgBlocke
 }
 
 // mapBlockedServicesPauseScheduleToAdgSchedule takes a scheduleModel from plan and maps into an ADG Schedule object
-func mapBlockedServicesPauseScheduleToAdgSchedule(ctx context.Context, schedule scheduleModel, diags *diag.Diagnostics) adguard.Schedule {
+func mapBlockedServicesPauseScheduleToAdgSchedule(ctx context.Context, schedule scheduleModel, diags *diag.Diagnostics) adgmodels.Schedule {
 	// initialize empty diags variable
 	var d diag.Diagnostics
 
 	// instantiate empty object for storing plan data
-	var blockedServicesSchedule adguard.Schedule
+	var blockedServicesSchedule adgmodels.Schedule
 
 	// unpack nested attributes for each day from plan
 	var planSunDayRangeConfig dayRangeModel

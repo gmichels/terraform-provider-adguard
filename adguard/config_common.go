@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/gmichels/adguard-client-go"
+	adgmodels "github.com/gmichels/adguard-client-go/models"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -440,7 +441,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 
 	// FILTERING CONFIG
 	// get refreshed filtering config value from AdGuard Home
-	filteringConfig, err := adg.GetAllFilters()
+	filteringConfig, err := adg.FilteringStatus()
 	if err != nil {
 		diags.AddError(
 			"Unable to Read AdGuard Home Config",
@@ -475,7 +476,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 
 	// SAFE BROWSING
 	// get refreshed safe browsing status from AdGuard Home
-	safeBrowsingStatus, err := adg.GetSafeBrowsingStatus()
+	safeBrowsingStatus, err := adg.SafeBrowsingStatus()
 	if err != nil {
 		diags.AddError(
 			"Unable to Read AdGuard Home Config",
@@ -486,14 +487,14 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	// log response body
 	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
 		"object": "safeBrowsingStatus",
-		"body":   strconv.FormatBool(*safeBrowsingStatus),
+		"body":   strconv.FormatBool(*&safeBrowsingStatus.Enabled),
 	})
 	// add to config model
-	o.SafeBrowsing = types.BoolValue(*safeBrowsingStatus)
+	o.SafeBrowsing = types.BoolValue(*&safeBrowsingStatus.Enabled)
 
 	// PARENTAL CONTROL
 	// get refreshed safe parental control status from AdGuard Home
-	parentalStatus, err := adg.GetParentalStatus()
+	parentalStatus, err := adg.ParentalStatus()
 	if err != nil {
 		diags.AddError(
 			"Unable to Read AdGuard Home Config",
@@ -503,14 +504,14 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	}
 	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
 		"object": "parentalStatus",
-		"body":   strconv.FormatBool(*parentalStatus),
+		"body":   strconv.FormatBool(*&parentalStatus.Enabled),
 	})
 	// add to config model
-	o.ParentalControl = types.BoolValue(*parentalStatus)
+	o.ParentalControl = types.BoolValue(*&parentalStatus.Enabled)
 
 	// SAFE SEARCH
 	// retrieve safe search info
-	safeSearchConfig, err := adg.GetSafeSearchConfig()
+	safeSearchConfig, err := adg.SafeSearchStatus()
 	if err != nil {
 		diags.AddError(
 			"Unable to Read AdGuard Home Config",
@@ -551,7 +552,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 
 	// QUERY LOG
 	// retrieve query log config info
-	queryLogConfig, err := adg.GetQueryLogConfig()
+	queryLogConfig, err := adg.QuerylogConfig()
 	if err != nil {
 		diags.AddError(
 			"Unable to Read AdGuard Home Config",
@@ -595,7 +596,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 
 	// STATS
 	// retrieve server statistics config info
-	statsConfig, err := adg.GetStatsConfig()
+	statsConfig, err := adg.StatsConfig()
 	if err != nil {
 		diags.AddError(
 			"Unable to Read AdGuard Home Config",
@@ -638,7 +639,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 
 	// BLOCKED SERVICES
 	// get refreshed blocked services from AdGuard Home
-	blockedServicesPauseSchedule, err := adg.GetBlockedServices()
+	blockedServicesPauseSchedule, err := adg.BlockedServicesGet()
 	if err != nil {
 		diags.AddError(
 			"Unable to Read AdGuard Home Config",
@@ -707,7 +708,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	}
 
 	// DNS CONFIG
-	dnsConfig, err := adg.GetDnsInfo()
+	dnsConfig, err := adg.DnsInfo()
 	if err != nil {
 		diags.AddError(
 			"Unable to Read AdGuard Home Config",
@@ -804,7 +805,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 
 	// DNS ACCESS
 	// retrieve dns access info
-	dnsAccess, err := adg.GetAccess()
+	dnsAccess, err := adg.AccessList()
 	if err != nil {
 		diags.AddError(
 			"Unable to Read AdGuard Home Config",
@@ -850,7 +851,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 
 	// DHCP
 	// retrieve dhcp info
-	dhcpStatus, err := adg.GetDhcpStatus()
+	dhcpStatus, err := adg.DhcpStatus()
 	if err != nil {
 		diags.AddError(
 			"Unable to Read AdGuard Home Config",
@@ -967,7 +968,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 
 	// TLS
 	// get refreshed filtering config value from AdGuard Home
-	tlsConfig, err := adg.GetTlsConfig()
+	tlsConfig, err := adg.TlsStatus()
 	if err != nil {
 		diags.AddError(
 			"Unable to Read AdGuard Home Config",
@@ -1069,13 +1070,13 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		return
 	}
 	// instantiate empty object for storing plan data
-	var filteringConfig adguard.FilterConfig
+	var filteringConfig adgmodels.FilterConfig
 	// populate filtering config from plan
 	filteringConfig.Enabled = planFiltering.Enabled.ValueBool()
 	filteringConfig.Interval = uint(planFiltering.UpdateInterval.ValueInt64())
 
 	// set filtering config using plan
-	_, err := r.adg.ConfigureFiltering(filteringConfig)
+	err := r.adg.FilteringConfig(filteringConfig)
 	if err != nil {
 		diags.AddError(
 			"Unable to Update AdGuard Home Config",
@@ -1086,7 +1087,11 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 
 	// SAFE BROWSING
 	// set safe browsing status using plan
-	err = r.adg.SetSafeBrowsingStatus(plan.SafeBrowsing.ValueBool())
+	if plan.SafeBrowsing.ValueBool() {
+		err = r.adg.SafeBrowsingEnable()
+	} else {
+		err = r.adg.SafeBrowsingDisable()
+	}
 	if err != nil {
 		diags.AddError(
 			"Unable to Update AdGuard Home Config",
@@ -1097,7 +1102,11 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 
 	// PARENTAL CONTROL
 	// set parental control status using plan
-	err = r.adg.SetParentalStatus(plan.ParentalControl.ValueBool())
+	if plan.ParentalControl.ValueBool() {
+		err = r.adg.ParentalEnable()
+	} else {
+		err = r.adg.ParentalDisable()
+	}
 	if err != nil {
 		diags.AddError(
 			"Unable to Update AdGuard Home Config",
@@ -1115,7 +1124,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		return
 	}
 	// instantiate empty object for storing plan data
-	var safeSearchConfig adguard.SafeSearchConfig
+	var safeSearchConfig adgmodels.SafeSearchConfig
 	// populate safe search config using plan
 	safeSearchConfig.Enabled = planSafeSearch.Enabled.ValueBool()
 	if len(planSafeSearch.Services.Elements()) > 0 {
@@ -1131,7 +1140,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		setSafeSearchServices(v, t, safeSearchServicesEnabled)
 	}
 	// set safe search config using plan
-	_, err = r.adg.SetSafeSearchConfig(safeSearchConfig)
+	err = r.adg.SafeSearchSettings(safeSearchConfig)
 	if err != nil {
 		diags.AddError(
 			"Unable to Update AdGuard Home Config",
@@ -1149,7 +1158,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		return
 	}
 	// instantiate empty object for storing plan data
-	var queryLogConfig adguard.GetQueryLogConfigResponse
+	var queryLogConfig adgmodels.GetQueryLogConfigResponse
 	// populate query log config from plan
 	queryLogConfig.Enabled = planQueryLogConfig.Enabled.ValueBool()
 	queryLogConfig.Interval = uint64(planQueryLogConfig.Interval.ValueInt64() * 3600 * 1000)
@@ -1161,7 +1170,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	}
 
 	// set query log config using plan
-	_, err = r.adg.SetQueryLogConfig(queryLogConfig)
+	err = r.adg.QuerylogConfigUpdate(queryLogConfig)
 	if err != nil {
 		diags.AddError(
 			"Unable to Update AdGuard Home Config",
@@ -1179,7 +1188,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		return
 	}
 	// instantiate empty object for storing plan data
-	var statsConfig adguard.GetStatsConfigResponse
+	var statsConfig adgmodels.GetStatsConfigResponse
 	// populate stats from plan
 	statsConfig.Enabled = planStatsConfig.Enabled.ValueBool()
 	statsConfig.Interval = uint64(planStatsConfig.Interval.ValueInt64() * 3600 * 1000)
@@ -1189,7 +1198,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		return
 	}
 	// set stats config using plan
-	_, err = r.adg.SetStatsConfig(statsConfig)
+	err = r.adg.StatsConfigUpdate(statsConfig)
 	if err != nil {
 		diags.AddError(
 			"Unable to Update AdGuard Home Config",
@@ -1217,7 +1226,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		return
 	}
 	// instantiate empty object for storing plan data
-	var blockedServicesPauseScheduleConfig adguard.BlockedServicesSchedule
+	var blockedServicesPauseScheduleConfig adgmodels.BlockedServicesSchedule
 	// populate blocked services schedule from plan
 	blockedServicesPauseScheduleConfig.Ids = blockedServices
 	// defer to common function to populate schedule
@@ -1227,7 +1236,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	}
 
 	// set blocked services and schedule using plan
-	_, err = r.adg.SetBlockedServices(blockedServicesPauseScheduleConfig)
+	err = r.adg.BlockedServicesUpdate(blockedServicesPauseScheduleConfig)
 	if err != nil {
 		diags.AddError(
 			"Unable to Update AdGuard Home Config",
@@ -1245,7 +1254,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		return
 	}
 	// instantiate empty object for storing plan data
-	var dnsConfig adguard.DNSConfig
+	var dnsConfig adgmodels.DNSConfig
 	// populate DNS config from plan
 	if len(planDnsConfig.BootstrapDns.Elements()) > 0 {
 		d = planDnsConfig.BootstrapDns.ElementsAs(ctx, &dnsConfig.BootstrapDns, false)
@@ -1313,7 +1322,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		dnsConfig.LocalPtrUpstreams = []string{}
 	}
 	// set DNS config using plan
-	_, err = r.adg.SetDnsConfig(dnsConfig)
+	err = r.adg.DnsConfig(dnsConfig)
 	if err != nil {
 		diags.AddError(
 			"Unable to Update AdGuard Home Config",
@@ -1323,7 +1332,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	}
 
 	// instantiate empty dns access list for storing plan data
-	var dnsAccess adguard.AccessList
+	var dnsAccess adgmodels.AccessList
 	// populate dns access list from plan
 	if len(planDnsConfig.AllowedClients.Elements()) > 0 {
 		d = planDnsConfig.AllowedClients.ElementsAs(ctx, &dnsAccess.AllowedClients, false)
@@ -1347,7 +1356,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		}
 	}
 	// set DNS access list using plan
-	_, err = r.adg.SetAccess(dnsAccess)
+	err = r.adg.AccessSet(dnsAccess)
 	if err != nil {
 		diags.AddError(
 			"Unable to Update AdGuard Home Config",
@@ -1390,7 +1399,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	}
 
 	// instantiate empty object for storing plan data
-	var dhcpConfig adguard.DhcpConfig
+	var dhcpConfig adgmodels.DhcpConfig
 	// populate dhcp config from plan
 	dhcpConfig.Enabled = planDhcpConfig.Enabled.ValueBool()
 	dhcpConfig.InterfaceName = planDhcpConfig.Interface.ValueString()
@@ -1403,7 +1412,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	dhcpConfig.V6.LeaseDuration = uint64(planDhcpIpv6Settings.LeaseDuration.ValueInt64())
 
 	// set dhcp config using plan
-	_, err = r.adg.SetDhcpConfig(dhcpConfig)
+	err = r.adg.DhcpSetConfig(dhcpConfig)
 	if err != nil {
 		diags.AddError(
 			"Unable to Update AdGuard Home Config",
@@ -1422,7 +1431,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		// check if the entire dhcp server has been turned off
 		if dhcpConfig.InterfaceName == "" {
 			// it was, set dhcp config to defaults
-			err = r.adg.ResetDhcpConfig()
+			err = r.adg.DhcpReset()
 			if err != nil {
 				diags.AddError(
 					"Unable to Update AdGuard Home Config",
@@ -1472,7 +1481,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		// go through the dhcp static leases existing in state
 		for _, stateDhcpStaticLease := range stateDhcpStaticLeases {
 			// instantiate empty object for storing state data
-			var dhcpStaticLease adguard.DhcpStaticLease
+			var dhcpStaticLease adgmodels.DhcpStaticLease
 			dhcpStaticLease.Mac = stateDhcpStaticLease.Mac.ValueString()
 			dhcpStaticLease.Ip = stateDhcpStaticLease.Ip.ValueString()
 			dhcpStaticLease.Hostname = stateDhcpStaticLease.Hostname.ValueString()
@@ -1482,7 +1491,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 			// check if this dhcp static lease is still in the plan
 			if !contains(allPlanDhcpStaticLeases, dhcpStaticLease_key) {
 				// not in plan, delete it
-				_, err = r.adg.ManageDhcpStaticLease(false, dhcpStaticLease)
+				err = r.adg.DhcpRemoveStaticLease(dhcpStaticLease)
 				if err != nil {
 					diags.AddError(
 						"Unable to Update AdGuard Home Config",
@@ -1497,7 +1506,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	// go through all dhcp static leases in plan
 	for _, planDhcpStaticLease := range planDhcpStaticLeases {
 		// instantiate empty object for storing plan data
-		var dhcpStaticLease adguard.DhcpStaticLease
+		var dhcpStaticLease adgmodels.DhcpStaticLease
 		dhcpStaticLease.Mac = planDhcpStaticLease.Mac.ValueString()
 		dhcpStaticLease.Ip = planDhcpStaticLease.Ip.ValueString()
 		dhcpStaticLease.Hostname = planDhcpStaticLease.Hostname.ValueString()
@@ -1505,7 +1514,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		// check if this dhcp static lease isn't already in state
 		if !contains(allStateDhcpStaticLeases, fmt.Sprintf("%s_%s_%s", dhcpStaticLease.Hostname, dhcpStaticLease.Mac, dhcpStaticLease.Ip)) {
 			// set this dhcp static lease using plan
-			_, err = r.adg.ManageDhcpStaticLease(true, dhcpStaticLease)
+			err = r.adg.DhcpAddStaticLease(dhcpStaticLease)
 			if err != nil {
 				diags.AddError(
 					"Unable to Update AdGuard Home Config",
@@ -1525,7 +1534,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		return
 	}
 	// instantiate empty object for storing plan data
-	var tlsConfig adguard.TlsConfig
+	var tlsConfig adgmodels.TlsConfig
 	// populate tls config from plan
 	tlsConfig.Enabled = planTlsConfig.Enabled.ValueBool()
 	tlsConfig.ServerName = planTlsConfig.ServerName.ValueString()
@@ -1557,7 +1566,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	}
 
 	// set tls config using plan
-	tlsConfigResponse, err := r.adg.SetTlsConfig(tlsConfig)
+	tlsConfigResponse, err := r.adg.TlsConfigure(tlsConfig)
 	if err != nil {
 		diags.AddError(
 			"Unable to Update AdGuard Home Config",

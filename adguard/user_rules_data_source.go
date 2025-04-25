@@ -62,8 +62,8 @@ func (d *userRulesDataSource) Read(ctx context.Context, req datasource.ReadReque
 	diags := req.Config.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 
-	// retrieve user rules info
-	userRules, err := d.adg.GetUserRules()
+	// retrieve user rules info from all filters
+	allFilters, err := d.adg.FilteringStatus()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read AdGuard Home User Rules",
@@ -72,7 +72,7 @@ func (d *userRulesDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 	// convert to JSON for response logging
-	userRulesJson, err := json.Marshal(userRules)
+	userRulesJson, err := json.Marshal(allFilters.UserRules)
 	if err != nil {
 		diags.AddError(
 			"Unable to Parse AdGuard Home User Rules",
@@ -87,7 +87,7 @@ func (d *userRulesDataSource) Read(ctx context.Context, req datasource.ReadReque
 	})
 
 	// map response body to model
-	state.Rules, diags = types.ListValueFrom(ctx, types.StringType, userRules)
+	state.Rules, diags = types.ListValueFrom(ctx, types.StringType, allFilters.UserRules)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

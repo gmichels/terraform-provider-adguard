@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/gmichels/adguard-client-go"
+	adgmodels "github.com/gmichels/adguard-client-go/models"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -113,7 +114,7 @@ func (r *listFilterResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	// instantiate empty client for storing plan data
-	var listFilter adguard.AddUrlRequest
+	var listFilter adgmodels.AddUrlRequest
 
 	// populate list filter from plan
 	listFilter.Name = plan.Name.ValueString()
@@ -121,7 +122,17 @@ func (r *listFilterResource) Create(ctx context.Context, req resource.CreateRequ
 	listFilter.Whitelist = plan.Whitelist.ValueBool()
 
 	// create new list filter using plan
-	newListFilter, _, err := r.adg.CreateListFilter(listFilter)
+	err := r.adg.FilteringAddUrl(listFilter)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Creating AdGuard Home List Filter",
+			"Could not create list filter, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// get the list filter by name to retrieve the computed attributes
+	newListFilter, _, err := GetListFilterByName(r.adg, listFilter.Name)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Creating AdGuard Home List Filter",
@@ -140,18 +151,18 @@ func (r *listFilterResource) Create(ctx context.Context, req resource.CreateRequ
 	if !plan.Enabled.ValueBool() {
 
 		// generate API request body from plan
-		var updateListFilterData adguard.FilterSetUrlData
+		var updateListFilterData adgmodels.FilterSetUrlData
 		updateListFilterData.Enabled = plan.Enabled.ValueBool()
 		updateListFilterData.Name = plan.Name.ValueString()
 		updateListFilterData.Url = plan.Url.ValueString()
 
-		var updateListFilter adguard.FilterSetUrl
+		var updateListFilter adgmodels.FilterSetUrl
 		updateListFilter.Url = listFilter.Url
 		updateListFilter.Whitelist = plan.Whitelist.ValueBool()
 		updateListFilter.Data = updateListFilterData
 
 		// update existing list filter
-		_, _, err := r.adg.UpdateListFilter(updateListFilter)
+		err := r.adg.FilteringSetUrl(updateListFilter)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error Updating AdGuard Home List Filter",
@@ -193,7 +204,7 @@ func (r *listFilterResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	// get refreshed list filter from AdGuard Home
-	listFilter, whitelist, err := r.adg.GetListFilterById(id)
+	listFilter, whitelist, err := GetListFilterById(r.adg, id)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Reading AdGuard Home List Filter",
@@ -261,7 +272,7 @@ func (r *listFilterResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 	// retrieve current list filter as we need the current URL
-	currentListFilter, _, err := r.adg.GetListFilterById(id)
+	currentListFilter, _, err := GetListFilterById(r.adg, id)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Retrieving AdGuard Home List Filter",
@@ -285,18 +296,18 @@ func (r *listFilterResource) Update(ctx context.Context, req resource.UpdateRequ
 	})
 
 	// generate API request body from plan
-	var updateListFilterData adguard.FilterSetUrlData
+	var updateListFilterData adgmodels.FilterSetUrlData
 	updateListFilterData.Enabled = plan.Enabled.ValueBool()
 	updateListFilterData.Name = plan.Name.ValueString()
 	updateListFilterData.Url = plan.Url.ValueString()
 
-	var updateListFilter adguard.FilterSetUrl
+	var updateListFilter adgmodels.FilterSetUrl
 	updateListFilter.Url = currentListFilter.Url
 	updateListFilter.Whitelist = plan.Whitelist.ValueBool()
 	updateListFilter.Data = updateListFilterData
 
 	// update existing list filter
-	updatedlistFilter, _, err := r.adg.UpdateListFilter(updateListFilter)
+	err = r.adg.FilteringSetUrl(updateListFilter)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Updating AdGuard Home List Filter",
@@ -305,9 +316,19 @@ func (r *listFilterResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
+	// refresh the list filter by ID to retrieve the computed attributes
+	refreshedUpdatedlistFilter, _, err := GetListFilterById(r.adg, id)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Creating AdGuard Home List Filter",
+			"Could not create list filter, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
 	// update plan with computed attributes
-	plan.LastUpdated = types.StringValue(updatedlistFilter.LastUpdated)
-	plan.RulesCount = types.Int64Value(int64(updatedlistFilter.RulesCount))
+	plan.LastUpdated = types.StringValue(refreshedUpdatedlistFilter.LastUpdated)
+	plan.RulesCount = types.Int64Value(int64(refreshedUpdatedlistFilter.RulesCount))
 
 	// update state
 	diags = resp.State.Set(ctx, plan)
@@ -327,12 +348,12 @@ func (r *listFilterResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	var deleteListFilter adguard.RemoveUrlRequest
+	var deleteListFilter adgmodels.RemoveUrlRequest
 	deleteListFilter.Url = state.Url.ValueString()
 	deleteListFilter.Whitelist = state.Whitelist.ValueBool()
 
 	// delete existing list filter
-	err := r.adg.DeleteListFilter(deleteListFilter)
+	err := r.adg.FilteringRemoveUrl(deleteListFilter)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home List Filter",

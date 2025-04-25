@@ -87,7 +87,7 @@ func (d *listFilterDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	resp.Diagnostics.Append(diags...)
 
 	// retrieve list filter info
-	listFilter, whitelist, err := d.adg.GetListFilterByName(state.Name.ValueString())
+	listFilter, whitelist, err := GetListFilterByName(d.adg, state.Name.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read AdGuard Home List Filter",

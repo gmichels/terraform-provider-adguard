@@ -53,7 +53,7 @@ func (d *rewriteDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 			},
 			"answer": schema.StringAttribute{
 				Description: "Value of A, AAAA or CNAME DNS record",
-				Computed:    true,
+				Required:    true,
 			},
 		},
 	}
@@ -67,7 +67,7 @@ func (d *rewriteDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	resp.Diagnostics.Append(diags...)
 
 	// retrieve rewrite info
-	rewrite, err := d.adg.GetRewrite(state.Domain.ValueString())
+	rewrite, err := GetRewrite(d.adg, state.Domain.ValueString(), state.Answer.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read AdGuard Home Rewrite Rule",
@@ -92,7 +92,7 @@ func (d *rewriteDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	if rewrite == nil {
 		resp.Diagnostics.AddError(
 			"Unable to Locate AdGuard Home Rewrite Rule",
-			"No rewrite rule with name `"+state.Domain.ValueString()+"` exists in AdGuard Home.",
+			"No rewrite rule with domain `"+state.Domain.ValueString()+" and answer `"+state.Answer.ValueString()+"` exists in AdGuard Home.",
 		)
 		return
 	}
