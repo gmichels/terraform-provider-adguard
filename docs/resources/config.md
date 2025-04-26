@@ -274,6 +274,7 @@ Optional:
 - `resolve_clients` (Boolean) Whether reverse DNS resolution of clients' IP addresses is enabled. Defaults to `true`
 - `upstream_dns` (List of String) Upstream DNS servers. Defaults to the ones supplied by the default AdGuard Home configuration
 - `upstream_mode` (String) Upstream DNS resolvers usage strategy. Valid values are `load_balance` (default), `parallel` and `fastest_addr`
+- `upstream_timeout` (Number) The number of seconds to wait for a response from the upstream server. Defaults to `10`
 - `use_private_ptr_resolvers` (Boolean) Whether to use private reverse DNS resolvers. Defaults to `false`
 
 
