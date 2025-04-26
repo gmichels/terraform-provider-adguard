@@ -411,6 +411,12 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 							types.SetValueMust(types.StringType, []attr.Value{}),
 						),
 					},
+					"upstream_timeout": schema.Int64Attribute{
+						Description: fmt.Sprintf("The number of seconds to wait for a response from the upstream server. Defaults to `%d`", CONFIG_DNS_UPSTREAM_TIMEOUT),
+						Computed:    true,
+						Optional:    true,
+						Default:     int64default.StaticInt64(CONFIG_DNS_UPSTREAM_TIMEOUT),
+					},
 					"allowed_clients": schema.SetAttribute{
 						Description: "The allowlist of clients: IP addresses, CIDRs, or ClientIDs",
 						ElementType: types.StringType,
@@ -1043,6 +1049,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	dnsConfig.UsePrivatePtrResolvers = CONFIG_DNS_USE_PRIVATE_PTR_RESOLVERS
 	dnsConfig.ResolveClients = CONFIG_DNS_RESOLVE_CLIENTS
 	dnsConfig.LocalPtrUpstreams = []string{}
+	dnsConfig.UpstreamTimeout = CONFIG_DNS_UPSTREAM_TIMEOUT
 
 	// set dns config to defaults
 	err = r.adg.DnsConfig(dnsConfig)

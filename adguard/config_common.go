@@ -138,6 +138,7 @@ type dnsConfigModel struct {
 	UsePrivatePtrResolvers types.Bool   `tfsdk:"use_private_ptr_resolvers"`
 	ResolveClients         types.Bool   `tfsdk:"resolve_clients"`
 	LocalPtrUpstreams      types.Set    `tfsdk:"local_ptr_upstreams"`
+	UpstreamTimeout			 types.Int64  `tfsdk:"upstream_timeout"`
 	AllowedClients         types.Set    `tfsdk:"allowed_clients"`
 	DisallowedClients      types.Set    `tfsdk:"disallowed_clients"`
 	BlockedHosts           types.Set    `tfsdk:"blocked_hosts"`
@@ -171,6 +172,7 @@ func (o dnsConfigModel) attrTypes() map[string]attr.Type {
 		"use_private_ptr_resolvers":  types.BoolType,
 		"resolve_clients":            types.BoolType,
 		"local_ptr_upstreams":        types.SetType{ElemType: types.StringType},
+		"upstream_timeout":              types.Int64Type,
 		"allowed_clients":            types.SetType{ElemType: types.StringType},
 		"disallowed_clients":         types.SetType{ElemType: types.StringType},
 		"blocked_hosts":              types.SetType{ElemType: types.StringType},
@@ -209,6 +211,7 @@ func (o dnsConfigModel) defaultObject() map[string]attr.Value {
 		"use_private_ptr_resolvers":  types.BoolValue(CONFIG_DNS_USE_PRIVATE_PTR_RESOLVERS),
 		"resolve_clients":            types.BoolValue(CONFIG_DNS_RESOLVE_CLIENTS),
 		"local_ptr_upstreams":        types.SetValueMust(types.StringType, []attr.Value{}),
+		"upstream_timeout":           types.Int64Value(CONFIG_DNS_UPSTREAM_TIMEOUT),
 		"allowed_clients":            types.SetNull(types.StringType),
 		"disallowed_clients":         types.SetNull(types.StringType),
 		"blocked_hosts":              types.SetValueMust(types.StringType, blocked_hosts),
@@ -802,6 +805,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	if diags.HasError() {
 		return
 	}
+	stateDnsConfig.UpstreamTimeout = types.Int64Value(int64(dnsConfig.UpstreamTimeout))
 
 	// DNS ACCESS
 	// retrieve dns access info
@@ -1321,6 +1325,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	} else {
 		dnsConfig.LocalPtrUpstreams = []string{}
 	}
+	dnsConfig.UpstreamTimeout = uint(planDnsConfig.UpstreamTimeout.ValueInt64())
 	// set DNS config using plan
 	err = r.adg.DnsConfig(dnsConfig)
 	if err != nil {

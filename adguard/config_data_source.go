@@ -219,6 +219,10 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 						ElementType: types.StringType,
 						Computed:    true,
 					},
+					"upstream_timeout": schema.Int64Attribute{
+						Description: "The number of seconds to wait for a response from the upstream server",
+						Computed:    true,
+					},
 					"allowed_clients": schema.SetAttribute{
 						Description: "The allowlist of clients: IP addresses, CIDRs, or ClientIDs",
 						ElementType: types.StringType,
