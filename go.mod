@@ -6,7 +6,7 @@ go 1.24.2
 // replace github.com/gmichels/adguard-client-go => /path/to/adguard-client-go
 
 require (
-	github.com/gmichels/adguard-client-go v0.11.0
+	github.com/gmichels/adguard-client-go v1.0.0
 	github.com/hashicorp/terraform-plugin-docs v0.20.1
 	github.com/hashicorp/terraform-plugin-framework v1.14.1
 	github.com/hashicorp/terraform-plugin-framework-validators v0.17.0
