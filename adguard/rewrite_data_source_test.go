@@ -12,7 +12,11 @@ func TestAccRewriteDataSource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Read testing
 			{
-				Config: providerConfig + `data "adguard_rewrite" "test" { domain = "example.org" }`,
+				Config: providerConfig + `
+data "adguard_rewrite" "test" {
+	domain = "example.org"
+	answer = "1.2.3.4"
+}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.adguard_rewrite.test", "domain", "example.org"),
 					resource.TestCheckResourceAttr("data.adguard_rewrite.test", "answer", "1.2.3.4"),

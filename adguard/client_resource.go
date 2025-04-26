@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gmichels/adguard-client-go"
+	adgmodels "github.com/gmichels/adguard-client-go/models"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
@@ -314,10 +315,10 @@ func (r *clientResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
-	var deleteClient adguard.ClientDelete
+	var deleteClient adgmodels.ClientDelete
 	deleteClient.Name = state.ID.ValueString()
 	// delete existing client
-	err := r.adg.DeleteClient(deleteClient)
+	err := r.adg.ClientsDelete(deleteClient)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Client",

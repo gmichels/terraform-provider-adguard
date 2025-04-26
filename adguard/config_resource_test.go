@@ -137,6 +137,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_optimistic", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.use_private_ptr_resolvers", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.local_ptr_upstreams.#", "2"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.upstream_timeout", "10"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.1", "allowed-client"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.interface", "eth1"),
@@ -184,6 +185,7 @@ resource "adguard_config" "test" {
 	}
 	dns = {
 		upstream_dns              = ["https://1.1.1.1/dns-query"]
+		upstream_timeout          = 1
 		protection_enabled        = false
 		blocking_mode             = "nxdomain"
 		rate_limit                = 25
@@ -286,6 +288,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.use_private_ptr_resolvers", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.resolve_clients", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.local_ptr_upstreams.#", "0"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.upstream_timeout", "1"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.#", "0"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.disallowed_clients.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.disallowed_clients.1", "blocked-client"),

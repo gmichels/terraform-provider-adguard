@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gmichels/adguard-client-go"
+	adgmodels "github.com/gmichels/adguard-client-go/models"
 	"github.com/hashicorp/terraform-plugin-framework-validators/boolvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -409,6 +410,12 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Default: setdefault.StaticValue(
 							types.SetValueMust(types.StringType, []attr.Value{}),
 						),
+					},
+					"upstream_timeout": schema.Int64Attribute{
+						Description: fmt.Sprintf("The number of seconds to wait for a response from the upstream server. Defaults to `%d`", CONFIG_DNS_UPSTREAM_TIMEOUT),
+						Computed:    true,
+						Optional:    true,
+						Default:     int64default.StaticInt64(CONFIG_DNS_UPSTREAM_TIMEOUT),
 					},
 					"allowed_clients": schema.SetAttribute{
 						Description: "The allowlist of clients: IP addresses, CIDRs, or ClientIDs",
@@ -888,12 +895,12 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	// there is no "real" delete for the configuration, so this means "restore defaults"
 
 	// populate filtering config with default values
-	var filterConfig adguard.FilterConfig
+	var filterConfig adgmodels.FilterConfig
 	filterConfig.Enabled = CONFIG_FILTERING_ENABLED
 	filterConfig.Interval = CONFIG_FILTERING_UPDATE_INTERVAL
 
 	// set filtering config to default
-	_, err := r.adg.ConfigureFiltering(filterConfig)
+	err := r.adg.FilteringConfig(filterConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
@@ -903,7 +910,11 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// set safebrowsing to default
-	err = r.adg.SetSafeBrowsingStatus(CONFIG_SAFEBROWSING_ENABLED)
+	if CONFIG_SAFEBROWSING_ENABLED {
+		err = r.adg.SafeBrowsingEnable()
+	} else {
+		err = r.adg.SafeBrowsingDisable()
+	}
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
@@ -913,7 +924,11 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// set parental to default
-	err = r.adg.SetParentalStatus(CONFIG_PARENTAL_CONTROL_ENABLED)
+	if CONFIG_PARENTAL_CONTROL_ENABLED {
+		err = r.adg.ParentalEnable()
+	} else {
+		err = r.adg.ParentalDisable()
+	}
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
@@ -923,7 +938,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// populate safe search with default values
-	var safeSearchConfig adguard.SafeSearchConfig
+	var safeSearchConfig adgmodels.SafeSearchConfig
 	safeSearchConfig.Enabled = SAFE_SEARCH_ENABLED
 	safeSearchConfig.Bing = true
 	safeSearchConfig.Duckduckgo = true
@@ -933,7 +948,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	safeSearchConfig.Youtube = true
 
 	// set safe search to defaults
-	_, err = r.adg.SetSafeSearchConfig(safeSearchConfig)
+	err = r.adg.SafeSearchSettings(safeSearchConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
@@ -943,14 +958,14 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// populate query log config with default values
-	var queryLogConfig adguard.GetQueryLogConfigResponse
+	var queryLogConfig adgmodels.GetQueryLogConfigResponse
 	queryLogConfig.Enabled = CONFIG_QUERYLOG_ENABLED
 	queryLogConfig.Interval = CONFIG_QUERYLOG_INTERVAL * 3600 * 1000
 	queryLogConfig.AnonymizeClientIp = CONFIG_QUERYLOG_ANONYMIZE_CLIENT_IP
 	queryLogConfig.Ignored = []string{}
 
 	// set query log config to defaults
-	_, err = r.adg.SetQueryLogConfig(queryLogConfig)
+	err = r.adg.QuerylogConfigUpdate(queryLogConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
@@ -960,13 +975,13 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// populate server statistics config with default values
-	var statsConfig adguard.GetStatsConfigResponse
+	var statsConfig adgmodels.GetStatsConfigResponse
 	statsConfig.Enabled = CONFIG_STATS_ENABLED
 	statsConfig.Interval = CONFIG_STATS_INTERVAL * 3600 * 1000
 	statsConfig.Ignored = []string{}
 
 	// set server statistics to defaults
-	_, err = r.adg.SetStatsConfig(statsConfig)
+	err = r.adg.StatsConfigUpdate(statsConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
@@ -976,7 +991,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// populate blocked services and schedules with default values
-	var blockedServicesPauseScheduleConfig adguard.BlockedServicesSchedule
+	var blockedServicesPauseScheduleConfig adgmodels.BlockedServicesSchedule
 	blockedServicesPauseScheduleConfig.Ids = make([]string, 0)
 	blockedServicesPauseScheduleConfig.Schedule.TimeZone = BLOCKED_SERVICES_PAUSE_SCHEDULE_TIMEZONE
 	blockedServicesPauseScheduleConfig.Schedule.Sunday.Start = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
@@ -995,7 +1010,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	blockedServicesPauseScheduleConfig.Schedule.Saturday.End = BLOCKED_SERVICES_PAUSE_SCHEDULE_START_END
 
 	// set blocked services to defaults
-	_, err = r.adg.SetBlockedServices(blockedServicesPauseScheduleConfig)
+	err = r.adg.BlockedServicesUpdate(blockedServicesPauseScheduleConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
@@ -1005,7 +1020,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// instantiate empty DNS config for storing default values
-	var dnsConfig adguard.DNSConfig
+	var dnsConfig adgmodels.DNSConfig
 
 	// populate DNS config with default values
 	dnsConfig.BootstrapDns = CONFIG_DNS_BOOTSTRAP
@@ -1034,9 +1049,10 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	dnsConfig.UsePrivatePtrResolvers = CONFIG_DNS_USE_PRIVATE_PTR_RESOLVERS
 	dnsConfig.ResolveClients = CONFIG_DNS_RESOLVE_CLIENTS
 	dnsConfig.LocalPtrUpstreams = []string{}
+	dnsConfig.UpstreamTimeout = CONFIG_DNS_UPSTREAM_TIMEOUT
 
 	// set dns config to defaults
-	_, err = r.adg.SetDnsConfig(dnsConfig)
+	err = r.adg.DnsConfig(dnsConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
@@ -1046,7 +1062,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// instantiate empty dns access list for storing default values
-	var dnsAccess adguard.AccessList
+	var dnsAccess adgmodels.AccessList
 
 	// populate dns access list with default values
 	dnsAccess.AllowedClients = []string{}
@@ -1054,7 +1070,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	dnsAccess.BlockedHosts = CONFIG_DNS_BLOCKED_HOSTS
 
 	// set dns access list to defaults
-	_, err = r.adg.SetAccess(dnsAccess)
+	err = r.adg.AccessSet(dnsAccess)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
@@ -1064,7 +1080,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// set dhcp config to defaults
-	err = r.adg.ResetDhcpConfig()
+	err = r.adg.DhcpReset()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
@@ -1074,7 +1090,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// remove all dhcp static leases
-	err = r.adg.ResetDhcpStaticLeases()
+	err = r.adg.DhcpResetLeases()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",
@@ -1084,7 +1100,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// instantiate empty tls config for storing default values
-	var tlsConfig adguard.TlsConfig
+	var tlsConfig adgmodels.TlsConfig
 
 	// populate tls config list with default values
 	tlsConfig.Enabled = CONFIG_TLS_ENABLED
@@ -1101,7 +1117,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	tlsConfig.ServePlainDns = true
 
 	// set tls config to defaults
-	_, err = r.adg.SetTlsConfig(tlsConfig)
+	_, err = r.adg.TlsConfigure(tlsConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home Config",

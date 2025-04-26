@@ -16,6 +16,7 @@ description: |-
 # get a DNS rewrite rule
 data "adguard_rewrite" "test" {
   domain = "example.org"
+  answer = "1.2.3.4"
 }
 ```
 
@@ -24,9 +25,9 @@ data "adguard_rewrite" "test" {
 
 ### Required
 
+- `answer` (String) Value of A, AAAA or CNAME DNS record
 - `domain` (String) Domain name
 
 ### Read-Only
 
-- `answer` (String) Value of A, AAAA or CNAME DNS record
 - `id` (String) Identifier attribute

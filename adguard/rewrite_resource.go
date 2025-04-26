@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/gmichels/adguard-client-go"
+	adgmodels "github.com/gmichels/adguard-client-go/models"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -66,10 +68,16 @@ func (r *rewriteResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			"domain": schema.StringAttribute{
 				Description: "Domain name",
 				Required:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"answer": schema.StringAttribute{
 				Description: "Value of A, AAAA or CNAME DNS record",
 				Required:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 				Validators: []validator.String{
 					stringvalidator.RegexMatches(
 						regexp.MustCompile(`^[A-Za-z0-9/.:-]+$`),
@@ -101,14 +109,14 @@ func (r *rewriteResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	// instantiate empty DNS rewrite rule for storing plan data
-	var rewrite adguard.RewriteEntry
+	var rewrite adgmodels.RewriteEntry
 
 	// populate DNS rewrite rule from plan
 	rewrite.Domain = plan.Domain.ValueString()
 	rewrite.Answer = plan.Answer.ValueString()
 
 	// create new DNS rewrite rule using plan
-	newRewrite, err := r.adg.CreateRewrite(rewrite)
+	err := r.adg.RewriteAdd(rewrite)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Creating DNS Rewrite Rule",
@@ -117,9 +125,8 @@ func (r *rewriteResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	// response sent by AdGuard Home is the same as the sent payload,
-	// just add missing attributes for state
-	plan.ID = types.StringValue(newRewrite.Domain)
+	// add missing attributes for state
+	plan.ID = types.StringValue(rewrite.Domain + "||" + rewrite.Answer)
 	// add the last updated attribute
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 
@@ -141,8 +148,18 @@ func (r *rewriteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
+	// detect old ID format
+	if !strings.Contains(state.ID.ValueString(), "||") {
+		// set the ID to the new format
+		newID := state.Domain.ValueString() + "||" + state.Answer.ValueString()
+		state.ID = types.StringValue(newID)
+	}
+
+	// split the ID to separate domain and answer
+	idSplit := strings.Split(state.ID.ValueString(), "||")
+
 	// get refreshed DNS rewrite rule value from AdGuard Home
-	rewrite, err := r.adg.GetRewrite(state.ID.ValueString())
+	rewrite, err := GetRewrite(r.adg, idSplit[0], idSplit[1])
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Reading AdGuard Home DNS Rewrite Rule",
@@ -196,13 +213,29 @@ func (r *rewriteResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	// generate API request body from plan
-	var updateRewrite adguard.RewriteEntry
-	updateRewrite.Domain = plan.Domain.ValueString()
-	updateRewrite.Answer = plan.Answer.ValueString()
+	// retrieve state as we need the current info
+	var state rewriteResourceModel
+	diags = req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// generate API request body from plan and state
+	var updateRewriteTarget adgmodels.RewriteEntry
+	updateRewriteTarget.Domain = state.Domain.ValueString()
+	updateRewriteTarget.Answer = state.Answer.ValueString()
+
+	var updateRewriteUpdate adgmodels.RewriteEntry
+	updateRewriteUpdate.Domain = plan.Domain.ValueString()
+	updateRewriteUpdate.Answer = plan.Answer.ValueString()
+
+	var updateRewrite adgmodels.RewriteUpdate
+	updateRewrite.Target = updateRewriteTarget
+	updateRewrite.Update = updateRewriteUpdate
 
 	// update existing DNS rewrite rule
-	_, err := r.adg.UpdateRewrite(updateRewrite)
+	err := r.adg.RewriteUpdate(updateRewrite)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Updating AdGuard Home DNS Rewrite Rule",
@@ -232,8 +265,13 @@ func (r *rewriteResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
+	// generate API request body from state
+	var deleteRewrite adgmodels.RewriteEntry
+	deleteRewrite.Domain = state.Domain.ValueString()
+	deleteRewrite.Answer = state.Answer.ValueString()
+
 	// delete existing DNS rewrite rule
-	err := r.adg.DeleteRewrite(state.ID.ValueString())
+	err := r.adg.RewriteDelete(deleteRewrite)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting AdGuard Home DNS Rewrite Rule",

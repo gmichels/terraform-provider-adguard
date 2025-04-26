@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/gmichels/adguard-client-go"
+	adgmodels "github.com/gmichels/adguard-client-go/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -48,30 +49,47 @@ func (o *clientCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		// this is an import operation, use the ID
 		clientName = currState.ID.ValueString()
 	}
-	// retrieve client info
-	client, err := adg.GetClient(clientName)
+
+	// retrieve all clients
+	allClients, err := adg.Clients()
 	if err != nil {
 		diags.AddError(
 			"Unable to Read AdGuard Home Client",
 			err.Error(),
 		)
-		return
 	}
-	// convert to JSON for response logging
-	clientJson, err := json.Marshal(client)
-	if err != nil {
-		diags.AddError(
-			"Unable to Parse AdGuard Home Client",
-			err.Error(),
-		)
-		return
+
+	// instantiate empty client for storing response data
+	var client adgmodels.Client
+	// assume client does not exist
+	clientExists := false
+
+	// check if this client exists
+	for _, currentClient := range allClients.Clients {
+		if currentClient.Name == clientName {
+			// found the client
+			clientExists = true
+			client = currentClient
+			// convert to JSON for response logging
+			clientJson, err := json.Marshal(client)
+			if err != nil {
+				diags.AddError(
+					"Unable to Parse AdGuard Home Client",
+					err.Error(),
+				)
+				return
+			}
+			// log response body
+			tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+				"object": "client",
+				"body":   string(clientJson),
+			})
+			break
+		}
 	}
-	// log response body
-	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
-		"object": "client",
-		"body":   string(clientJson),
-	})
-	if client == nil {
+
+	if !clientExists {
+		// client not found
 		diags.AddError(
 			"Unable to Locate AdGuard Home Client",
 			"No client with name `"+clientName+"` exists in AdGuard Home.",
@@ -191,7 +209,7 @@ func (r *clientResource) CreateOrUpdate(ctx context.Context, plan *clientCommonM
 	var d diag.Diagnostics
 
 	// instantiate empty client for storing plan data
-	var client adguard.Client
+	var client adgmodels.Client
 
 	// populate client from plan
 	client.Name = plan.Name.ValueString()
@@ -271,7 +289,7 @@ func (r *clientResource) CreateOrUpdate(ctx context.Context, plan *clientCommonM
 
 	if create_operation {
 		// create new client using plan
-		_, err := r.adg.CreateClient(client)
+		err := r.adg.ClientsAdd(client)
 		if err != nil {
 			diags.AddError(
 				"Error Creating Client",
@@ -281,12 +299,12 @@ func (r *clientResource) CreateOrUpdate(ctx context.Context, plan *clientCommonM
 		}
 	} else {
 		// instantiate specific empty update client for storing plan data
-		var updateClient adguard.ClientUpdate
+		var updateClient adgmodels.ClientUpdate
 		updateClient.Name = plan.ID.ValueString()
 		// grab our client and place in object
 		updateClient.Data = client
 		// update existing client
-		_, err := r.adg.UpdateClient(updateClient)
+		err := r.adg.ClientsUpdate(updateClient)
 		if err != nil {
 			diags.AddError(
 				"Error Updating AdGuard Home Client",

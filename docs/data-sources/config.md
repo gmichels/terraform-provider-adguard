@@ -201,6 +201,7 @@ Read-Only:
 - `resolve_clients` (Boolean) Whether reverse DNS resolution of clients' IP addresses is enabled
 - `upstream_dns` (List of String) Upstream DNS servers
 - `upstream_mode` (String) Upstream DNS resolvers usage strategy
+- `upstream_timeout` (Number) The number of seconds to wait for a response from the upstream server
 - `use_private_ptr_resolvers` (Boolean) Whether to use private reverse DNS resolvers
 
 
