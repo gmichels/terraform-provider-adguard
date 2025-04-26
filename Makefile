@@ -44,3 +44,8 @@ testacc: ## Run acceptance tests using the docker-compose file
 	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 10m
 	docker compose -f ./docker/docker-compose.yaml down
 	git checkout HEAD -- ./docker/conf/AdGuardHome.yaml
+
+cleanup: ## Cleanup leftovers after failed tests
+	docker compose -f ./docker/docker-compose.yaml down
+	rm -fr ./docker
+	git checkout HEAD -- ./docker

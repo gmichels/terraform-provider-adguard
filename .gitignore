@@ -20,3 +20,5 @@ terraform.tfstate*
 
 # IDE
 .idea
+
+.DS_Store
