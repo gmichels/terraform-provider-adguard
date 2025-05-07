@@ -6,7 +6,7 @@ go 1.24.2
 // replace github.com/gmichels/adguard-client-go => /path/to/adguard-client-go
 
 require (
-	github.com/gmichels/adguard-client-go v1.0.0
+	github.com/gmichels/adguard-client-go v1.0.1
 	github.com/hashicorp/terraform-plugin-docs v0.20.1
 	github.com/hashicorp/terraform-plugin-framework v1.14.1
 	github.com/hashicorp/terraform-plugin-framework-validators v0.17.0
@@ -21,6 +21,7 @@ require (
 	github.com/ProtonMail/go-crypto v1.1.3 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.7.1 // indirect
+	github.com/clarketm/json v1.17.1 // indirect
 	github.com/cloudflare/circl v1.5.0 // indirect
 	github.com/hashicorp/cli v1.1.6 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
