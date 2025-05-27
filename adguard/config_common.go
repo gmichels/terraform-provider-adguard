@@ -138,7 +138,7 @@ type dnsConfigModel struct {
 	UsePrivatePtrResolvers types.Bool   `tfsdk:"use_private_ptr_resolvers"`
 	ResolveClients         types.Bool   `tfsdk:"resolve_clients"`
 	LocalPtrUpstreams      types.Set    `tfsdk:"local_ptr_upstreams"`
-	UpstreamTimeout			 types.Int64  `tfsdk:"upstream_timeout"`
+	UpstreamTimeout        types.Int64  `tfsdk:"upstream_timeout"`
 	AllowedClients         types.Set    `tfsdk:"allowed_clients"`
 	DisallowedClients      types.Set    `tfsdk:"disallowed_clients"`
 	BlockedHosts           types.Set    `tfsdk:"blocked_hosts"`
@@ -172,7 +172,7 @@ func (o dnsConfigModel) attrTypes() map[string]attr.Type {
 		"use_private_ptr_resolvers":  types.BoolType,
 		"resolve_clients":            types.BoolType,
 		"local_ptr_upstreams":        types.SetType{ElemType: types.StringType},
-		"upstream_timeout":              types.Int64Type,
+		"upstream_timeout":           types.Int64Type,
 		"allowed_clients":            types.SetType{ElemType: types.StringType},
 		"disallowed_clients":         types.SetType{ElemType: types.StringType},
 		"blocked_hosts":              types.SetType{ElemType: types.StringType},
@@ -699,10 +699,14 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	}
 
 	// add to config model
-	o.BlockedServices, d = types.SetValueFrom(ctx, types.StringType, blockedServicesPauseSchedule.Ids)
-	diags.Append(d...)
-	if diags.HasError() {
-		return
+	if len(blockedServicesPauseSchedule.Ids) > 0 {
+		o.BlockedServices, d = types.SetValueFrom(ctx, types.StringType, blockedServicesPauseSchedule.Ids)
+		diags.Append(d...)
+		if diags.HasError() {
+			return
+		}
+	} else {
+		o.BlockedServices = types.SetNull(types.StringType)
 	}
 	o.BlockedServicesPauseSchedule, d = types.ObjectValueFrom(ctx, scheduleModel{}.attrTypes(), &stateBlockedServicesPauseScheduleConfig)
 	diags.Append(d...)
@@ -1221,6 +1225,8 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		if diags.HasError() {
 			return
 		}
+	} else {
+		blockedServices = make([]string, 0)
 	}
 	// unpack nested attributes from plan
 	var planBlockedServicesPauseScheduleConfig scheduleModel
