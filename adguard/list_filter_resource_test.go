@@ -16,12 +16,12 @@ func TestAccListFilterResource(t *testing.T) {
 				Config: providerConfig + `
 resource "adguard_list_filter" "test_blacklist" {
   name = "Test Blacklist Filter Resource"
-  url  = "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_3.txt"
+  url  = "/opt/adguardhome/work/data/userfilters/list_filter_3.txt"
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "name", "Test Blacklist Filter Resource"),
-					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "url", "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_3.txt"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "url", "/opt/adguardhome/work/data/userfilters/list_filter_3.txt"),
 					resource.TestCheckResourceAttrSet("adguard_list_filter.test_blacklist", "last_updated"),
 					resource.TestCheckResourceAttrSet("adguard_list_filter.test_blacklist", "id"),
 					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "rules_count", "5"),
@@ -40,12 +40,12 @@ resource "adguard_list_filter" "test_blacklist" {
 				Config: providerConfig + `
 resource "adguard_list_filter" "test_blacklist" {
   name = "Test Blacklist Filter Resource Updated"
-  url  = "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_4.txt"
+  url  = "/opt/adguardhome/work/data/userfilters/list_filter_4.txt"
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "name", "Test Blacklist Filter Resource Updated"),
-					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "url", "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_4.txt"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "url", "/opt/adguardhome/work/data/userfilters/list_filter_4.txt"),
 					resource.TestCheckResourceAttr("adguard_list_filter.test_blacklist", "rules_count", "8"),
 				),
 			},
@@ -57,13 +57,13 @@ resource "adguard_list_filter" "test_blacklist" {
 				Config: providerConfig + `
 resource "adguard_list_filter" "test_whitelist" {
   name      = "Test Whitelist Filter Resource"
-  url       = "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_5.txt"
+  url       = "/opt/adguardhome/work/data/userfilters/list_filter_5.txt"
   whitelist = true
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "name", "Test Whitelist Filter Resource"),
-					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "url", "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_5.txt"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "url", "/opt/adguardhome/work/data/userfilters/list_filter_5.txt"),
 					resource.TestCheckResourceAttrSet("adguard_list_filter.test_whitelist", "last_updated"),
 					resource.TestCheckResourceAttrSet("adguard_list_filter.test_whitelist", "id"),
 					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "rules_count", "9"),
@@ -82,14 +82,14 @@ resource "adguard_list_filter" "test_whitelist" {
 				Config: providerConfig + `
 resource "adguard_list_filter" "test_whitelist" {
   name      = "Test Whitelist Filter Resource Updated"
-  url       = "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_6.txt"
+  url       = "/opt/adguardhome/work/data/userfilters/list_filter_6.txt"
   enabled   = false
   whitelist = true
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "name", "Test Whitelist Filter Resource Updated"),
-					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "url", "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_6.txt"),
+					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "url", "/opt/adguardhome/work/data/userfilters/list_filter_6.txt"),
 					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "rules_count", "0"),
 					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "enabled", "false"),
 					resource.TestCheckResourceAttr("adguard_list_filter.test_whitelist", "whitelist", "true"),
