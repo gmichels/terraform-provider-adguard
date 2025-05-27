@@ -180,7 +180,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					setvalidator.SizeAtLeast(1),
 					// validation for provided values happens at ModifyPlan
 				},
-				Default: setdefault.StaticValue(types.SetValueMust(types.StringType, []attr.Value{})),
+				Default: setdefault.StaticValue(types.SetNull(types.StringType)),
 			},
 			"blocked_services_pause_schedule": scheduleResourceSchema(),
 			"dns": schema.SingleNestedAttribute{

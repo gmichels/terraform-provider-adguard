@@ -699,10 +699,14 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	}
 
 	// add to config model
-	o.BlockedServices, d = types.SetValueFrom(ctx, types.StringType, blockedServicesPauseSchedule.Ids)
-	diags.Append(d...)
-	if diags.HasError() {
-		return
+	if len(blockedServicesPauseSchedule.Ids) > 0 {
+		o.BlockedServices, d = types.SetValueFrom(ctx, types.StringType, blockedServicesPauseSchedule.Ids)
+		diags.Append(d...)
+		if diags.HasError() {
+			return
+		}
+	} else {
+		o.BlockedServices = types.SetNull(types.StringType)
 	}
 	o.BlockedServicesPauseSchedule, d = types.ObjectValueFrom(ctx, scheduleModel{}.attrTypes(), &stateBlockedServicesPauseScheduleConfig)
 	diags.Append(d...)
@@ -1215,10 +1219,14 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	// instantiate empty object for storing plan data
 	var blockedServices []string
 	// populate blocked services from plan
-	d = plan.BlockedServices.ElementsAs(ctx, &blockedServices, false)
-	diags.Append(d...)
-	if diags.HasError() {
-		return
+	if len(plan.BlockedServices.Elements()) > 0 {
+		d = plan.BlockedServices.ElementsAs(ctx, &blockedServices, false)
+		diags.Append(d...)
+		if diags.HasError() {
+			return
+		}
+	} else {
+		blockedServices = make([]string, 0)
 	}
 	// unpack nested attributes from plan
 	var planBlockedServicesPauseScheduleConfig scheduleModel
