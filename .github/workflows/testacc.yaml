@@ -10,6 +10,9 @@ on:
   # allow this workflow to be called from other workflows
   workflow_call:
 
+permissions:
+  contents: read
+
 env:
   GOPROXY: https://proxy.golang.org,direct
   DEBIAN_FRONTEND: noninteractive
