@@ -18,7 +18,7 @@ data "adguard_list_filter" "test_blacklist" {
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.adguard_list_filter.test_blacklist", "url", "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_1.txt"),
+					resource.TestCheckResourceAttr("data.adguard_list_filter.test_blacklist", "url", "/opt/adguardhome/work/data/userfilters/list_filter_1.txt"),
 					resource.TestCheckResourceAttr("data.adguard_list_filter.test_blacklist", "enabled", "true"),
 					resource.TestCheckResourceAttr("data.adguard_list_filter.test_blacklist", "whitelist", "false"),
 					resource.TestCheckResourceAttr("data.adguard_list_filter.test_blacklist", "rules_count", "13"),
@@ -33,7 +33,7 @@ data "adguard_list_filter" "test_whitelist" {
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.adguard_list_filter.test_whitelist", "url", "https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_2.txt"),
+					resource.TestCheckResourceAttr("data.adguard_list_filter.test_whitelist", "url", "/opt/adguardhome/work/data/userfilters/list_filter_2.txt"),
 					resource.TestCheckResourceAttr("data.adguard_list_filter.test_whitelist", "enabled", "false"),
 					resource.TestCheckResourceAttr("data.adguard_list_filter.test_whitelist", "whitelist", "true"),
 					resource.TestCheckResourceAttr("data.adguard_list_filter.test_whitelist", "rules_count", "0"),

@@ -103,7 +103,7 @@ statistics:
   enabled: true
 filters:
   - enabled: true
-    url: https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_1.txt
+    url: /opt/adguardhome/work/data/userfilters/list_filter_1.txt
     name: Test Blocklist Datasource
     id: 1
   - enabled: false
@@ -112,7 +112,7 @@ filters:
     id: 2
 whitelist_filters:
   - enabled: false
-    url: https://raw.githubusercontent.com/gmichels/terraform-provider-adguard/refs/heads/main/assets/list_filter_2.txt
+    url: /opt/adguardhome/work/data/userfilters/list_filter_2.txt
     name: Test Whitelist Datasource
     id: 3
 user_rules:
