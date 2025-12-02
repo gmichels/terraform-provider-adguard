@@ -354,6 +354,8 @@ Read-Only:
 
 Import is supported using the following syntax:
 
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # Config can be imported by specifying the ID as `1`
 # NOTE: there can only be 1 (one) `adguard_config` resource, hence the hardcoded ID
