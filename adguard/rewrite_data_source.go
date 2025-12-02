@@ -27,6 +27,7 @@ type rewriteDataModel struct {
 	ID     types.String `tfsdk:"id"`
 	Domain types.String `tfsdk:"domain"`
 	Answer types.String `tfsdk:"answer"`
+	Enabled types.Bool   `tfsdk:"enabled"`
 }
 
 // NewRewriteDataSource is a helper function to simplify the provider implementation
@@ -54,6 +55,10 @@ func (d *rewriteDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 			"answer": schema.StringAttribute{
 				Description: "Value of A, AAAA or CNAME DNS record",
 				Required:    true,
+			},
+			"enabled": schema.BoolAttribute{
+				Description: "Whether the rewrite rule is enabled",
+				Computed:    true,
 			},
 		},
 	}
@@ -100,6 +105,7 @@ func (d *rewriteDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	// map response body to model
 	state.Domain = types.StringValue(rewrite.Domain)
 	state.Answer = types.StringValue(rewrite.Answer)
+	state.Enabled = types.BoolValue(rewrite.Enabled)
 
 	// set ID placeholder for testing
 	state.ID = types.StringValue("placeholder")
