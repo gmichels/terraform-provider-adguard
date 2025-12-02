@@ -51,6 +51,8 @@ resource "adguard_list_filter" "test_whitelist" {
 
 Import is supported using the following syntax:
 
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # List filter can be imported by specifying the id
 terraform import adguard_list_filter.test "5"

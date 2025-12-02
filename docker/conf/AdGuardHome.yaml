@@ -32,8 +32,7 @@ dns:
     - 2620:fe::fe:10
   fallback_dns:
     - 9.9.9.10
-  all_servers: false
-  fastest_addr: false
+  upstream_mode: load_balance
   fastest_timeout: 1s
   allowed_clients: []
   disallowed_clients:
@@ -46,6 +45,7 @@ dns:
   trusted_proxies:
     - 127.0.0.0/8
     - ::1/128
+  cache_enabled: true
   cache_size: 4194304
   cache_ttl_min: 0
   cache_ttl_max: 0
@@ -70,6 +70,10 @@ dns:
   dns64_prefixes: []
   serve_http3: false
   use_http3_upstreams: false
+  serve_plain_dns: true
+  hostsfile_enabled: true
+  pending_requests:
+    enabled: true
 tls:
   enabled: true
   server_name: TestAdGuardHome
@@ -86,6 +90,7 @@ tls:
   private_key_path: /opt/adguardhome/ssl/server.key
   strict_sni_check: false
 querylog:
+  dir_path: ""
   ignored:
     - abc.com
     - example.com
@@ -95,6 +100,7 @@ querylog:
   enabled: true
   file_enabled: true
 statistics:
+  dir_path: ""
   ignored:
     - domain1.com
     - ignored.net
@@ -158,6 +164,7 @@ filtering:
     enabled: false
     bing: true
     duckduckgo: true
+    ecosia: true
     google: true
     pixabay: true
     yandex: true
@@ -168,6 +175,10 @@ filtering:
   rewrites:
     - domain: example.org
       answer: 1.2.3.4
+      enabled: true
+  safe_fs_patterns:
+    - /opt/adguardhome/work/data/userfilters/*
+    - /opt/adguardhome/work/data/userfilters/list_filter_1.txt
   safebrowsing_cache_size: 1048576
   safesearch_cache_size: 1048576
   parental_cache_size: 1048576
@@ -175,6 +186,7 @@ filtering:
   filters_update_interval: 24
   blocked_response_ttl: 10
   filtering_enabled: true
+  rewrites_enabled: true
   parental_enabled: false
   safebrowsing_enabled: false
   protection_enabled: true
@@ -190,6 +202,7 @@ clients:
         enabled: true
         bing: false
         duckduckgo: false
+        ecosia: false
         google: true
         pixabay: false
         yandex: false
@@ -223,6 +236,7 @@ clients:
       ignore_querylog: false
       ignore_statistics: true
 log:
+  enabled: true
   file: ""
   max_backups: 0
   max_size: 100
@@ -234,4 +248,4 @@ os:
   group: ""
   user: ""
   rlimit_nofile: 0
-schema_version: 27
+schema_version: 31
