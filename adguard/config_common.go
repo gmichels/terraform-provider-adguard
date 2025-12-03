@@ -32,6 +32,7 @@ type configCommonModel struct {
 	Dns                          types.Object `tfsdk:"dns"`
 	Dhcp                         types.Object `tfsdk:"dhcp"`
 	Tls                          types.Object `tfsdk:"tls"`
+	Rewrites                     types.Bool   `tfsdk:"rewrites"`
 }
 
 // nested attributes objects
@@ -1061,6 +1062,24 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 		return
 	}
 
+	// REWRITES
+	// get refreshed rewrite status from AdGuard Home
+	rewriteSettings, err := adg.RewriteSettings()
+	if err != nil {
+		diags.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "rewriteSettings",
+		"body":   strconv.FormatBool(rewriteSettings.Enabled),
+	})
+	// add to config model
+	o.Rewrites = types.BoolValue(rewriteSettings.Enabled)
+
 	// if we got here, all went fine
 }
 
@@ -1608,6 +1627,22 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	plan.Tls, d = types.ObjectValueFrom(ctx, tlsConfigModel{}.attrTypes(), &planTlsConfig)
 	diags.Append(d...)
 	if diags.HasError() {
+		return
+	}
+
+	// REWRITES
+	// instantiate empty object for storing plan data
+	var rewriteSettings adgmodels.RewriteSettings
+	// populate rewrite settings from plan
+	rewriteSettings.Enabled = plan.Rewrites.ValueBool()
+
+	// set rewrite settings using plan
+	err = r.adg.RewriteSettingsUpdate(rewriteSettings)
+	if err != nil {
+		diags.AddError(
+			"Unable to Update AdGuard Home Config",
+			err.Error(),
+		)
 		return
 	}
 

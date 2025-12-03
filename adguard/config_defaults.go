@@ -37,6 +37,7 @@ const CONFIG_TLS_PORT_HTTPS = 443
 const CONFIG_TLS_PORT_DNS_OVER_TLS = 853
 const CONFIG_TLS_PORT_DNS_OVER_QUIC = 853
 const CONFIG_TLS_SERVE_PLAIN_DNS = true
+const CONFIG_REWRITES_ENABLED = true
 
 var CONFIG_DNS_BOOTSTRAP = []string{"9.9.9.10", "149.112.112.10", "2620:fe::10", "2620:fe::fe:10"}
 var CONFIG_DNS_UPSTREAM = []string{"https://dns10.quad9.net/dns-query"}

@@ -20,6 +20,7 @@ data "adguard_rewrite" "test" {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.adguard_rewrite.test", "domain", "example.org"),
 					resource.TestCheckResourceAttr("data.adguard_rewrite.test", "answer", "1.2.3.4"),
+					resource.TestCheckResourceAttr("data.adguard_rewrite.test", "enabled", "true"),
 
 					// Verify placeholder id attribute
 					resource.TestCheckResourceAttr("data.adguard_rewrite.test", "id", "placeholder"),

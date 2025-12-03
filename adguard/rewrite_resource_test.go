@@ -21,6 +21,7 @@ resource "adguard_rewrite" "test" {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("adguard_rewrite.test", "domain", "example.com"),
 					resource.TestCheckResourceAttr("adguard_rewrite.test", "answer", "4.3.2.1"),
+					resource.TestCheckResourceAttr("adguard_rewrite.test", "enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_rewrite.test", "id", "example.com||4.3.2.1"),
 					// Verify dynamic values have any value set in the state.
 					resource.TestCheckResourceAttrSet("adguard_rewrite.test", "last_updated"),
@@ -39,13 +40,15 @@ resource "adguard_rewrite" "test" {
 			{
 				Config: providerConfig + `
 resource "adguard_rewrite" "test" {
-  domain = "example.com"
-  answer = "2400:cb00:2049:1::a29f:1804"
+  domain  = "example.com"
+  answer  = "2400:cb00:2049:1::a29f:1804"
+  enabled = false
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("adguard_rewrite.test", "domain", "example.com"),
 					resource.TestCheckResourceAttr("adguard_rewrite.test", "answer", "2400:cb00:2049:1::a29f:1804"),
+					resource.TestCheckResourceAttr("adguard_rewrite.test", "enabled", "false"),
 					resource.TestCheckResourceAttr("adguard_rewrite.test", "id", "example.com||2400:cb00:2049:1::a29f:1804"),
 				),
 			},

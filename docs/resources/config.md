@@ -102,6 +102,7 @@ resource "adguard_config" "test" {
 - `filtering` (Attributes) (see [below for nested schema](#nestedatt--filtering))
 - `parental_control` (Boolean) Whether Parental Control is enabled. Defaults to `false`
 - `querylog` (Attributes) (see [below for nested schema](#nestedatt--querylog))
+- `rewrites` (Boolean) Whether Rewrites are enabled. Defaults to `true`
 - `safebrowsing` (Boolean) Whether Safe Browsing is enabled. Defaults to `false`
 - `safesearch` (Attributes) (see [below for nested schema](#nestedatt--safesearch))
 - `stats` (Attributes) (see [below for nested schema](#nestedatt--stats))
