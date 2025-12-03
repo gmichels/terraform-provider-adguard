@@ -151,6 +151,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.server_name", "Test AdGuard Home"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.issuer", "CN=TestRootCA,O=AdGuard Home,L=Dallas,ST=Texas,C=US"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.serve_plain_dns", "false"),
+					resource.TestCheckResourceAttr("adguard_config.test", "rewrites", "true"),
 					// Verify dynamic values have any value set in the state.
 					resource.TestCheckResourceAttrSet("adguard_config.test", "id"),
 					resource.TestCheckResourceAttrSet("adguard_config.test", "last_updated"),
@@ -240,6 +241,7 @@ resource "adguard_config" "test" {
 		certificate_chain = "/opt/adguardhome/ssl/ca.crt"
 		private_key       = "/opt/adguardhome/ssl/ca.key"
 	}
+	rewrites = false
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -302,6 +304,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.server_name", "Test AdGuard Home Modified"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.serve_plain_dns", "true"),
+					resource.TestCheckResourceAttr("adguard_config.test", "rewrites", "false"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

@@ -1630,5 +1630,21 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 		return
 	}
 
+	// REWRITES
+	// instantiate empty object for storing plan data
+  var rewriteSettings adgmodels.RewriteSettings
+	// populate rewrite settings from plan
+	rewriteSettings.Enabled = plan.Rewrites.ValueBool()
+
+	// set rewrite settings using plan
+	err = r.adg.RewriteSettingsUpdate(rewriteSettings)
+	if err != nil {
+		diags.AddError(
+			"Unable to Update AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+
 	// if we got here, all went fine
 }

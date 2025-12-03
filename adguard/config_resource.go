@@ -736,6 +736,12 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					},
 				},
 			},
+						"rewrites": schema.BoolAttribute{
+				Description: fmt.Sprintf("Whether Rewrites are enabled. Defaults to `%t`", CONFIG_REWRITES_ENABLED),
+				Computed:    true,
+				Optional:    true,
+				Default:     booldefault.StaticBool(CONFIG_REWRITES_ENABLED),
+			},
 		},
 	}
 }
@@ -1126,6 +1132,17 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
+	// set rewrites to default
+	var rewriteSettings adgmodels.RewriteSettings
+	rewriteSettings.Enabled = CONFIG_REWRITES_ENABLED
+	err = r.adg.RewriteSettingsUpdate(rewriteSettings)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Deleting AdGuard Home Config",
+			"Could not delete config, unexpected error: "+err.Error(),
+		)
+		return
+	}	
 }
 
 func (r *configResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
