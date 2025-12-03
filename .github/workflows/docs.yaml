@@ -24,7 +24,9 @@ jobs:
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
-      - name: Format and generate docs
+      - name: Format Go code
+        run: go fmt ./...
+      - name: Generate docs
         run: go generate ./...
       - name: Check for changes
         id: check_changes
