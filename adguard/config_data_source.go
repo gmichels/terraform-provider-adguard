@@ -426,7 +426,7 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 				},
 			},
 			"rewrites": schema.BoolAttribute{
-				Description: "Whether DNS rewrites are enabled",
+				Description: "Whether Rewrites are enabled",
 				Computed:    true,
 			},
 		},
