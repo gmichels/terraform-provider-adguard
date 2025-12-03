@@ -427,7 +427,7 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 			},
 			"rewrites": schema.BoolAttribute{
 				Description: "Whether Rewrites are enabled",
-						  Computed:    true,
+				Computed:    true,
 			},
 		},
 	}
