@@ -28,6 +28,10 @@ resource "adguard_rewrite" "test" {
 - `answer` (String) Value of A, AAAA or CNAME DNS record
 - `domain` (String) Domain name
 
+### Optional
+
+- `enabled` (Boolean) Whether the rewrite rule is enabled. Defaults to `true`
+
 ### Read-Only
 
 - `id` (String) Internal identifier for this rewrite

@@ -30,4 +30,5 @@ data "adguard_rewrite" "test" {
 
 ### Read-Only
 
+- `enabled` (Boolean) Whether the rewrite rule is enabled
 - `id` (String) Identifier attribute
