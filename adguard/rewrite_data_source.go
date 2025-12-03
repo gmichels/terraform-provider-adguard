@@ -24,9 +24,9 @@ type rewriteDataSource struct {
 
 // rewriteDataModel maps rewrite schema data
 type rewriteDataModel struct {
-	ID     types.String `tfsdk:"id"`
-	Domain types.String `tfsdk:"domain"`
-	Answer types.String `tfsdk:"answer"`
+	ID      types.String `tfsdk:"id"`
+	Domain  types.String `tfsdk:"domain"`
+	Answer  types.String `tfsdk:"answer"`
 	Enabled types.Bool   `tfsdk:"enabled"`
 }
 

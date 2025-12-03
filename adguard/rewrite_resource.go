@@ -40,7 +40,7 @@ type rewriteResourceModel struct {
 	LastUpdated types.String `tfsdk:"last_updated"`
 	Domain      types.String `tfsdk:"domain"`
 	Answer      types.String `tfsdk:"answer"`
-	Enabled types.Bool `tfsdk:"enabled"`
+	Enabled     types.Bool   `tfsdk:"enabled"`
 }
 
 // NewRewriteResource is a helper function to simplify the provider implementation
@@ -92,7 +92,7 @@ func (r *rewriteResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description: fmt.Sprintf("Whether the rewrite rule is enabled. Defaults to `%t`", REWRITE_ENABLED),
 				Computed:    true,
 				Optional:    true,
-				Default: booldefault.StaticBool(REWRITE_ENABLED),
+				Default:     booldefault.StaticBool(REWRITE_ENABLED),
 			},
 		},
 	}

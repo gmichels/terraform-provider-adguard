@@ -736,7 +736,7 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					},
 				},
 			},
-						"rewrites": schema.BoolAttribute{
+			"rewrites": schema.BoolAttribute{
 				Description: fmt.Sprintf("Whether Rewrites are enabled. Defaults to `%t`", CONFIG_REWRITES_ENABLED),
 				Computed:    true,
 				Optional:    true,
@@ -1142,7 +1142,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 			"Could not delete config, unexpected error: "+err.Error(),
 		)
 		return
-	}	
+	}
 }
 
 func (r *configResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

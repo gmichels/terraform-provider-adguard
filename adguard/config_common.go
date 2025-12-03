@@ -32,7 +32,7 @@ type configCommonModel struct {
 	Dns                          types.Object `tfsdk:"dns"`
 	Dhcp                         types.Object `tfsdk:"dhcp"`
 	Tls                          types.Object `tfsdk:"tls"`
-	Rewrites              types.Bool   `tfsdk:"rewrites"`
+	Rewrites                     types.Bool   `tfsdk:"rewrites"`
 }
 
 // nested attributes objects
@@ -1632,7 +1632,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 
 	// REWRITES
 	// instantiate empty object for storing plan data
-  var rewriteSettings adgmodels.RewriteSettings
+	var rewriteSettings adgmodels.RewriteSettings
 	// populate rewrite settings from plan
 	rewriteSettings.Enabled = plan.Rewrites.ValueBool()
 
