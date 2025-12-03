@@ -32,6 +32,7 @@ type configCommonModel struct {
 	Dns                          types.Object `tfsdk:"dns"`
 	Dhcp                         types.Object `tfsdk:"dhcp"`
 	Tls                          types.Object `tfsdk:"tls"`
+	Rewrites              types.Bool   `tfsdk:"rewrites"`
 }
 
 // nested attributes objects
@@ -1060,6 +1061,24 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	if diags.HasError() {
 		return
 	}
+
+	// REWRITES
+	// get refreshed rewrite status from AdGuard Home
+	rewriteSettings, err := adg.RewriteSettings()
+	if err != nil {
+		diags.AddError(
+			"Unable to Read AdGuard Home Config",
+			err.Error(),
+		)
+		return
+	}
+	// log response body
+	tflog.Debug(ctx, "ADG API response", map[string]interface{}{
+		"object": "rewriteSettings",
+		"body":   strconv.FormatBool(rewriteSettings.Enabled),
+	})
+	// add to config model
+	o.Rewrites = types.BoolValue(rewriteSettings.Enabled)
 
 	// if we got here, all went fine
 }
