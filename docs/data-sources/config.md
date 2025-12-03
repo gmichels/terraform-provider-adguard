@@ -31,7 +31,7 @@ data "adguard_config" "test" {}
 - `last_updated` (String) Timestamp of the last Terraform refresh
 - `parental_control` (Boolean) Whether Parental Control is enabled
 - `querylog` (Attributes) (see [below for nested schema](#nestedatt--querylog))
-- `rewrites` (Boolean) Whether DNS rewrites are enabled
+- `rewrites` (Boolean) Whether Rewrites are enabled
 - `safebrowsing` (Boolean) Whether Safe Browsing is enabled
 - `safesearch` (Attributes) (see [below for nested schema](#nestedatt--safesearch))
 - `stats` (Attributes) (see [below for nested schema](#nestedatt--stats))
