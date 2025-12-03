@@ -3,6 +3,7 @@ package adguard
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -38,6 +40,7 @@ type rewriteResourceModel struct {
 	LastUpdated types.String `tfsdk:"last_updated"`
 	Domain      types.String `tfsdk:"domain"`
 	Answer      types.String `tfsdk:"answer"`
+	Enabled types.Bool `tfsdk:"enabled"`
 }
 
 // NewRewriteResource is a helper function to simplify the provider implementation
@@ -85,6 +88,12 @@ func (r *rewriteResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 					),
 				},
 			},
+			"enabled": schema.BoolAttribute{
+				Description: fmt.Sprintf("Whether the rewrite rule is enabled. Defaults to `%t`", REWRITE_ENABLED),
+				Computed:    true,
+				Optional:    true,
+				Default: booldefault.StaticBool(REWRITE_ENABLED),
+			},
 		},
 	}
 }
@@ -114,6 +123,7 @@ func (r *rewriteResource) Create(ctx context.Context, req resource.CreateRequest
 	// populate DNS rewrite rule from plan
 	rewrite.Domain = plan.Domain.ValueString()
 	rewrite.Answer = plan.Answer.ValueString()
+	rewrite.Enabled = plan.Enabled.ValueBool()
 
 	// create new DNS rewrite rule using plan
 	err := r.adg.RewriteAdd(rewrite)
@@ -194,6 +204,7 @@ func (r *rewriteResource) Read(ctx context.Context, req resource.ReadRequest, re
 	// overwrite DNS rewrite rule with refreshed state
 	state.Domain = types.StringValue(rewrite.Domain)
 	state.Answer = types.StringValue(rewrite.Answer)
+	state.Enabled = types.BoolValue(rewrite.Enabled)
 
 	// set refreshed state
 	diags = resp.State.Set(ctx, &state)
@@ -225,10 +236,12 @@ func (r *rewriteResource) Update(ctx context.Context, req resource.UpdateRequest
 	var updateRewriteTarget adgmodels.RewriteEntry
 	updateRewriteTarget.Domain = state.Domain.ValueString()
 	updateRewriteTarget.Answer = state.Answer.ValueString()
+	updateRewriteTarget.Enabled = state.Enabled.ValueBool()
 
 	var updateRewriteUpdate adgmodels.RewriteEntry
 	updateRewriteUpdate.Domain = plan.Domain.ValueString()
 	updateRewriteUpdate.Answer = plan.Answer.ValueString()
+	updateRewriteUpdate.Enabled = plan.Enabled.ValueBool()
 
 	var updateRewrite adgmodels.RewriteUpdate
 	updateRewrite.Target = updateRewriteTarget
