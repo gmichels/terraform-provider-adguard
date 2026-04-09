@@ -50,6 +50,8 @@ dns:
   cache_ttl_min: 0
   cache_ttl_max: 0
   cache_optimistic: false
+  cache_optimistic_answer_ttl: 30s
+  cache_optimistic_max_age: 12h
   bogus_nxdomain: []
   aaaa_disabled: false
   enable_dnssec: false
@@ -98,6 +100,7 @@ querylog:
   interval: 4h
   size_memory: 1000
   enabled: true
+  ignored_enabled: true
   file_enabled: true
 statistics:
   dir_path: ""
@@ -107,6 +110,7 @@ statistics:
     - test3.zyx
   interval: 8h
   enabled: true
+  ignored_enabled: true
 filters:
   - enabled: true
     url: /opt/adguardhome/work/data/userfilters/list_filter_1.txt
@@ -248,4 +252,4 @@ os:
   group: ""
   user: ""
   rlimit_nofile: 0
-schema_version: 31
+schema_version: 33
