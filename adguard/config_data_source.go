@@ -85,6 +85,10 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 						ElementType: types.StringType,
 						Computed:    true,
 					},
+					"ignored_enabled": schema.BoolAttribute{
+						Description: "If `true`, the host names in the `ignored` array are excluded from the query log.",
+						Computed:    true,
+					},
 				},
 			},
 			"stats": schema.SingleNestedAttribute{
@@ -101,6 +105,10 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 					"ignored": schema.SetAttribute{
 						Description: "Set of host names which should not be counted in the server statistics",
 						ElementType: types.StringType,
+						Computed:    true,
+					},
+					"ignored_enabled": schema.BoolAttribute{
+						Description: "If `true`, the host names in the `ignored` array are excluded from the statistics",
 						Computed:    true,
 					},
 				},

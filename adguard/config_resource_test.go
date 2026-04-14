@@ -29,9 +29,9 @@ resource "adguard_config" "test" {
 		ignored             = ["test2.com", "example2.com"]
 	}
 	stats = {
-		enabled  = false
-		interval = 2
-		ignored  = ["test3.net", "example4.com"]
+		enabled         = false
+		interval        = 2
+		ignored         = ["test3.net", "example4.com"]
 	}
 	blocked_services = ["youtube", "pinterest"]
 	blocked_services_pause_schedule = {
@@ -105,11 +105,13 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.ignored.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.ignored.0", "example2.com"),
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.ignored.1", "test2.com"),
+					resource.TestCheckResourceAttr("adguard_config.test", "querylog.ignored_enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.enabled", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.interval", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.0", "example4.com"),
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.1", "test3.net"),
+					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored_enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "blocked_services.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "blocked_services.0", "pinterest"),
 					resource.TestCheckResourceAttr("adguard_config.test", "blocked_services_pause_schedule.time_zone", "America/Chicago"),
@@ -180,10 +182,13 @@ resource "adguard_config" "test" {
 		update_interval = 72
 	}
 	querylog = {
-		ignored = ["test2.com", "example2.com", "abc2.com"]
+		ignored         = ["test2.com", "example2.com", "abc2.com"]
+		ignored_enabled = false
 	}
 	stats = {
-		ignored = ["test9.com", "example15.com", "abc5.com"]
+		ignored         = ["test9.com", "example15.com", "abc5.com"]
+		ignored_enabled = false
+
 	}
 	dns = {
 		upstream_dns              = ["https://1.1.1.1/dns-query"]
@@ -259,12 +264,14 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.ignored.0", "abc2.com"),
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.ignored.1", "example2.com"),
 					resource.TestCheckResourceAttr("adguard_config.test", "querylog.ignored.2", "test2.com"),
+					resource.TestCheckResourceAttr("adguard_config.test", "querylog.ignored_enabled", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.interval", "24"),
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.#", "3"),
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.0", "abc5.com"),
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.1", "example15.com"),
 					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored.2", "test9.com"),
+					resource.TestCheckResourceAttr("adguard_config.test", "stats.ignored_enabled", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "blocked_services.#", "0"),
 					resource.TestCheckNoResourceAttr("adguard_config.test", "blocked_services_pause_schedule.time_zone"),
 					resource.TestCheckNoResourceAttr("adguard_config.test", "blocked_services_pause_schedule.sun.start"),

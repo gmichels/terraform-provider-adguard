@@ -65,6 +65,7 @@ type queryLogConfigModel struct {
 	Interval          types.Int64 `tfsdk:"interval"`
 	AnonymizeClientIp types.Bool  `tfsdk:"anonymize_client_ip"`
 	Ignored           types.Set   `tfsdk:"ignored"`
+	IgnoredEnabled    types.Bool  `tfsdk:"ignored_enabled"`
 }
 
 // attrTypes - return attribute types for this model
@@ -74,6 +75,7 @@ func (o queryLogConfigModel) attrTypes() map[string]attr.Type {
 		"interval":            types.Int64Type,
 		"anonymize_client_ip": types.BoolType,
 		"ignored":             types.SetType{ElemType: types.StringType},
+		"ignored_enabled":     types.BoolType,
 	}
 }
 
@@ -84,31 +86,35 @@ func (o queryLogConfigModel) defaultObject() map[string]attr.Value {
 		"interval":            types.Int64Value(int64(CONFIG_QUERYLOG_INTERVAL)),
 		"anonymize_client_ip": types.BoolValue(CONFIG_QUERYLOG_ANONYMIZE_CLIENT_IP),
 		"ignored":             types.SetValueMust(types.StringType, []attr.Value{}),
+		"ignored_enabled":     types.BoolValue(CONFIG_QUERYLOG_IGNORED_ENABLED),
 	}
 }
 
 // statsConfigModel maps stats configuration schema data
 type statsConfigModel struct {
-	Enabled  types.Bool  `tfsdk:"enabled"`
-	Interval types.Int64 `tfsdk:"interval"`
-	Ignored  types.Set   `tfsdk:"ignored"`
+	Enabled        types.Bool  `tfsdk:"enabled"`
+	Interval       types.Int64 `tfsdk:"interval"`
+	Ignored        types.Set   `tfsdk:"ignored"`
+	IgnoredEnabled types.Bool  `tfsdk:"ignored_enabled"`
 }
 
 // attrTypes - return attribute types for this model
 func (o statsConfigModel) attrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"enabled":  types.BoolType,
-		"interval": types.Int64Type,
-		"ignored":  types.SetType{ElemType: types.StringType},
+		"enabled":         types.BoolType,
+		"interval":        types.Int64Type,
+		"ignored":         types.SetType{ElemType: types.StringType},
+		"ignored_enabled": types.BoolType,
 	}
 }
 
 // defaultObject - return default object for this model
 func (o statsConfigModel) defaultObject() map[string]attr.Value {
 	return map[string]attr.Value{
-		"enabled":  types.BoolValue(CONFIG_STATS_ENABLED),
-		"interval": types.Int64Value(CONFIG_STATS_INTERVAL),
-		"ignored":  types.SetValueMust(types.StringType, []attr.Value{}),
+		"enabled":         types.BoolValue(CONFIG_STATS_ENABLED),
+		"interval":        types.Int64Value(CONFIG_STATS_INTERVAL),
+		"ignored":         types.SetValueMust(types.StringType, []attr.Value{}),
+		"ignored_enabled": types.BoolValue(CONFIG_STATS_IGNORED_ENABLED),
 	}
 }
 
@@ -594,6 +600,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	} else {
 		stateQueryLogConfig.Ignored = types.SetValueMust(types.StringType, []attr.Value{})
 	}
+	stateQueryLogConfig.IgnoredEnabled = types.BoolValue(queryLogConfig.IgnoredEnabled)
 	// add to config model
 	o.QueryLog, d = types.ObjectValueFrom(ctx, queryLogConfigModel{}.attrTypes(), &stateQueryLogConfig)
 	diags.Append(d...)
@@ -637,6 +644,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	} else {
 		stateStatsConfig.Ignored = types.SetValueMust(types.StringType, []attr.Value{})
 	}
+	stateStatsConfig.IgnoredEnabled = types.BoolValue(statsConfig.IgnoredEnabled)
 	// add to config model
 	o.Stats, d = types.ObjectValueFrom(ctx, statsConfigModel{}.attrTypes(), &stateStatsConfig)
 	diags.Append(d...)
@@ -1199,6 +1207,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	if diags.HasError() {
 		return
 	}
+	queryLogConfig.IgnoredEnabled = planQueryLogConfig.IgnoredEnabled.ValueBool()
 
 	// set query log config using plan
 	err = r.adg.QuerylogConfigUpdate(queryLogConfig)
@@ -1228,6 +1237,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	if diags.HasError() {
 		return
 	}
+	statsConfig.IgnoredEnabled = planStatsConfig.IgnoredEnabled.ValueBool()
 	// set stats config using plan
 	err = r.adg.StatsConfigUpdate(statsConfig)
 	if err != nil {
