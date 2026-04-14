@@ -132,6 +132,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.edns_cs_enabled", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.edns_cs_use_custom", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.edns_cs_custom_ip", ""),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_ttl_min", "600"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_ttl_max", "86400"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_optimistic", "true"),
@@ -197,6 +198,7 @@ resource "adguard_config" "test" {
 		edns_cs_custom_ip         = "2607:f0d0:1002:51::4"
 		disable_ipv6              = true
 		dnssec_enabled            = true
+		cache_enabled             = false
 		cache_size                = 8000000
 		upstream_mode             = "load_balance"
 		use_private_ptr_resolvers = false
@@ -285,6 +287,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.edns_cs_custom_ip", "2607:f0d0:1002:51::4"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.disable_ipv6", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.dnssec_enabled", "true"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_enabled", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.cache_size", "8000000"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.upstream_mode", "load_balance"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.use_private_ptr_resolvers", "false"),

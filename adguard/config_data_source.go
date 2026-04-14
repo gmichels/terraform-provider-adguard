@@ -186,6 +186,10 @@ func (d *configDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 						Description: "Whether outgoing DNSSEC is enabled",
 						Computed:    true,
 					},
+					"cache_enabled": schema.BoolAttribute{
+						Description: "Whether the DNS response cache is enabled",
+						Computed:    true,
+					},
 					"cache_size": schema.Int64Attribute{
 						Description: "DNS cache size (in bytes)",
 						Computed:    true,
