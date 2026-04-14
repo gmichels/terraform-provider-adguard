@@ -138,6 +138,12 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						},
 						Default: setdefault.StaticValue(types.SetValueMust(types.StringType, []attr.Value{})),
 					},
+					"ignored_enabled": schema.BoolAttribute{
+						Description: fmt.Sprintf("If `true`, the host names in the `ignored` array are excluded from the query log. Defaults to `%t`", CONFIG_QUERYLOG_IGNORED_ENABLED),
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(CONFIG_QUERYLOG_IGNORED_ENABLED),
+					},
 				},
 			},
 			"stats": schema.SingleNestedAttribute{
@@ -168,6 +174,12 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 							setvalidator.SizeAtLeast(1),
 						},
 						Default: setdefault.StaticValue(types.SetValueMust(types.StringType, []attr.Value{})),
+					},
+					"ignored_enabled": schema.BoolAttribute{
+						Description: fmt.Sprintf("If `true`, the host names in the `ignored` array are excluded from the statistics. Defaults to `%t`", CONFIG_STATS_IGNORED_ENABLED),
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(CONFIG_STATS_IGNORED_ENABLED),
 					},
 				},
 			},
