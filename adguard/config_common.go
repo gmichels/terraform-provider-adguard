@@ -131,6 +131,7 @@ type dnsConfigModel struct {
 	EDnsCsCustomIp         types.String `tfsdk:"edns_cs_custom_ip"`
 	DisableIpv6            types.Bool   `tfsdk:"disable_ipv6"`
 	DnsSecEnabled          types.Bool   `tfsdk:"dnssec_enabled"`
+	CacheEnabled           types.Bool   `tfsdk:"cache_enabled"`
 	CacheSize              types.Int64  `tfsdk:"cache_size"`
 	CacheTtlMin            types.Int64  `tfsdk:"cache_ttl_min"`
 	CacheTtlMax            types.Int64  `tfsdk:"cache_ttl_max"`
@@ -165,6 +166,7 @@ func (o dnsConfigModel) attrTypes() map[string]attr.Type {
 		"edns_cs_custom_ip":          types.StringType,
 		"disable_ipv6":               types.BoolType,
 		"dnssec_enabled":             types.BoolType,
+		"cache_enabled":              types.BoolType,
 		"cache_size":                 types.Int64Type,
 		"cache_ttl_min":              types.Int64Type,
 		"cache_ttl_max":              types.Int64Type,
@@ -204,6 +206,7 @@ func (o dnsConfigModel) defaultObject() map[string]attr.Value {
 		"edns_cs_custom_ip":          types.StringValue(""),
 		"disable_ipv6":               types.BoolValue(CONFIG_DNS_DISABLE_IPV6),
 		"dnssec_enabled":             types.BoolValue(CONFIG_DNS_DNSSEC_ENABLED),
+		"cache_enabled":              types.BoolValue(CONFIG_DNS_CACHE_ENABLED),
 		"cache_size":                 types.Int64Value(CONFIG_DNS_CACHE_SIZE),
 		"cache_ttl_min":              types.Int64Value(CONFIG_DNS_CACHE_TTL_MIN),
 		"cache_ttl_max":              types.Int64Value(CONFIG_DNS_CACHE_TTL_MAX),
@@ -794,6 +797,7 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	}
 	stateDnsConfig.DisableIpv6 = types.BoolValue(dnsConfig.DisableIpv6)
 	stateDnsConfig.DnsSecEnabled = types.BoolValue(dnsConfig.DnsSecEnabled)
+	stateDnsConfig.CacheEnabled = types.BoolValue(dnsConfig.CacheEnabled)
 	stateDnsConfig.CacheSize = types.Int64Value(int64(dnsConfig.CacheSize))
 	stateDnsConfig.CacheTtlMin = types.Int64Value(int64(dnsConfig.CacheTtlMin))
 	stateDnsConfig.CacheTtlMax = types.Int64Value(int64(dnsConfig.CacheTtlMax))
@@ -1330,6 +1334,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	dnsConfig.EDnsCsCustomIp = planDnsConfig.EDnsCsCustomIp.ValueString()
 	dnsConfig.DisableIpv6 = planDnsConfig.DisableIpv6.ValueBool()
 	dnsConfig.DnsSecEnabled = planDnsConfig.DnsSecEnabled.ValueBool()
+	dnsConfig.CacheEnabled = planDnsConfig.CacheEnabled.ValueBool()
 	dnsConfig.CacheSize = uint(planDnsConfig.CacheSize.ValueInt64())
 	dnsConfig.CacheTtlMin = uint(planDnsConfig.CacheTtlMin.ValueInt64())
 	dnsConfig.CacheTtlMax = uint(planDnsConfig.CacheTtlMax.ValueInt64())

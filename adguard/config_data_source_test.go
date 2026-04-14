@@ -58,6 +58,7 @@ func TestAccConfigDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.edns_cs_custom_ip", ""),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.disable_ipv6", "false"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.dnssec_enabled", "false"),
+					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.cache_enabled", "true"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.cache_size", "4194304"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.cache_ttl_min", "0"),
 					resource.TestCheckResourceAttr("data.adguard_config.test", "dns.cache_ttl_max", "0"),

@@ -255,6 +255,7 @@ Optional:
 - `blocking_ipv6` (String) When `blocking_mode` is set to `custom_ip`, the IPv6 address to be returned for a blocked A request
 - `blocking_mode` (String) DNS response sent when request is blocked. Valid values are `default` (the default), `refused`, `nxdomain`, `null_ip` or `custom_ip`
 - `bootstrap_dns` (List of String) Booststrap DNS servers. Defaults to the ones supplied by the default AdGuard Home configuration
+- `cache_enabled` (Boolean) Whether the DNS response cache is enabled. Defaults to `true`
 - `cache_optimistic` (Boolean) Whether optimistic DNS caching is enabled. Defaults to `false`
 - `cache_size` (Number) DNS cache size (in bytes). Defaults to `4194304`
 - `cache_ttl_max` (Number) Overridden maximum TTL (in seconds) received from upstream DNS servers. Defaults to `0`

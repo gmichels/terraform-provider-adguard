@@ -353,6 +353,12 @@ func (r *configResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Optional:    true,
 						Default:     booldefault.StaticBool(CONFIG_DNS_DNSSEC_ENABLED),
 					},
+					"cache_enabled": schema.BoolAttribute{
+						Description: fmt.Sprintf("Whether the DNS response cache is enabled. Defaults to `%t`", CONFIG_DNS_CACHE_ENABLED),
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(CONFIG_DNS_CACHE_ENABLED),
+					},
 					"cache_size": schema.Int64Attribute{
 						Description: fmt.Sprintf("DNS cache size (in bytes). Defaults to `%d`", CONFIG_DNS_CACHE_SIZE),
 						Computed:    true,
@@ -1047,6 +1053,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	dnsConfig.EDnsCsCustomIp = ""
 	dnsConfig.DisableIpv6 = CONFIG_DNS_DISABLE_IPV6
 	dnsConfig.DnsSecEnabled = CONFIG_DNS_DNSSEC_ENABLED
+	dnsConfig.CacheEnabled = CONFIG_DNS_CACHE_ENABLED
 	dnsConfig.CacheSize = CONFIG_DNS_CACHE_SIZE
 	dnsConfig.CacheTtlMin = CONFIG_DNS_CACHE_TTL_MIN
 	dnsConfig.CacheTtlMax = CONFIG_DNS_CACHE_TTL_MAX
