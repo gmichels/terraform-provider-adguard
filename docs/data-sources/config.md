@@ -182,6 +182,7 @@ Read-Only:
 - `blocking_ipv6` (String) When `blocking_mode` is set to `custom_ip`, the IPv6 address to be returned for a blocked A request
 - `blocking_mode` (String) DNS response sent when request is blocked
 - `bootstrap_dns` (List of String) Booststrap DNS servers
+- `cache_enabled` (Boolean) Whether the DNS response cache is enabled
 - `cache_optimistic` (Boolean) Whether optimistic DNS caching is enabled
 - `cache_size` (Number) DNS cache size (in bytes)
 - `cache_ttl_max` (Number) Overridden maximum TTL received from upstream DNS servers
