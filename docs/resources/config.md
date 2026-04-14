@@ -297,6 +297,7 @@ Optional:
 - `anonymize_client_ip` (Boolean) Whether anonymizing clients' IP addresses is enabled. Defaults to `false`
 - `enabled` (Boolean) Whether the query log is enabled. Defaults to `true`
 - `ignored` (Set of String) Set of host names which should not be written to log
+- `ignored_enabled` (Boolean) If `true`, the host names in the `ignored` array are excluded from the query log. Defaults to `true`
 - `interval` (Number) Time period for query log rotation, in hours. Defaults to `2160` (90 days)
 
 
@@ -316,6 +317,7 @@ Optional:
 
 - `enabled` (Boolean) Whether server statistics are enabled. Defaults to `true`
 - `ignored` (Set of String) Set of host names which should not be counted in the server statistics
+- `ignored_enabled` (Boolean) If `true`, the host names in the `ignored` array are excluded from the statistics. Defaults to `true`
 - `interval` (Number) Time period for server statistics rotation, in hours. Defaults to `24` (1 day)
 
 

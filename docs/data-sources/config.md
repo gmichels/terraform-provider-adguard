@@ -224,6 +224,7 @@ Read-Only:
 - `anonymize_client_ip` (Boolean) Whether anonymizing clients' IP addresses is enabled
 - `enabled` (Boolean) Whether the query log is enabled
 - `ignored` (Set of String) Set of host names which should not be written to log
+- `ignored_enabled` (Boolean) If `true`, the host names in the `ignored` array are excluded from the query log.
 - `interval` (Number) Time period for query log rotation, in hours
 
 
@@ -243,6 +244,7 @@ Read-Only:
 
 - `enabled` (Boolean) Whether server statistics enabled
 - `ignored` (Set of String) Set of host names which should not be counted in the server statistics
+- `ignored_enabled` (Boolean) If `true`, the host names in the `ignored` array are excluded from the statistics
 - `interval` (Number) Time period for the server statistics rotation, in hours
 
 
