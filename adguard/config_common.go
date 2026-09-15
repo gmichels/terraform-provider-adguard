@@ -447,6 +447,38 @@ func (o tlsConfigModel) defaultObject() map[string]attr.Value {
 	}
 }
 
+// setComputedStatusFields normalizes the computed TLS status fields (not_before,
+// not_after, dns_names) from an upstream TlsConfig response, so that the
+// representation of "no certificate configured" is identical regardless of
+// which code path (Read vs Create/Update) produced it. This avoids
+// "Provider produced inconsistent result after apply" errors.
+func (o *tlsConfigModel) setComputedStatusFields(ctx context.Context, tlsConfig adgmodels.TlsConfig) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	// handle default (zero-value) timestamp from upstream
+	if tlsConfig.NotBefore != "0001-01-01T00:00:00Z" {
+		o.NotBefore = types.StringValue(tlsConfig.NotBefore)
+	} else {
+		o.NotBefore = types.StringValue("")
+	}
+	if tlsConfig.NotAfter != "0001-01-01T00:00:00Z" {
+		o.NotAfter = types.StringValue(tlsConfig.NotAfter)
+	} else {
+		o.NotAfter = types.StringValue("")
+	}
+
+	// always produce an empty (non-null) list when there are no DNS names
+	if len(tlsConfig.DnsNames) > 0 {
+		var d diag.Diagnostics
+		o.DnsNames, d = types.ListValueFrom(ctx, types.StringType, tlsConfig.DnsNames)
+		diags.Append(d...)
+	} else {
+		o.DnsNames = types.ListValueMust(types.StringType, []attr.Value{})
+	}
+
+	return diags
+}
+
 // common `Read` function for both data source and resource
 func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState *configCommonModel, diags *diag.Diagnostics, rtype string) {
 	// initialize empty diags variable
@@ -1040,26 +1072,10 @@ func (o *configCommonModel) Read(ctx context.Context, adg adguard.ADG, currState
 	stateTlsConfig.ValidChain = types.BoolValue(tlsConfig.ValidChain)
 	stateTlsConfig.Subject = types.StringValue(tlsConfig.Subject)
 	stateTlsConfig.Issuer = types.StringValue(tlsConfig.Issuer)
-	// handle default timestamp from upstream
-	if tlsConfig.NotBefore != "0001-01-01T00:00:00Z" {
-		stateTlsConfig.NotBefore = types.StringValue(tlsConfig.NotBefore)
-	} else {
-		stateTlsConfig.NotBefore = types.StringValue("")
-	}
-	// handle default timestamp from upstream
-	if tlsConfig.NotAfter != "0001-01-01T00:00:00Z" {
-		stateTlsConfig.NotAfter = types.StringValue(tlsConfig.NotAfter)
-	} else {
-		stateTlsConfig.NotAfter = types.StringValue("")
-	}
-	if len(tlsConfig.DnsNames) > 0 {
-		stateTlsConfig.DnsNames, d = types.ListValueFrom(ctx, types.StringType, tlsConfig.DnsNames)
-		diags.Append(d...)
-		if diags.HasError() {
-			return
-		}
-	} else {
-		stateTlsConfig.DnsNames = types.ListValueMust(types.StringType, []attr.Value{})
+	d = stateTlsConfig.setComputedStatusFields(ctx, *tlsConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
 	}
 	stateTlsConfig.ValidKey = types.BoolValue(tlsConfig.ValidKey)
 	stateTlsConfig.KeyType = types.StringValue(tlsConfig.KeyType)
@@ -1629,9 +1645,7 @@ func (r *configResource) CreateOrUpdate(ctx context.Context, plan *configCommonM
 	planTlsConfig.KeyType = types.StringValue(tlsConfigResponse.KeyType)
 	planTlsConfig.Subject = types.StringValue(tlsConfigResponse.Subject)
 	planTlsConfig.Issuer = types.StringValue(tlsConfigResponse.Issuer)
-	planTlsConfig.NotBefore = types.StringValue(tlsConfigResponse.NotBefore)
-	planTlsConfig.NotAfter = types.StringValue(tlsConfigResponse.NotAfter)
-	planTlsConfig.DnsNames, d = types.ListValueFrom(ctx, types.StringType, tlsConfig.DnsNames)
+	d = planTlsConfig.setComputedStatusFields(ctx, *tlsConfigResponse)
 	diags.Append(d...)
 	if diags.HasError() {
 		return
