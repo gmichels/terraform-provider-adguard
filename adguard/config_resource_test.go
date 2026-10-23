@@ -60,28 +60,6 @@ resource "adguard_config" "test" {
 		local_ptr_upstreams        = ["192.168.0.1", "192.168.0.2"]
 		allowed_clients            = ["allowed-client", "192.168.200.200"]
 	}
-	dhcp = {
-		interface = "eth1"
-		ipv4_settings = {
-			gateway_ip     = "192.168.250.1"
-			subnet_mask    = "255.255.255.0"
-			range_start    = "192.168.250.10"
-			range_end      = "192.168.250.100"
-			lease_duration = 7200
-		}
-		static_leases = [
-			{
-				mac      = "00:11:22:33:44:55"
-				ip       = "192.168.250.20"
-				hostname = "test-lease-1"
-			},
-			{
-				mac      = "aa:bb:cc:dd:ee:ff"
-				ip       = "192.168.250.30"
-				hostname = "test-lease-2"
-			}
-		]
-	}
 	tls = {
 		enabled           = true
 		serve_plain_dns   = false
@@ -143,13 +121,7 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.upstream_timeout", "10"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.1", "allowed-client"),
-					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.interface", "eth1"),
-					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.gateway_ip", "192.168.250.1"),
-					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.range_start", "192.168.250.10"),
-					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.range_end", "192.168.250.100"),
-					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.lease_duration", "7200"),
-					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.#", "2"),
-					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.static_leases.1.ip", "192.168.250.30"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.enabled", "false"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.enabled", "true"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.server_name", "Test AdGuard Home"),
 					resource.TestCheckResourceAttr("adguard_config.test", "tls.issuer", "CN=TestRootCA,O=AdGuard Home,L=Dallas,ST=Texas,C=US"),
@@ -211,7 +183,8 @@ resource "adguard_config" "test" {
 		disallowed_clients        = ["blocked-client", "172.16.0.0/16"]
 	}
 	dhcp = {
-		interface = "eth1"
+	  enabled   = "true"
+		interface = "eth0"
 		ipv4_settings = {
 			gateway_ip     = "192.168.250.1"
 			subnet_mask    = "255.255.255.0"
@@ -304,6 +277,8 @@ resource "adguard_config" "test" {
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.allowed_clients.#", "0"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.disallowed_clients.#", "2"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dns.disallowed_clients.1", "blocked-client"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.enabled", "true"),
+					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.interface", "eth0"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.range_start", "192.168.250.20"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.range_end", "192.168.250.90"),
 					resource.TestCheckResourceAttr("adguard_config.test", "dhcp.ipv4_settings.lease_duration", "14400"),
